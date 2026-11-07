@@ -19,7 +19,7 @@ import android.widget.Toast;
 import androidx.core.content.FileProvider;
 
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning;
-import com.google.mlkit.vision.documentscanner.GmsDocumentScanningOptions;
+import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions;
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult;
 
 import java.io.File;
@@ -30,7 +30,7 @@ public class MainActivity extends Activity {
     private ValueCallback<Uri[]> fileCallback;
     private Uri cameraOutputUri;
     private File cameraOutputFile;
-    private GmsDocumentScanningOptions scanOptions;
+    private GmsDocumentScannerOptions scanOptions;
     private static final int FILE_CHOOSER_REQUEST = 501;
     private static final int CAMERA_REQUEST = 502;
     private static final int DOCUMENT_SCAN_REQUEST = 503;
@@ -81,11 +81,11 @@ public class MainActivity extends Activity {
     }
 
     private void launchDocumentScanner() {
-        scanOptions = new GmsDocumentScanningOptions.Builder()
+        scanOptions = new GmsDocumentScannerOptions.Builder()
                 .setGalleryImportAllowed(false)
                 .setPageLimit(1)
-                .setResultFormats(GmsDocumentScanningOptions.RESULT_FORMAT_JPEG)
-                .setScannerMode(GmsDocumentScanningOptions.SCANNER_MODE_FULL)
+                .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_JPEG)
+                .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
                 .build();
 
         GmsDocumentScanning.getClient(scanOptions)
