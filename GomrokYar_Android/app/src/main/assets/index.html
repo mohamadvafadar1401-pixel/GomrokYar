@@ -21,26 +21,67 @@ const FIELDS=[['goods','نوع کالا'],['permit','شماره مجوز بار�
 // جدول داخلی: ۱۰ ردیف و ۳ ستون؛ ستون ۱ راست، ستون ۲ وسط، ستون ۳ چپ.
 // چهار نشانه جهت‌یابی فرم: اطلاعات کالا (بالا-راست)، اطلاعات توزین (بالا-چپ)،
 // قبض مادر (پایین-راست) و فضای سفید (پایین-چپ).
-const TABLE_GRID={
-  x:[.013,.209,.759,.982], // از چپ به راست: لبه چپ، مرز ستون‌ها، لبه راست
-  y:[.164,.208,.285,.363,.439,.582,.662,.742,.818,.895,.973] // ۱۱ مرز برای ۱۰ ردیف
-};
-function regionsFromTableGrid(){
+// تشخیص واقعی جدول از روی خطوط چاپ‌شده داخل کادر برگه؛ هیچ مختصاتی از کل صفحه A5 فرض نمی‌شود.
+function detectTableGrid(im){
+  const iw=im.naturalWidth||im.width,ih=im.naturalHeight||im.height;
+  const scale=Math.min(1,1100/Math.max(iw,ih)),w=Math.max(1,Math.round(iw*scale)),h=Math.max(1,Math.round(ih*scale));
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const ctx=c.getContext('2d',{willReadFrequently:true});ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(im,0,0,w,h);
+  const d=ctx.getImageData(0,0,w,h).data,gray=(x,y)=>{const i=(y*w+x)*4;return .299*d[i]+.587*d[i+1]+.114*d[i+2]};
+  const rowScore=new Float32Array(h),colScore=new Float32Array(w);
+  for(let y=0;y<h;y++){let hit=0,total=0;for(let x=Math.round(w*.015);x<Math.round(w*.985);x+=2){let dark=false;for(let dy=-2;dy<=2;dy++)if(y+dy>=0&&y+dy<h&&gray(x,y+dy)<105){dark=true;break;}if(dark)hit++;total++;}rowScore[y]=hit/Math.max(1,total);}
+  for(let x=0;x<w;x++){let hit=0,total=0;for(let y=Math.round(h*.08);y<Math.round(h*.985);y+=2){let dark=false;for(let dx=-2;dx<=2;dx++)if(x+dx>=0&&x+dx<w&&gray(x+dx,y)<105){dark=true;break;}if(dark)hit++;total++;}colScore[x]=hit/Math.max(1,total);}
+  const peaks=(arr,lo,hi,threshold,minGap)=>{
+    const found=[];
+    for(let i=Math.max(2,lo);i<Math.min(arr.length-2,hi);i++){
+      if(arr[i]<threshold||arr[i]<arr[i-1]||arr[i]<arr[i+1])continue;
+      if(found.length&&i-found[found.length-1].pos<minGap){if(arr[i]>found[found.length-1].score)found[found.length-1]={pos:i,score:arr[i]};}
+      else found.push({pos:i,score:arr[i]});
+    }return found;
+  };
+  const xp=peaks(colScore,w*.006,w*.994,.18,Math.max(3,w*.006));
+  let bestX=null,bestXS=-1;
+  for(let a=0;a<xp.length;a++)for(let b=a+1;b<xp.length;b++)for(let cc=b+1;cc<xp.length;cc++)for(let e=cc+1;e<xp.length;e++){
+    const q=[xp[a],xp[b],xp[cc],xp[e]],v=q.map(z=>z.pos/w),g=[v[1]-v[0],v[2]-v[1],v[3]-v[2]];
+    if(g.some(z=>z<.10||z>.70)||v[0]>.12||v[3]<.88)continue;
+    const shape=Math.abs(g[0]-.20)+Math.abs(g[1]-.55)+Math.abs(g[2]-.23);
+    const score=q.reduce((n,z)=>n+z.score,0)-shape*.22;
+    if(score>bestXS){bestXS=score;bestX=q;}
+  }
+  if(!bestX||bestXS<.82)throw new Error('چهار مرز عمودی جدول به‌طور مطمئن پیدا نشد');
+  const yp=peaks(rowScore,h*.10,h*.995,.20,Math.max(3,h*.004));
+  let states=yp.map((p,i)=>({path:[i],score:p.score}));
+  for(let n=1;n<11;n++){
+    const next=[];
+    for(let i=0;i<yp.length;i++){
+      let best=null;
+      for(let j=0;j<i;j++){
+        const gap=(yp[i].pos-yp[j].pos)/h;
+        if(gap<.032||gap>.19)continue;
+        const prev=states[j];if(!prev)continue;
+        const candidate=prev.score+yp[i].score-Math.abs(gap-.082)*.22;
+        if(!best||candidate>best.score)best={path:prev.path.concat(i),score:candidate};
+      }next[i]=best;
+    }states=next;
+  }
+  let chosen=null;
+  for(let i=0;i<states.length;i++){const st=states[i];if(!st||st.path.length!==11)continue;const ys=st.path.map(k=>yp[k].pos);
+    if(ys[0]/h<.10||ys[0]/h>.35||ys[10]/h<.78||ys[10]/h>.995)continue;
+    if(!chosen||st.score>chosen.score)chosen={ys,score:st.score};
+  }
+  if(!chosen)throw new Error('یازده مرز افقی جدول (ده ردیف) با اطمینان کافی پیدا نشد');
+  const xs=bestX.map(p=>p.pos/w),ys=chosen.ys.map(p=>p/h);
+  if(xs.some((v,i)=>i&&v<=xs[i-1])||ys.some((v,i)=>i&&v<=ys[i-1]))throw new Error('شبکه جدول معتبر نیست');
+  return {x:xs,y:ys,confidence:Math.min(bestXS,chosen.score/6)};
+}
+function regionsFromTableGrid(im){
+  const grid=detectTableGrid(im);
   const cell=(row,col)=>{
-    // شماره ستون‌ها در فرم از راست به چپ است؛ آرایه مختصات از چپ به راست نگهداری می‌شود.
-    const leftIndex=3-col;
-    const x0=TABLE_GRID.x[leftIndex],x1=TABLE_GRID.x[leftIndex+1],y0=TABLE_GRID.y[row-1],y1=TABLE_GRID.y[row];
-    const ix=.004,iy=.004;
+    const leftIndex=3-col,x0=grid.x[leftIndex],x1=grid.x[leftIndex+1],y0=grid.y[row-1],y1=grid.y[row];
+    const ix=Math.max(.002,(x1-x0)*.012),iy=Math.max(.002,(y1-y0)*.035);
     return {x:x0+ix,y:y0+iy,w:x1-x0-2*ix,h:y1-y0-2*iy};
   };
-  return {
-    permit:cell(3,1), // ردیف ۳، ستون ۱: راست
-    plate:cell(4,2),  // ردیف ۴، ستون ۲: وسط
-    first:cell(3,3),  // ردیف ۳، ستون ۳: چپ
-    second:cell(6,3), // ردیف ۶، ستون ۳: چپ
-    net:cell(7,1),    // ردیف ۷، ستون ۱: راست
-    goods:cell(7,2)   // ردیف ۷، ستون ۲: وسط
-  };
+  return {permit:cell(3,1),plate:cell(4,2),first:cell(3,3),second:cell(6,3),net:cell(7,1),goods:cell(7,2)};
 }
 const $=id=>document.getElementById(id);let image=null,sourceData='',regions={},active='plate',drag=null,crops={},db,frameRect={x:0,y:0,w:1,h:1},templateMode=false,perspectiveSource=null,perspectiveSelecting=false,perspectivePoints=[];
 const DB='gomrokyar_offline_v1';
@@ -184,10 +225,10 @@ $('preview').addEventListener('click',async ev=>{
     image=await warpPerspective(perspectiveSource,perspectivePoints);
     const frame=detectBlackFrame(image);
     if(!frame)throw new Error('پس از اصلاح، کادر برگه پیدا نشد؛ چهار گوشه را دقیقاً روی خط بیرونی مشکی انتخاب کن');
-    image=await cropToPaper(image,frame);frameRect={x:0,y:0,w:1,h:1};regions=regionsFromTableGrid();
+    image=await cropToPaper(image,frame);frameRect={x:0,y:0,w:1,h:1};regions=regionsFromTableGrid(image);
     const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;c.getContext('2d').drawImage(image,0,0);
     sourceData=c.toDataURL('image/jpeg',.94);$('preview').src=sourceData;
-    $('calStatus').textContent='پرسپکتیو اصلاح شد؛ برگه صاف شد و شش خانه دوباره برش خوردند.';
+    $('calStatus').textContent='پرسپکتیو اصلاح شد؛ کادر فرم جدا و شبکه واقعی جدول ۱۰×۳ دوباره تشخیص داده شد.';
     $('dataPanel').classList.add('hide');makeCrops();
   }catch(err){perspectiveSelecting=false;$('calStatus').textContent=err.message+'؛ دوباره دکمه اصلاح پرسپکتیو را بزن.';}
 });
@@ -216,7 +257,7 @@ async function handleSelectedPhoto(e){  let f=e.target.files[0];if(!f)return;
     image=await cropToPaper(image,detectedFrame);
     frameRect={x:0,y:0,w:1,h:1};
     regions=regionsFromTableGrid();
-    $('calStatus').textContent='برگه شناسایی شد؛ جدول ۱۰×۳ نسبت به کادر مشکی شناسایی شد؛ شش خانه از ردیف‌ها و ستون‌های مشخص‌شده برش خوردند.';
+    $('calStatus').textContent='برگه شناسایی شد؛ کادر فرم جدا شد؛ خطوط واقعی جدول ۱۰×۳ شناسایی و شش خانه از روی خطوط چاپ‌شده برش خوردند.';
   }else{
     frameRect={x:0,y:0,w:1,h:1};
     regions={};
