@@ -148,7 +148,7 @@ public class MainActivity extends Activity {
             if (resultCode == Activity.RESULT_OK && data != null && scanOptions != null) {
                 try {
                     GmsDocumentScanningResult scanResult =
-                            GmsDocumentScanning.getClient(scanOptions).getScanningResultFromIntent(data);
+                            GmsDocumentScanningResult.fromActivityResultIntent(data);
                     if (scanResult != null && scanResult.getPages() != null && !scanResult.getPages().isEmpty()) {
                         scannedImage = scanResult.getPages().get(0).getImageUri();
                     }
