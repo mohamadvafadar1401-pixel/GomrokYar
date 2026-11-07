@@ -82,8 +82,12 @@ function regionsFromTableGrid(im){
   const cell=(row,col)=>{
     // شماره ستون‌ها از راست به چپ است: ۱ راست، ۲ وسط، ۳ چپ.
     const leftIndex=3-col,x0=grid.x[leftIndex],x1=grid.x[leftIndex+1],y0=grid.y[row-1],y1=grid.y[row];
-    const ix=(x1-x0)*.012,iy=(y1-y0)*.035;
-    return {x:x0+ix,y:y0+iy,w:x1-x0-2*ix,h:y1-y0-2*iy};
+    // حاشیه برش را کمی از مرز خانه‌ها بیرون می‌بریم تا ابتدا و انتهای نوشته‌ها قطع نشود.
+    // گسترش افقی ۶٪ و عمودی ۱۵٪ از هر طرف؛ محدود به محدوده عکس.
+    const px=(x1-x0)*.06,py=(y1-y0)*.15;
+    const left=Math.max(0,x0-px),right=Math.min(1,x1+px);
+    const top=Math.max(0,y0-py),bottom=Math.min(1,y1+py);
+    return {x:left,y:top,w:right-left,h:bottom-top};
   };
   return {permit:cell(3,1),plate:cell(4,2),first:cell(3,3),second:cell(6,3),net:cell(7,1),goods:cell(7,2)};
 }
