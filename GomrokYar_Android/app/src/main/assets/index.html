@@ -18,12 +18,12 @@
 <script>
 const FIELDS=[['goods','نوع کالا'],['permit','شماره مجوز بارگیری'],['first','توزین اول'],['second','توزین دوم'],['plate','شماره پلاک'],['net','وزن خالص']];
 const AUTO_REGIONS={
-  permit:{x:.761,y:.291,w:.216,h:.067},
-  plate:{x:.212,y:.369,w:.539,h:.066},
-  first:{x:.022,y:.291,w:.183,h:.067},
-  second:{x:.022,y:.560,w:.183,h:.065},
-  net:{x:.761,y:.635,w:.216,h:.101},
-  goods:{x:.212,y:.635,w:.539,h:.101}
+  permit:{x:.765,y:.283,w:.207,h:.081},
+  plate:{x:.216,y:.363,w:.530,h:.079},
+  first:{x:.025,y:.283,w:.176,h:.081},
+  second:{x:.025,y:.552,w:.176,h:.080},
+  net:{x:.765,y:.628,w:.207,h:.114},
+  goods:{x:.216,y:.628,w:.530,h:.114}
 };
 const $=id=>document.getElementById(id);let image=null,sourceData='',regions={},active='plate',drag=null,crops={},db,frameRect={x:0,y:0,w:1,h:1},templateMode=false;
 const DB='gomrokyar_offline_v1';
