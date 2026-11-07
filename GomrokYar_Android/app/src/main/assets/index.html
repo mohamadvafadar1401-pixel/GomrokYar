@@ -570,13 +570,14 @@ const authRead=async()=>{if(!db)throw new Error('پایگاه داده برنا�
 const authWrite=v=>setting(AUTH_KEY,v);
 function authNormalize(v){return String(v||'').trim().toLowerCase().replace(/[^a-z0-9_.@-]/g,'')}
 async function hashPassword(password,salt){
+ // ابتدا WebCrypto و در صورت نبودن/خطا، پیاده‌سازی بومی اندروید امتحان می‌شود.
  if(window.crypto?.subtle){
-  const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
-  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:Uint8Array.from(atob(salt),c=>c.charCodeAt(0)),iterations:150000,hash:'SHA-256'},material,256);
-  return btoa(String.fromCharCode(...new Uint8Array(bits)));
+  try{
+   const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
+   const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:Uint8Array.from(atob(salt),c=>c.charCodeAt(0)),iterations:150000,hash:'SHA-256'},material,256);
+   return btoa(String.fromCharCode(...new Uint8Array(bits)));
+  }catch(e){console.warn('WebCrypto unavailable; using Android password bridge.',e)}
  }
- // Android WebView که فایل محلی را باز می‌کند ممکن است WebCrypto نداشته باشد؛
- // در این حالت همان PBKDF2-HMAC-SHA256 با پل بومی اندروید اجرا می‌شود.
  if(window.AndroidAuth?.derivePasswordHash){
   const result=window.AndroidAuth.derivePasswordHash(String(password),String(salt));
   if(typeof result==='string'&&!result.startsWith('ERROR:'))return result;
