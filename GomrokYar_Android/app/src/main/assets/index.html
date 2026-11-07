@@ -5,7 +5,7 @@
 </style></head><body><header><h1>گمرکیار</h1><p>ثبت ورودی صادراتی، ورودی وارداتی با باسکول دستی، ورود کامیون خالی و خروج کامیون وارداتی ـ آفلاین</p></header><main class="wrap">
 <nav class="tabs" aria-label="بخش‌های ثبت"><button class="tabbtn active" data-tab="weighTab">ورود صادراتی با برگه باسکول</button><button class="tabbtn" data-tab="importEntryTab">ورود وارداتی با باسکول دستی</button><button class="tabbtn" data-tab="emptyTab">ورود کامیون خالی</button><button class="tabbtn" data-tab="exitTab">خروج کامیون وارداتی</button></nav>
 <div id="weighTab">
-<section class="panel"><h2>۱) انتخاب یا گرفتن عکس برگه</h2><div class="row"><label class="btn" for="photo">🖼️ انتخاب عکس از گالری</label><input id="photo" type="file" accept="image/*" class="hide"><label class="btn secondary" for="cameraPhoto">📷 گرفتن عکس با دوربین</label><input id="cameraPhoto" type="file" accept="image/*" capture="environment" class="hide"><button id="calibrate" class="secondary hide" disabled>تنظیم محل برش‌ها</button></div><p class="hint">برش خودکار فرم A5 فعال است؛ برنامه پس از تشخیص کادر برگه، شش خانه ثابت را طبق ردیف‌ها و ستون‌های فرم (شماره ستون‌ها از راست به چپ) جدا می‌کند. نیازی به تنظیم دستی یا تشخیص متن نیست.</p><img id="preview" class="preview hide" alt="پیش‌نمایش برگه"><div id="calStatus" class="status"></div></section>
+<section class="panel"><h2>۱) انتخاب یا گرفتن عکس برگه</h2><div class="row"><label class="btn" for="photo">🖼️ انتخاب عکس از گالری</label><input id="photo" type="file" accept="image/*" class="hide"><label class="btn secondary" for="cameraPhoto">📷 گرفتن عکس با دوربین</label><input id="cameraPhoto" type="file" accept="image/*" capture="environment" class="hide"><button id="calibrate" class="secondary hide" disabled>تنظیم محل برش‌ها</button></div><p class="hint">برش خودکار فرم A5 فعال است؛ برنامه پس از تشخیص کادر برگه، شش خانه ثابت را طبق ردیف‌ها و ستون‌های فرم (شماره ستون‌ها از راست به چپ) جدا می‌کند. نیازی به تنظیم دستی یا تشخیص متن نیست.</p><img id="preview" class="preview hide" alt="پیش‌نمایش برگه"><div class="row" style="margin-top:8px"><button id="perspectiveBtn" class="secondary hide" type="button">اصلاح پرسپکتیو با ۴ گوشه</button></div><div id="calStatus" class="status"></div></section>
 <section id="cropPanel" class="panel hide"><h2>۲) تنظیم محدوده برش</h2><p id="cropInstruction" class="hint">ابتدا دکمه فیلد را بزن تا انتخاب شود؛ سپس روی خود تصویر از گوشه اول تا گوشه مقابل آن فیلد انگشتت را بکش.</p><div class="row" id="fieldButtons"></div><canvas id="overlay" class="preview"></canvas><div class="row" style="margin-top:10px"><button id="saveTemplate">ذخیره الگو</button><button id="cancelCal" class="secondary">انصراف</button></div><p class="small">محدوده‌ها نسبت به کادر مشکی ذخیره می‌شوند؛ کادر باید در عکس‌های بعدی کامل و واضح دیده شود.</p></section>
 <section id="dataPanel" class="panel hide"><h2>۳) بازبینی و ثبت اطلاعات</h2><div class="grid" id="crops"></div><div class="grid"><div class="field"><label>شماره پلاک (اجباری؛ ورود دستی، ۵ رقم)</label><input id="plateKey" inputmode="numeric" maxlength="5" autocomplete="off" required placeholder="مثلاً 00469"></div><div class="field"><label>وزن خالص (ورود دستی، کیلوگرم)</label><input id="netWeight" inputmode="numeric" autocomplete="off" placeholder="مثلاً 24500"></div></div><label>توضیحات (اختیاری)</label><input id="notes" placeholder="توضیحات"><div class="row" style="margin-top:12px"><button id="saveRecord">ثبت اتوماتیک برگه و آماده‌سازی بعدی</button><button id="resetForm" class="secondary">پاک کردن فرم</button></div><div id="saveStatus" class="status"></div></section>
 </div>
@@ -42,7 +42,7 @@ function regionsFromTableGrid(){
     goods:cell(7,2)   // ردیف ۷، ستون ۲: وسط
   };
 }
-const $=id=>document.getElementById(id);let image=null,sourceData='',regions={},active='plate',drag=null,crops={},db,frameRect={x:0,y:0,w:1,h:1},templateMode=false;
+const $=id=>document.getElementById(id);let image=null,sourceData='',regions={},active='plate',drag=null,crops={},db,frameRect={x:0,y:0,w:1,h:1},templateMode=false,perspectiveSource=null,perspectiveSelecting=false,perspectivePoints=[];
 const DB='gomrokyar_offline_v1';
 function openDB(){return new Promise((res,rej)=>{let q=indexedDB.open(DB,1);q.onupgradeneeded=()=>{q.result.createObjectStore('records',{keyPath:'id',autoIncrement:true});q.result.createObjectStore('settings')};q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
 function tx(store,mode='readonly'){return db.transaction(store,mode).objectStore(store)}
@@ -127,6 +127,71 @@ async function straightenToBlackFrame(im){
   const fixed=await loadImageData(out.toDataURL('image/jpeg',.94));return {image:fixed,angle:best.angle,found:true};
 }
 function loadImageData(src){return new Promise((resolve,reject)=>{let im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=src})}
+function solveLinearSystem(A,b){
+  const n=b.length,m=A.map((r,i)=>r.slice().concat(b[i]));
+  for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(m[r][c])>Math.abs(m[p][c]))p=r;
+    if(Math.abs(m[p][c])<1e-9)throw new Error('چهار گوشه قابل اصلاح نیستند');
+    [m[c],m[p]]=[m[p],m[c]];let q=m[c][c];for(let j=c;j<=n;j++)m[c][j]/=q;
+    for(let r=0;r<n;r++)if(r!==c){q=m[r][c];for(let j=c;j<=n;j++)m[r][j]-=q*m[c][j];}
+  }return m.map(r=>r[n]);
+}
+function homographyFromRectToQuad(w,h,p){
+  const dst=[[0,0],[w,0],[w,h],[0,h]],A=[],b=[];
+  for(let i=0;i<4;i++){const [x,y]=dst[i],[u,v]=p[i];
+    A.push([x,y,1,0,0,0,-u*x,-u*y]);b.push(u);
+    A.push([0,0,0,x,y,1,-v*x,-v*y]);b.push(v);
+  }return solveLinearSystem(A,b);
+}
+function warpPerspective(source,points){
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  const W=Math.round(Math.max(dist(points[0],points[1]),dist(points[3],points[2])));
+  const H=Math.round(Math.max(dist(points[0],points[3]),dist(points[1],points[2])));
+  if(W<300||H<300||W*H>12000000)throw new Error('ابعاد یا انتخاب گوشه‌ها معتبر نیست');
+  const p=points.map(q=>[q.x,q.y]),g=homographyFromRectToQuad(W,H,p);
+  const src=document.createElement('canvas');src.width=source.naturalWidth;src.height=source.naturalHeight;
+  const sc=src.getContext('2d',{willReadFrequently:true});sc.drawImage(source,0,0);
+  const sd=sc.getImageData(0,0,src.width,src.height),out=document.createElement('canvas');out.width=W;out.height=H;
+  const oc=out.getContext('2d'),od=oc.createImageData(W,H),a=g[0],b=g[1],c=g[2],d=g[3],e=g[4],f=g[5],gg=g[6],hh=g[7];
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const z=gg*x+hh*y+1,sx=Math.round((a*x+b*y+c)/z),sy=Math.round((d*x+e*y+f)/z);
+    if(sx<0||sy<0||sx>=src.width||sy>=src.height)continue;
+    const si=(sy*src.width+sx)*4,di=(y*W+x)*4;
+    od.data[di]=sd.data[si];od.data[di+1]=sd.data[si+1];od.data[di+2]=sd.data[si+2];od.data[di+3]=255;
+  }
+  oc.putImageData(od,0,0);return loadImageData(out.toDataURL('image/jpeg',.96));
+}
+function previewPoint(ev){
+  const el=$('preview'),r=el.getBoundingClientRect(),nw=perspectiveSource.naturalWidth,nh=perspectiveSource.naturalHeight;
+  const scale=Math.min(r.width/nw,r.height/nh),dw=nw*scale,dh=nh*scale,ox=(r.width-dw)/2,oy=(r.height-dh)/2;
+  return {x:(ev.clientX-r.left-ox)/scale,y:(ev.clientY-r.top-oy)/scale};
+}
+$('perspectiveBtn').onclick=()=>{
+  if(!perspectiveSource)return;
+  perspectiveSelecting=true;perspectivePoints=[];
+  const c=document.createElement('canvas');c.width=perspectiveSource.naturalWidth;c.height=perspectiveSource.naturalHeight;c.getContext('2d').drawImage(perspectiveSource,0,0);
+  $('preview').src=c.toDataURL('image/jpeg',.94);
+  $('calStatus').textContent='چهار گوشه کادر مشکی را به ترتیب لمس کن: ۱ بالا-چپ، ۲ بالا-راست، ۳ پایین-راست، ۴ پایین-چپ.';
+};
+$('preview').addEventListener('click',async ev=>{
+  if(!perspectiveSelecting||!perspectiveSource)return;
+  const p=previewPoint(ev),w=perspectiveSource.naturalWidth,h=perspectiveSource.naturalHeight;
+  if(p.x<0||p.y<0||p.x>w||p.y>h)return;
+  perspectivePoints.push(p);
+  $('calStatus').textContent='گوشه '+perspectivePoints.length+' از ۴ ثبت شد.';
+  if(perspectivePoints.length<4)return;
+  perspectiveSelecting=false;
+  try{
+    image=await warpPerspective(perspectiveSource,perspectivePoints);
+    const frame=detectBlackFrame(image);
+    if(!frame)throw new Error('پس از اصلاح، کادر برگه پیدا نشد؛ چهار گوشه را دقیقاً روی خط بیرونی مشکی انتخاب کن');
+    image=await cropToPaper(image,frame);frameRect={x:0,y:0,w:1,h:1};regions=regionsFromTableGrid();
+    const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;c.getContext('2d').drawImage(image,0,0);
+    sourceData=c.toDataURL('image/jpeg',.94);$('preview').src=sourceData;
+    $('calStatus').textContent='پرسپکتیو اصلاح شد؛ برگه صاف شد و شش خانه دوباره برش خوردند.';
+    $('dataPanel').classList.add('hide');makeCrops();
+  }catch(err){perspectiveSelecting=false;$('calStatus').textContent=err.message+'؛ دوباره دکمه اصلاح پرسپکتیو را بزن.';}
+});
+
 // برش خودکار عکس تا لبه‌های کادر مشکی؛ حاشیه بسیار کم برای حفظ کامل خط کادر باقی می‌ماند.
 async function cropToPaper(im,rect){const w=im.naturalWidth||im.width,h=im.naturalHeight||im.height;let x=Math.max(0,Math.floor(rect.x*w)),y=Math.max(0,Math.floor(rect.y*h)),r=Math.min(w,Math.ceil((rect.x+rect.w)*w)),b=Math.min(h,Math.ceil((rect.y+rect.h)*h));if(r-x<100||b-y<100)throw new Error('کادر برگه خیلی کوچک است');const c=document.createElement('canvas');c.width=r-x;c.height=b-y;c.getContext('2d').drawImage(im,x,y,c.width,c.height,0,0,c.width,c.height);return loadImageData(c.toDataURL('image/jpeg',.96))}
 function toImageRect(r){return{x:frameRect.x+r.x*frameRect.w,y:frameRect.y+r.y*frameRect.h,w:r.w*frameRect.w,h:r.h*frameRect.h}}
@@ -136,6 +201,7 @@ async function handleSelectedPhoto(e){  let f=e.target.files[0];if(!f)return;
     image=await loadImage(f);
     const aligned=await straightenToBlackFrame(image);
     image=aligned.image;
+    perspectiveSource=image;
     if(aligned.found){
       $('calStatus').textContent='کادر برگه شناسایی و تصویر تراز شد.'+(aligned.angle?' اصلاح چرخش: '+Math.abs(aligned.angle).toFixed(2)+' درجه.':'');
     }else{
@@ -158,7 +224,7 @@ async function handleSelectedPhoto(e){  let f=e.target.files[0];if(!f)return;
   }
   let c=$('work');c.width=image.naturalWidth;c.height=image.naturalHeight;c.getContext('2d').drawImage(image,0,0);
   sourceData=c.toDataURL('image/jpeg',.94);
-  $('preview').src=sourceData;$('preview').classList.remove('hide');
+  $('preview').src=sourceData;$('preview').classList.remove('hide');$('perspectiveBtn').classList.remove('hide');
   $('calibrate').disabled=true;$('cropPanel').classList.add('hide');$('dataPanel').classList.add('hide');
   if(detectedFrame)makeCrops();
   e.target.value='';
