@@ -3,6 +3,7 @@ package ir.gomrokhyar.app;
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
@@ -17,6 +18,10 @@ import android.widget.Toast;
 
 import androidx.core.content.FileProvider;
 
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanning;
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanningOptions;
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult;
+
 import java.io.File;
 import java.util.List;
 
@@ -25,8 +30,10 @@ public class MainActivity extends Activity {
     private ValueCallback<Uri[]> fileCallback;
     private Uri cameraOutputUri;
     private File cameraOutputFile;
+    private GmsDocumentScanningOptions scanOptions;
     private static final int FILE_CHOOSER_REQUEST = 501;
     private static final int CAMERA_REQUEST = 502;
+    private static final int DOCUMENT_SCAN_REQUEST = 503;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -46,10 +53,9 @@ public class MainActivity extends Activity {
                 clearPendingCallback();
                 fileCallback = callback;
 
-                // An HTML input with capture="environment" must open the native camera,
-                // not Android's gallery/document picker.
+                // capture="environment": open the document scanner instead of the gallery.
                 if (params.isCaptureEnabled()) {
-                    launchRearCamera();
+                    launchDocumentScanner();
                     return true;
                 }
 
@@ -72,6 +78,27 @@ public class MainActivity extends Activity {
             }
         });
         webView.loadUrl("file:///android_asset/index.html");
+    }
+
+    private void launchDocumentScanner() {
+        scanOptions = new GmsDocumentScanningOptions.Builder()
+                .setGalleryImportAllowed(false)
+                .setPageLimit(1)
+                .setResultFormats(GmsDocumentScanningOptions.RESULT_FORMAT_JPEG)
+                .setScannerMode(GmsDocumentScanningOptions.SCANNER_MODE_FULL)
+                .build();
+
+        GmsDocumentScanning.getClient(scanOptions)
+                .getStartScanIntent(this)
+                .addOnSuccessListener(intentSender -> {
+                    try {
+                        startIntentSenderForResult(intentSender, DOCUMENT_SCAN_REQUEST, null, 0, 0, 0);
+                    } catch (IntentSender.SendIntentException e) {
+                        // If Play Services scanner cannot be launched, use the phone's rear camera.
+                        launchRearCamera();
+                    }
+                })
+                .addOnFailureListener(error -> launchRearCamera());
     }
 
     private void launchRearCamera() {
@@ -115,6 +142,25 @@ public class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == DOCUMENT_SCAN_REQUEST) {
+            Uri scannedImage = null;
+            if (resultCode == Activity.RESULT_OK && data != null && scanOptions != null) {
+                try {
+                    GmsDocumentScanningResult scanResult =
+                            GmsDocumentScanning.getClient(scanOptions).getScanningResultFromIntent(data);
+                    if (scanResult != null && scanResult.getPages() != null && !scanResult.getPages().isEmpty()) {
+                        scannedImage = scanResult.getPages().get(0).getImageUri();
+                    }
+                } catch (Exception ignored) { }
+            }
+            if (fileCallback != null) {
+                fileCallback.onReceiveValue(scannedImage == null ? null : new Uri[]{scannedImage});
+                fileCallback = null;
+            }
+            scanOptions = null;
+            return;
+        }
 
         if (requestCode == CAMERA_REQUEST) {
             Uri result = null;
