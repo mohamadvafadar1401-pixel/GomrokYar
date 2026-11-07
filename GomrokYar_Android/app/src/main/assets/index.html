@@ -566,7 +566,7 @@ $('clearPlateHistory').onclick=()=>{$('plateHistoryQuery').value='';$('plateHist
 
 let currentUser=null;
 const AUTH_KEY='localUsers_v1';
-const authRead=()=>setting(AUTH_KEY);
+const authRead=async()=>{if(!db)throw new Error('پایگاه داده برنامه هنوز آماده نشده است. چند لحظه صبر کن و دوباره تلاش کن.');return await setting(AUTH_KEY)};
 const authWrite=v=>setting(AUTH_KEY,v);
 function authNormalize(v){return String(v||'').trim().toLowerCase().replace(/[^a-z0-9_.@-]/g,'')}
 async function hashPassword(password,salt){
@@ -602,12 +602,33 @@ $('createAdminBtn').onclick=async()=>{
  if(p!==p2){$('authError').textContent='تکرار رمز عبور با رمز اصلی یکسان نیست.';return}
  try{const admin=await makeUser(username,displayName,p,'admin');await authWrite([admin,...seedStaffUsers()]);$('setupPassword').value=$('setupPassword2').value='';await unlockAs(admin)}catch(e){$('authError').textContent=e.message||'ساخت حساب مدیر انجام نشد.'}
 };
-$('loginBtn').onclick=async()=>{
- const username=authNormalize($('loginUsername').value),p=$('loginPassword').value,users=await authRead()||[],user=users.find(x=>x.username===username);
- if(!user||user.active===false&&!user.pendingPassword){$('authError').textContent='نام کاربری یا رمز عبور صحیح نیست.';return}
- if(user.pendingPassword||!user.passwordHash){$('authError').textContent='حساب ایجاد شده اما مدیر هنوز رمز اولیه را برای آن تعیین نکرده است.';return}
- try{const hash=await hashPassword(p,user.salt);if(hash!==user.passwordHash){$('authError').textContent='نام کاربری یا رمز عبور صحیح نیست.';return} $('loginPassword').value='';await unlockAs(user)}catch(e){$('authError').textContent=e.message||'ورود انجام نشد.'}
-};
+let loginInProgress=false;
+async function handleLogin(){
+ const btn=$('loginBtn');
+ if(loginInProgress)return;
+ loginInProgress=true;btn.disabled=true;btn.textContent='در حال بررسی...';$('authError').textContent='';
+ try{
+  const username=authNormalize($('loginUsername').value),p=$('loginPassword').value;
+  if(!username){$('authError').textContent='نام کاربری را وارد کن.';$('loginUsername').focus();return}
+  if(!p){$('authError').textContent='رمز عبور را وارد کن.';$('loginPassword').focus();return}
+  const users=await authRead();
+  if(!Array.isArray(users))throw new Error('اطلاعات حساب‌های کاربری خوانده نشد. برنامه را کامل ببند و دوباره باز کن.');
+  const user=users.find(x=>x.username===username);
+  if(!user||user.active===false&&!user.pendingPassword){$('authError').textContent='نام کاربری یا رمز عبور صحیح نیست.';return}
+  if(user.pendingPassword||!user.passwordHash){$('authError').textContent='حساب ایجاد شده اما مدیر هنوز رمز اولیه را برای آن تعیین نکرده است.';return}
+  if(!user.salt)throw new Error('اطلاعات امنیتی این حساب ناقص است؛ مدیر سامانه باید رمز آن را دوباره تعیین کند.');
+  const hash=await hashPassword(p,user.salt);
+  if(hash!==user.passwordHash){$('authError').textContent='نام کاربری یا رمز عبور صحیح نیست.';return}
+  $('loginPassword').value='';await unlockAs(user);
+ }catch(e){
+  console.error('GomrokYar login error:',e);
+  $('authError').textContent='خطا هنگام ورود: '+(e&&e.message?e.message:'خطای ناشناخته. برنامه را دوباره باز کن.');
+ }finally{
+  loginInProgress=false;btn.disabled=false;btn.textContent='ورود به برنامه';
+ }
+}
+$('loginBtn').type='button';
+$('loginBtn').addEventListener('click',handleLogin);
 $('loginPassword').addEventListener('keydown',e=>{if(e.key==='Enter')$('loginBtn').click()});
 $('setupPassword2').addEventListener('keydown',e=>{if(e.key==='Enter')$('createAdminBtn').click()});
 async function renderUserManager(){
@@ -631,5 +652,5 @@ $('addUserBtn').onclick=async()=>{
 $('changeMyPasswordBtn').onclick=async()=>{closeDrawer();if(!currentUser)return;const old=prompt('رمز فعلی را وارد کن:');if(old===null)return;const users=await authRead()||[],target=users.find(x=>x.username===currentUser.username);if(!target)return;const oldHash=await hashPassword(old,target.salt);if(oldHash!==target.passwordHash){alert('رمز فعلی صحیح نیست.');return}const next=prompt('رمز جدید (حداقل ۸ نویسه):');if(next===null)return;if(next.length<8){alert('رمز جدید باید حداقل ۸ نویسه باشد.');return}const confirmNext=prompt('رمز جدید را دوباره وارد کن:');if(confirmNext!==next){alert('تکرار رمز با رمز جدید یکسان نیست.');return}target.salt=randomSalt();target.passwordHash=await hashPassword(next,target.salt);await authWrite(users);currentUser=target;alert('رمز عبور با موفقیت تغییر کرد.');};
 $('lockAppBtn').onclick=()=>{closeDrawer();currentUser=null;$('loginUsername').value='';$('loginPassword').value='';showAuth(false)};
 
-(async()=>{db=await openDB();await initAuth();regions=await setting('regions')||{};templateMode=(await setting('templateMode'))===true;await renderRecords();await refreshReportPreview()})();
+(async()=>{try{db=await openDB();await initAuth();regions=await setting('regions')||{};templateMode=(await setting('templateMode'))===true;await renderRecords();await refreshReportPreview()}catch(e){console.error('GomrokYar startup error:',e);$('authGate').style.display='flex';$('authError').textContent='راه‌اندازی برنامه با خطا روبه‌رو شد: '+(e&&e.message?e.message:'خطای ناشناخته')+'؛ برنامه را کامل ببند و دوباره باز کن.';}})();
 </script></body></html>
