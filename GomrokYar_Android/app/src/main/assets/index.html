@@ -538,9 +538,12 @@ async function initAuth(){
  let users=await authRead();
  if(!Array.isArray(users)||users.length===0){showAuth(true);$('setupUsername').value='muhamadvafadar22@gmail.com';}
  else{
-  if(users.length===1&&users[0].role==='admin'){
-   const known=new Set(users.map(x=>x.username));const add=seedStaffUsers().filter(x=>!known.has(x.username));
-   if(add.length){users=[...users,...add];await authWrite(users);}
+  const admin=users.find(x=>x.role==='admin');
+  if(admin&&admin.username!=='muhamadvafadar22@gmail.com'&&!users.some(x=>x.username==='muhamadvafadar22@gmail.com'&&x!==admin))admin.username='muhamadvafadar22@gmail.com';
+  if(admin){
+   const known=new Set(users.map(x=>x.username));const add=seedStaffUsers().filter(x=>!known.has(x.username)).slice(0,Math.max(0,6-users.length));
+   if(add.length)users=[...users,...add];
+   await authWrite(users);
   }
   showAuth(false);$('loginUsername').focus();
  }
@@ -554,8 +557,8 @@ $('createAdminBtn').onclick=async()=>{
  try{const admin=await makeUser(username,displayName,p,'admin');await authWrite([admin,...seedStaffUsers()]);$('setupPassword').value=$('setupPassword2').value='';await unlockAs(admin)}catch(e){$('authError').textContent=e.message||'ساخت حساب مدیر انجام نشد.'}
 };
 $('loginBtn').onclick=async()=>{
- const username=authNormalize($('loginUsername').value),p=$('loginPassword').value,users=await authRead()||[],user=users.find(x=>x.username===username&&x.active!==false);
- if(!user){$('authError').textContent='نام کاربری یا رمز عبور صحیح نیست.';return}
+ const username=authNormalize($('loginUsername').value),p=$('loginPassword').value,users=await authRead()||[],user=users.find(x=>x.username===username);
+ if(!user||user.active===false&&!user.pendingPassword){$('authError').textContent='نام کاربری یا رمز عبور صحیح نیست.';return}
  if(user.pendingPassword||!user.passwordHash){$('authError').textContent='حساب ایجاد شده اما مدیر هنوز رمز اولیه را برای آن تعیین نکرده است.';return}
  try{const hash=await hashPassword(p,user.salt);if(hash!==user.passwordHash){$('authError').textContent='نام کاربری یا رمز عبور صحیح نیست.';return} $('loginPassword').value='';await unlockAs(user)}catch(e){$('authError').textContent=e.message||'ورود انجام نشد.'}
 };
