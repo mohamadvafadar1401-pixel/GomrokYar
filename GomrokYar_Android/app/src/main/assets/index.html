@@ -17,22 +17,36 @@
 </main><canvas id="work"></canvas>
 <script>
 const FIELDS=[['goods','نوع کالا'],['permit','شماره مجوز بارگیری'],['first','توزین اول'],['second','توزین دوم'],['plate','شماره پلاک'],['net','وزن خالص']];
-const AUTO_REGIONS={
-  permit:{x:.765,y:.283,w:.207,h:.081},
-  plate:{x:.216,y:.363,w:.530,h:.079},
-  first:{x:.025,y:.283,w:.176,h:.081},
-  second:{x:.025,y:.552,w:.176,h:.080},
-  net:{x:.765,y:.628,w:.207,h:.114},
-  goods:{x:.216,y:.628,w:.530,h:.114}
+// شبکه فرم A5 بر اساس کادر مشکی بیرونی اندازه‌گیری شده است؛ نه مختصات کل عکس.
+// جدول داخلی: ۱۰ ردیف و ۳ ستون؛ ستون ۱ راست، ستون ۲ وسط، ستون ۳ چپ.
+// چهار نشانه جهت‌یابی فرم: اطلاعات کالا (بالا-راست)، اطلاعات توزین (بالا-چپ)،
+// قبض مادر (پایین-راست) و فضای سفید (پایین-چپ).
+const TABLE_GRID={
+  x:[.013,.209,.759,.982],
+  y:[.164,.208,.285,.363,.439,.556,.630,.742,.818,.895,.973]
 };
+function regionsFromTableGrid(){
+  const cell=(row,col)=>{
+    const x0=TABLE_GRID.x[col-1],x1=TABLE_GRID.x[col],y0=TABLE_GRID.y[row-1],y1=TABLE_GRID.y[row];
+    const ix=.004,iy=.004;
+    return {x:x0+ix,y:y0+iy,w:x1-x0-2*ix,h:y1-y0-2*iy};
+  };
+  return {
+    permit:cell(3,1), // ردیف ۳، ستون ۱: راست
+    plate:cell(4,2),  // ردیف ۴، ستون ۲: وسط
+    first:cell(3,3),  // ردیف ۳، ستون ۳: چپ
+    second:cell(6,3), // ردیف ۶، ستون ۳: چپ
+    net:cell(7,1),    // ردیف ۷، ستون ۱: راست
+    goods:cell(7,2)   // ردیف ۷، ستون ۲: وسط
+  };
+}
 const $=id=>document.getElementById(id);let image=null,sourceData='',regions={},active='plate',drag=null,crops={},db,frameRect={x:0,y:0,w:1,h:1},templateMode=false;
 const DB='gomrokyar_offline_v1';
 function openDB(){return new Promise((res,rej)=>{let q=indexedDB.open(DB,1);q.onupgradeneeded=()=>{q.result.createObjectStore('records',{keyPath:'id',autoIncrement:true});q.result.createObjectStore('settings')};q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
 function tx(store,mode='readonly'){return db.transaction(store,mode).objectStore(store)}
 async function setting(k,v){if(arguments.length>1)return new Promise((r,j)=>{let q=tx('settings','readwrite').put(v,k);q.onsuccess=()=>r();q.onerror=()=>j(q.error)});return new Promise((r,j)=>{let q=tx('settings').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}
 async function allRecords(){return new Promise((r,j)=>{let q=tx('records').getAll();q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}
-function normalizePlate(v){return String(v||'').trim().replace(/[\sـ-]+/g,' ').toUpperCase()}
-function typeLabel(t){return ({weighed:'ورود صادراتی با برگه باسکول',import_entry_manual:'ورود وارداتی با باسکول دستی',empty_entry:'ورود کامیون خالی',import_exit:'خروج کامیون وارداتی'})[t]||'ثبت برگه باسکول'}
+function normalizePlate(v){return String(v||'').trim().replace(/[\sـ-]+/g,' ').toUpperCase()}function typeLabel(t){return ({weighed:'ورود صادراتی با برگه باسکول',import_entry_manual:'ورود وارداتی با باسکول دستی',empty_entry:'ورود کامیون خالی',import_exit:'خروج کامیون وارداتی'})[t]||'ثبت برگه باسکول'}
 function statusLabel(x){if(x.vehicleStatus==='empty')return 'خالی';if(x.vehicleStatus==='loaded_import')return 'حامل کالای وارداتی';if(x.vehicleStatus==='import_weighed')return 'وارداتی ـ باسکول دستی';return 'باسکول‌شده'}
 async function nextEntryNumber(all){let stored=Number(await setting('nextEntryNo'))||1,max=all.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);return Math.max(stored,max+1)}
 async function saveSimpleRecord(kind,plate,goods=''){
@@ -86,8 +100,7 @@ function scoreFrame(canvas,rect){
   const ctx=canvas.getContext('2d',{willReadFrequently:true}),w=canvas.width,h=canvas.height,d=ctx.getImageData(0,0,w,h).data;
   const x0=Math.round(rect.x*w),x1=Math.round((rect.x+rect.w)*w),y0=Math.round(rect.y*h),y1=Math.round((rect.y+rect.h)*h);
   const line=(horizontal,pos,a,b)=>{let dark=0,total=0;for(let t=a;t<=b;t+=2){let x=horizontal?t:pos,y=horizontal?pos:t;if(x<0||y<0||x>=w||y>=h)continue;let i=(y*w+x)*4,g=.299*d[i]+.587*d[i+1]+.114*d[i+2];if(g<90)dark++;total++}return total?dark/total:0};
-  const mx=(x0+x1)>>1,my=(y0+y1)>>1;
-  return (line(true,y0+1,x0+Math.round((x1-x0)*.08),x1-Math.round((x1-x0)*.08))+line(true,y1-1,x0+Math.round((x1-x0)*.08),x1-Math.round((x1-x0)*.08))+line(false,x0+1,y0+Math.round((y1-y0)*.08),y1-Math.round((y1-y0)*.08))+line(false,x1-1,y0+Math.round((y1-y0)*.08),y1-Math.round((y1-y0)*.08)))/4;
+  const mx=(x0+x1)>>1,my=(y0+y1)>>1;  return (line(true,y0+1,x0+Math.round((x1-x0)*.08),x1-Math.round((x1-x0)*.08))+line(true,y1-1,x0+Math.round((x1-x0)*.08),x1-Math.round((x1-x0)*.08))+line(false,x0+1,y0+Math.round((y1-y0)*.08),y1-Math.round((y1-y0)*.08))+line(false,x1-1,y0+Math.round((y1-y0)*.08),y1-Math.round((y1-y0)*.08)))/4;
 }
 function rotateOnExpandedCanvas(source,angle){
   const sw=source.width||source.naturalWidth,sh=source.height||source.naturalHeight,rad=angle*Math.PI/180;
@@ -113,11 +126,10 @@ async function straightenToBlackFrame(im){
 }
 function loadImageData(src){return new Promise((resolve,reject)=>{let im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=src})}
 // برش خودکار عکس تا لبه‌های کادر مشکی؛ حاشیه بسیار کم برای حفظ کامل خط کادر باقی می‌ماند.
-async function cropToPaper(im,rect){const w=im.naturalWidth||im.width,h=im.naturalHeight||im.height,pad=.006;let x=Math.max(0,Math.floor((rect.x-pad)*w)),y=Math.max(0,Math.floor((rect.y-pad)*h)),r=Math.min(w,Math.ceil((rect.x+rect.w+pad)*w)),b=Math.min(h,Math.ceil((rect.y+rect.h+pad)*h));if(r-x<100||b-y<100)throw new Error('کادر برگه خیلی کوچک است');const c=document.createElement('canvas');c.width=r-x;c.height=b-y;c.getContext('2d').drawImage(im,x,y,c.width,c.height,0,0,c.width,c.height);return loadImageData(c.toDataURL('image/jpeg',.96))}
+async function cropToPaper(im,rect){const w=im.naturalWidth||im.width,h=im.naturalHeight||im.height;let x=Math.max(0,Math.floor(rect.x*w)),y=Math.max(0,Math.floor(rect.y*h)),r=Math.min(w,Math.ceil((rect.x+rect.w)*w)),b=Math.min(h,Math.ceil((rect.y+rect.h)*h));if(r-x<100||b-y<100)throw new Error('کادر برگه خیلی کوچک است');const c=document.createElement('canvas');c.width=r-x;c.height=b-y;c.getContext('2d').drawImage(im,x,y,c.width,c.height,0,0,c.width,c.height);return loadImageData(c.toDataURL('image/jpeg',.96))}
 function toImageRect(r){return{x:frameRect.x+r.x*frameRect.w,y:frameRect.y+r.y*frameRect.h,w:r.w*frameRect.w,h:r.h*frameRect.h}}
 function toFrameRect(r){return{x:clamp((r.x-frameRect.x)/frameRect.w),y:clamp((r.y-frameRect.y)/frameRect.h),w:clamp(r.w/frameRect.w,0,1),h:clamp(r.h/frameRect.h,0,1)}}
-async function handleSelectedPhoto(e){
-  let f=e.target.files[0];if(!f)return;
+async function handleSelectedPhoto(e){  let f=e.target.files[0];if(!f)return;
   try{
     image=await loadImage(f);
     const aligned=await straightenToBlackFrame(image);
@@ -135,8 +147,8 @@ async function handleSelectedPhoto(e){
   if(detectedFrame){
     image=await cropToPaper(image,detectedFrame);
     frameRect={x:0,y:0,w:1,h:1};
-    regions=JSON.parse(JSON.stringify(AUTO_REGIONS));
-    $('calStatus').textContent='برگه شناسایی شد؛ شش خانه طبق الگوی ثابت A5 (ستون ۱ راست، ۲ وسط، ۳ چپ) به‌صورت خودکار برش داده می‌شوند.';
+    regions=regionsFromTableGrid();
+    $('calStatus').textContent='برگه شناسایی شد؛ جدول ۱۰×۳ نسبت به کادر مشکی شناسایی شد؛ شش خانه از ردیف‌ها و ستون‌های مشخص‌شده برش خوردند.';
   }else{
     frameRect={x:0,y:0,w:1,h:1};
     regions={};
