@@ -12,8 +12,6 @@ import android.util.Base64;
 import android.webkit.JavascriptInterface;
 import java.io.OutputStream;
 import java.io.IOException;
-import java.io.FileInputStream;
-import java.io.ByteArrayOutputStream;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
@@ -51,7 +49,6 @@ public class MainActivity extends Activity {
         settings.setAllowContentAccess(true);
         webView.setWebViewClient(new WebViewClient());
         webView.addJavascriptInterface(new DownloadBridge(), "GomrokYarDownload");
-        webView.addJavascriptInterface(new CameraBridge(), "GomrokYarCamera");
         webView.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 clearPendingCallback();
@@ -121,37 +118,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    private class CameraBridge {
-        @JavascriptInterface
-        public String getCapturedImageBase64() {
-            try {
-                if (cameraOutputFile == null || !cameraOutputFile.exists() || cameraOutputFile.length() == 0) return "";
-                try (FileInputStream in = new FileInputStream(cameraOutputFile);
-                     ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-                    byte[] buffer = new byte[8192];
-                    int count;
-                    while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
-                    return Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP);
-                }
-            } catch (Exception e) {
-                return "";
-            }
-        }
-
-        @JavascriptInterface
-        public void cameraImageConsumed() {
-            runOnUiThread(() -> {
-                if (cameraOutputUri != null) {
-                    revokeUriPermission(cameraOutputUri,
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                }
-                if (cameraOutputFile != null && cameraOutputFile.exists()) cameraOutputFile.delete();
-                cameraOutputUri = null;
-                cameraOutputFile = null;
-            });
-        }
-    }
-
     private void launchRearCamera() {
         try {
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -190,26 +156,23 @@ public class MainActivity extends Activity {
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == CAMERA_REQUEST) {
-            boolean photoReady = resultCode == Activity.RESULT_OK && cameraOutputFile != null
-                    && cameraOutputFile.exists() && cameraOutputFile.length() > 0;
+            Uri result = null;
+            if (resultCode == Activity.RESULT_OK && cameraOutputFile != null
+                    && cameraOutputFile.exists() && cameraOutputFile.length() > 0) {
+                result = cameraOutputUri;
+            } else if (cameraOutputFile != null) {
+                cameraOutputFile.delete();
+            }
             if (fileCallback != null) {
-                // Close WebView's pending chooser; the image is handed to the page through CameraBridge.
-                fileCallback.onReceiveValue(null);
+                fileCallback.onReceiveValue(result == null ? null : new Uri[]{result});
                 fileCallback = null;
             }
-            if (photoReady) {
-                webView.post(() -> webView.evaluateJavascript(
-                        "window.receiveNativeCameraPhoto && window.receiveNativeCameraPhoto();", null));
-            } else {
-                if (cameraOutputFile != null && cameraOutputFile.exists()) cameraOutputFile.delete();
-                if (cameraOutputUri != null) {
-                    revokeUriPermission(cameraOutputUri,
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                }
-                cameraOutputUri = null;
-                cameraOutputFile = null;
-                Toast.makeText(this, "عکسی از دوربین دریافت نشد؛ دوباره تلاش کن.", Toast.LENGTH_LONG).show();
+            if (cameraOutputUri != null) {
+                revokeUriPermission(cameraOutputUri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
             }
+            cameraOutputUri = null;
+            cameraOutputFile = null;
             return;
         }
         if (requestCode == FILE_CHOOSER_REQUEST && fileCallback != null) {
