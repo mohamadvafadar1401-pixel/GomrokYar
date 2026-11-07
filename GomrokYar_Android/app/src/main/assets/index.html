@@ -22,12 +22,14 @@ const FIELDS=[['goods','نوع کالا'],['permit','شماره مجوز بار�
 // چهار نشانه جهت‌یابی فرم: اطلاعات کالا (بالا-راست)، اطلاعات توزین (بالا-چپ)،
 // قبض مادر (پایین-راست) و فضای سفید (پایین-چپ).
 const TABLE_GRID={
-  x:[.013,.209,.759,.982],
-  y:[.164,.208,.285,.363,.439,.556,.630,.742,.818,.895,.973]
+  x:[.013,.209,.759,.982], // از چپ به راست: لبه چپ، مرز ستون‌ها، لبه راست
+  y:[.164,.208,.285,.363,.439,.582,.662,.742,.818,.895,.973] // ۱۱ مرز برای ۱۰ ردیف
 };
 function regionsFromTableGrid(){
   const cell=(row,col)=>{
-    const x0=TABLE_GRID.x[col-1],x1=TABLE_GRID.x[col],y0=TABLE_GRID.y[row-1],y1=TABLE_GRID.y[row];
+    // شماره ستون‌ها در فرم از راست به چپ است؛ آرایه مختصات از چپ به راست نگهداری می‌شود.
+    const leftIndex=3-col;
+    const x0=TABLE_GRID.x[leftIndex],x1=TABLE_GRID.x[leftIndex+1],y0=TABLE_GRID.y[row-1],y1=TABLE_GRID.y[row];
     const ix=.004,iy=.004;
     return {x:x0+ix,y:y0+iy,w:x1-x0-2*ix,h:y1-y0-2*iy};
   };
