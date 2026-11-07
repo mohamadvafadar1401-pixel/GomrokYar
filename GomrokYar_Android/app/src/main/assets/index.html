@@ -76,10 +76,13 @@ function detectTableGrid(im){
   return {x:xs,y:ys,confidence:Math.min(bestXS,chosen.score/6)};
 }
 function regionsFromTableGrid(im){
-  const grid=detectTableGrid(im);
+  // محدوده تصویر از قبل توسط کاربر انتخاب شده است؛ بدون تشخیص خطوط،
+  // آن را به ۱۰ ردیف و ۳ ستون مساوی تقسیم می‌کنیم.
+  const grid={x:[0,1/3,2/3,1],y:Array.from({length:11},(_,i)=>i/10)};
   const cell=(row,col)=>{
+    // شماره ستون‌ها از راست به چپ است: ۱ راست، ۲ وسط، ۳ چپ.
     const leftIndex=3-col,x0=grid.x[leftIndex],x1=grid.x[leftIndex+1],y0=grid.y[row-1],y1=grid.y[row];
-    const ix=Math.max(.002,(x1-x0)*.012),iy=Math.max(.002,(y1-y0)*.035);
+    const ix=(x1-x0)*.012,iy=(y1-y0)*.035;
     return {x:x0+ix,y:y0+iy,w:x1-x0-2*ix,h:y1-y0-2*iy};
   };
   return {permit:cell(3,1),plate:cell(4,2),first:cell(3,3),second:cell(6,3),net:cell(7,1),goods:cell(7,2)};
