@@ -6,7 +6,7 @@
 <nav class="tabs" aria-label="بخش‌های ثبت"><button class="tabbtn active" data-tab="weighTab">ورود صادراتی با برگه باسکول</button><button class="tabbtn" data-tab="importEntryTab">ورود وارداتی با باسکول دستی</button><button class="tabbtn" data-tab="emptyTab">ورود کامیون خالی</button><button class="tabbtn" data-tab="exitTab">خروج کامیون وارداتی</button></nav>
 <div id="weighTab">
 <section class="panel"><h2>۱) انتخاب یا گرفتن عکس برگه</h2><div class="row"><label class="btn" for="photo">🖼️ انتخاب عکس از گالری</label><input id="photo" type="file" accept="image/*" class="hide"><label class="btn secondary" for="cameraPhoto">📷 گرفتن عکس با دوربین</label><input id="cameraPhoto" type="file" accept="image/*" capture="environment" class="hide"><button id="calibrate" class="secondary hide" disabled>تنظیم محل برش‌ها</button></div><p class="hint">پس از گرفتن عکس، محدوده جدول را با انگشت مشخص کن. برنامه فقط همان قسمت را برش می‌دهد، شبکه ۱۰×۳ را پیدا می‌کند و خانه‌های موردنیاز را جدا می‌سازد؛ متن داخل خانه‌ها به‌صورت OCR خوانده نمی‌شود.</p><img id="preview" class="preview hide" alt="پیش‌نمایش برگه"><div class="row" style="margin-top:8px"><button id="selectTableBtn" class="hide" type="button">انتخاب محدوده جدول روی عکس</button><button id="perspectiveBtn" class="hide" type="button">اصلاح پرسپکتیو</button></div><div id="calStatus" class="status"></div></section>
-<section id="tableSelectPanel" class="panel hide"><h2>۲) مشخص کردن محدوده جدول</h2><p class="hint">با انگشت از گوشه بالای سمت راست جدول تا گوشه پایین سمت چپ آن یک مستطیل بکش. فقط محدوده داخل مستطیل بررسی می‌شود.</p><canvas id="tableSelectCanvas" class="preview"></canvas><div class="row" style="margin-top:10px"><button id="confirmTableRegion">تأیید محدوده و تشخیص خانه‌ها</button><button id="cancelTableRegion" class="secondary">انتخاب دوباره</button></div><div id="tableSelectStatus" class="status"></div></section>
+<section id="tableSelectPanel" class="panel hide"><h2>۲) مشخص کردن محدوده جدول</h2><p class="hint">مثل کادر پلاک و توزین، انگشتت را روی یک گوشه جدول بگذار و بدون برداشتن انگشت تا گوشه مقابل بکش؛ یک کادر مستطیلی دور کل جدول بساز. لازم نیست چهار نقطه جداگانه بزنی.</p><canvas id="tableSelectCanvas" class="preview"></canvas><div class="row" style="margin-top:10px"><button id="confirmTableRegion">تأیید محدوده و تشخیص خانه‌ها</button><button id="cancelTableRegion" class="secondary">انتخاب دوباره</button></div><div id="tableSelectStatus" class="status"></div></section>
 <section id="cropPanel" class="panel hide"><h2>۲) تنظیم محدوده برش</h2><p id="cropInstruction" class="hint">ابتدا دکمه فیلد را بزن تا انتخاب شود؛ سپس روی خود تصویر از گوشه اول تا گوشه مقابل آن فیلد انگشتت را بکش.</p><div class="row" id="fieldButtons"></div><canvas id="overlay" class="preview"></canvas><div class="row" style="margin-top:10px"><button id="saveTemplate">ذخیره الگو</button><button id="cancelCal" class="secondary">انصراف</button></div><p class="small">محدوده‌ها نسبت به کادر مشکی ذخیره می‌شوند؛ کادر باید در عکس‌های بعدی کامل و واضح دیده شود.</p></section>
 <section id="dataPanel" class="panel hide"><h2>۳) بازبینی و ثبت اطلاعات</h2><div class="grid" id="crops"></div><div class="grid"><div class="field"><label>شماره پلاک (اجباری؛ ورود دستی، ۵ رقم)</label><input id="plateKey" inputmode="numeric" maxlength="5" autocomplete="off" required placeholder="مثلاً 00469"></div><div class="field"><label>وزن خالص (ورود دستی، کیلوگرم)</label><input id="netWeight" inputmode="numeric" autocomplete="off" placeholder="مثلاً 24500"></div></div><label>توضیحات (اختیاری)</label><input id="notes" placeholder="توضیحات"><div class="row" style="margin-top:12px"><button id="saveRecord">ثبت اتوماتیک برگه و آماده‌سازی بعدی</button><button id="resetForm" class="secondary">پاک کردن فرم</button></div><div id="saveStatus" class="status"></div></section>
 </div>
@@ -238,7 +238,7 @@ $('preview').addEventListener('click',async ev=>{
 async function cropToPaper(im,rect){const w=im.naturalWidth||im.width,h=im.naturalHeight||im.height;let x=Math.max(0,Math.floor(rect.x*w)),y=Math.max(0,Math.floor(rect.y*h)),r=Math.min(w,Math.ceil((rect.x+rect.w)*w)),b=Math.min(h,Math.ceil((rect.y+rect.h)*h));if(r-x<100||b-y<100)throw new Error('کادر برگه خیلی کوچک است');const c=document.createElement('canvas');c.width=r-x;c.height=b-y;c.getContext('2d').drawImage(im,x,y,c.width,c.height,0,0,c.width,c.height);return loadImageData(c.toDataURL('image/jpeg',.96))}
 function toImageRect(r){return{x:frameRect.x+r.x*frameRect.w,y:frameRect.y+r.y*frameRect.h,w:r.w*frameRect.w,h:r.h*frameRect.h}}
 function toFrameRect(r){return{x:clamp((r.x-frameRect.x)/frameRect.w),y:clamp((r.y-frameRect.y)/frameRect.h),w:clamp(r.w/frameRect.w,0,1),h:clamp(r.h/frameRect.h,0,1)}}
-let tableSelection=null,tableDragStart=null;
+let tableSelection=null,tableDragStart=null,tableDragCurrent=null;
 function tableCanvasPoint(ev){
   const c=$('tableSelectCanvas'),r=c.getBoundingClientRect();
   return {x:clamp((ev.clientX-r.left)/r.width)*image.naturalWidth,y:clamp((ev.clientY-r.top)/r.height)*image.naturalHeight};
@@ -246,11 +246,15 @@ function tableCanvasPoint(ev){
 function drawTableSelection(){
   const c=$('tableSelectCanvas'),ctx=c.getContext('2d');
   ctx.clearRect(0,0,c.width,c.height);ctx.drawImage(image,0,0);
-  if(tableSelection){
-    const r=tableSelection;ctx.save();ctx.fillStyle='rgba(10,20,18,.42)';
-    ctx.fillRect(0,0,c.width,c.height);ctx.clearRect(r.x,r.y,r.w,r.h);ctx.drawImage(image,r.x,r.y,r.w,r.h,r.x,r.y,r.w,r.h);
-    ctx.strokeStyle='#ffb000';ctx.lineWidth=Math.max(5,c.width/250);ctx.strokeRect(r.x,r.y,r.w,r.h);
-    const sz=Math.max(12,c.width/100);[[r.x,r.y],[r.x+r.w,r.y],[r.x+r.w,r.y+r.h],[r.x,r.y+r.h]].forEach(([x,y])=>{ctx.fillStyle='#ffb000';ctx.beginPath();ctx.arc(x,y,sz,0,Math.PI*2);ctx.fill()});ctx.restore();
+  const r=tableSelection||(tableDragStart&&tableDragCurrent?(()=>{
+    const x=Math.min(tableDragStart.x,tableDragCurrent.x),y=Math.min(tableDragStart.y,tableDragCurrent.y);
+    return {x,y,w:Math.abs(tableDragCurrent.x-tableDragStart.x),h:Math.abs(tableDragCurrent.y-tableDragStart.y)};
+  })():null);
+  if(r&&r.w>0&&r.h>0){
+    ctx.save();ctx.fillStyle='rgba(10,20,18,.38)';ctx.fillRect(0,0,c.width,c.height);
+    ctx.clearRect(r.x,r.y,r.w,r.h);ctx.drawImage(image,r.x,r.y,r.w,r.h,r.x,r.y,r.w,r.h);
+    ctx.strokeStyle='#ffb000';ctx.lineWidth=Math.max(5,c.width/250);ctx.setLineDash([]);
+    ctx.strokeRect(r.x,r.y,r.w,r.h);ctx.restore();
   }
 }
 async function handleSelectedPhoto(e){
@@ -275,19 +279,20 @@ $('selectTableBtn').onclick=()=>{
   drawTableSelection();
 };
 $('tableSelectCanvas').addEventListener('pointerdown',ev=>{
-  if(!image)return;ev.preventDefault();tableDragStart=tableCanvasPoint(ev);
-  tableSelection=null;if($('tableSelectCanvas').setPointerCapture)$('tableSelectCanvas').setPointerCapture(ev.pointerId);
+  if(!image)return;ev.preventDefault();tableDragStart=tableCanvasPoint(ev);tableDragCurrent=tableDragStart;
+  tableSelection=null;drawTableSelection();if($('tableSelectCanvas').setPointerCapture)$('tableSelectCanvas').setPointerCapture(ev.pointerId);
 });
+$('tableSelectCanvas').addEventListener('pointermove',ev=>{if(!tableDragStart)return;ev.preventDefault();tableDragCurrent=tableCanvasPoint(ev);drawTableSelection();});
 $('tableSelectCanvas').addEventListener('pointerup',ev=>{
-  if(!tableDragStart)return;ev.preventDefault();const p=tableCanvasPoint(ev),a=tableDragStart;
+  if(!tableDragStart)return;ev.preventDefault();const p=tableCanvasPoint(ev),a=tableDragStart;tableDragCurrent=p;
   const x=Math.min(a.x,p.x),y=Math.min(a.y,p.y),w=Math.abs(p.x-a.x),h=Math.abs(p.y-a.y);
-  tableDragStart=null;
+  tableDragStart=null;tableDragCurrent=null;
   if(w<image.naturalWidth*.08||h<image.naturalHeight*.08){$('tableSelectStatus').textContent='محدوده خیلی کوچک است؛ دوباره دور کل جدول را انتخاب کن.';return;}
   tableSelection={x,y,w,h};drawTableSelection();
-  $('tableSelectStatus').textContent='محدوده انتخاب شد. اگر چهار طرف جدول داخل قاب است، تأیید را بزن.';
+  $('tableSelectStatus').textContent='کادر دور جدول مشخص شد. اگر کل جدول داخل کادر است، تأیید را بزن.';
 });
-$('tableSelectCanvas').addEventListener('pointercancel',()=>{tableDragStart=null});
-$('cancelTableRegion').onclick=()=>{tableSelection=null;drawTableSelection();$('tableSelectStatus').textContent='محدوده پاک شد؛ دوباره دور جدول را بکش.'};
+$('tableSelectCanvas').addEventListener('pointercancel',()=>{tableDragStart=null;tableDragCurrent=null;drawTableSelection()});
+$('cancelTableRegion').onclick=()=>{tableSelection=null;tableDragStart=null;tableDragCurrent=null;drawTableSelection();$('tableSelectStatus').textContent='محدوده پاک شد؛ دوباره دور جدول را بکش.'};
 $('confirmTableRegion').onclick=async()=>{
   if(!image||!tableSelection){alert('ابتدا محدوده جدول را روی عکس مشخص کن.');return;}
   try{
