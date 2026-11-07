@@ -268,32 +268,20 @@ function drawTableSelection(){
     ctx.strokeRect(r.x,r.y,r.w,r.h);ctx.restore();
   }
 }
-async function showSelectedImage(loadedImage){
-  image=loadedImage;perspectiveSource=image;tableSelection=null;tableDragStart=null;
-  const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;c.getContext('2d').drawImage(image,0,0);
-  sourceData=c.toDataURL('image/jpeg',.94);
-  $('preview').src=sourceData;$('preview').classList.remove('hide');
-  $('tableSelectActionRow').classList.remove('hide');$('selectTableBtn').classList.remove('hide');
-  $('calStatus').textContent='عکس آماده است. محدوده بررسی اطلاعات را روی همین تصویر مشخص کن.';
-  requestAnimationFrame(()=>$('selectTableBtn').scrollIntoView({behavior:'smooth',block:'center'}));
-  $('tableSelectCanvas').classList.add('hide');$('tableSelectControls').classList.add('hide');$('cropPanel').classList.add('hide');$('dataPanel').classList.add('hide');
-}
 async function handleSelectedPhoto(e){
   const f=e.target.files[0];if(!f)return;
-  try{await showSelectedImage(await loadImage(f));}
-  catch(err){alert('باز کردن عکس ناموفق بود. یک عکس JPG یا PNG دیگر انتخاب کن.');}
+  try{
+    image=await loadImage(f);perspectiveSource=image;tableSelection=null;tableDragStart=null;
+    const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;c.getContext('2d').drawImage(image,0,0);
+    sourceData=c.toDataURL('image/jpeg',.94);
+    $('preview').src=sourceData;$('preview').classList.remove('hide');
+    $('tableSelectActionRow').classList.remove('hide');$('selectTableBtn').classList.remove('hide');
+    $('calStatus').textContent='عکس آماده است. محدوده بررسی اطلاعات را روی همین تصویر مشخص کن.';
+    requestAnimationFrame(()=>$('selectTableBtn').scrollIntoView({behavior:'smooth',block:'center'}));
+    $('tableSelectCanvas').classList.add('hide');$('tableSelectControls').classList.add('hide');$('cropPanel').classList.add('hide');$('dataPanel').classList.add('hide');
+  }catch(err){alert('باز کردن عکس ناموفق بود. یک عکس JPG یا PNG دیگر انتخاب کن.');}
   e.target.value='';
 }
-window.receiveNativeCameraPhoto=async function(){
-  try{
-    const encoded=window.GomrokYarCamera&&window.GomrokYarCamera.getCapturedImageBase64();
-    if(!encoded)throw new Error('empty camera image');
-    await showSelectedImage(await loadImageData('data:image/jpeg;base64,'+encoded));
-    window.GomrokYarCamera.cameraImageConsumed();
-  }catch(err){
-    alert('دریافت عکس از دوربین ناموفق بود. دوباره عکس بگیر.');
-  }
-};
 $('selectTableBtn').onclick=()=>{
   if(!image)return;
   tableSelection=null;
