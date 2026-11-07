@@ -442,9 +442,19 @@ $('reportMode').addEventListener('change',refreshReportPreview);['reportFrom','r
 function transferKey(x){
   return JSON.stringify([String(x.created||''),String(x.eventType||'weighed'),normalizePlate(x.plateKey||x.manualPlate),String(x.permitNo||''),String(x.firstWeight||''),String(x.secondWeight||''),String(x.netWeight||''),String(x.goodsText||''),String(x.vehicleStatus||'')]);
 }
+function saveNativeDownload(name,mime,content){
+  try{
+    if(window.AndroidBridge&&typeof AndroidBridge.saveFile==='function'){
+      const bytes=new TextEncoder().encode(content);let binary='';
+      for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+      AndroidBridge.saveFile(name,mime,btoa(binary));return true;
+    }
+  }catch(err){console.error('Native file save failed',err)}
+  const blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);return true;
+}
 function downloadJson(data,name){
-  const a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));
-  a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),30000);
+  saveNativeDownload(name,'application/json;charset=utf-8',JSON.stringify(data,null,2));
 }
 function localISODate(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+day}
 $('transferDate').value=localISODate();
@@ -486,8 +496,7 @@ $('exportExcel').onclick=async()=>{
  const header='<Row>'+cols.map(c=>cell(c[0])).join('')+'</Row>';
  const body=rows.map((x,i)=>'<Row>'+cols.map(c=>cell(c[1]==='entryNo'?(x.entryNo??i+1):c[1]==='created'?(x.created?new Date(x.created).toLocaleString('fa-IR'): ''):x[c[1]]??'')).join('')+'</Row>').join('');
  const xml='<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="گمرک‌یار"><Table>'+header+body+'</Table></Worksheet></Workbook>';
- const blob=new Blob(['\\uFEFF',xml],{type:'application/vnd.ms-excel;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
- a.href=url;a.download='gomrokyar-excel-'+(from||'start')+'-'+(to||'end')+'.xls';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+ saveNativeDownload('gomrokyar-excel-'+(from||'start')+'-'+(to||'end')+'.xls','application/vnd.ms-excel;charset=utf-8','\\uFEFF'+xml);
  $('recordCount').textContent='فایل اکسل شامل '+rows.length.toLocaleString('fa-IR')+' سابقه آماده دریافت و انتقال به رایانه است.';
 };
 $('exportDay').onclick=async()=>{
