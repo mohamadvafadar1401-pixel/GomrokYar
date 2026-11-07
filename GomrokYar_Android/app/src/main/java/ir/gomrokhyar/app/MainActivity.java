@@ -1,9 +1,13 @@
 package ir.gomrokhyar.app;
 
 import android.app.Activity;
+import android.content.ClipData;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -11,10 +15,18 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import androidx.core.content.FileProvider;
+
+import java.io.File;
+import java.util.List;
+
 public class MainActivity extends Activity {
     private WebView webView;
     private ValueCallback<Uri[]> fileCallback;
+    private Uri cameraOutputUri;
+    private File cameraOutputFile;
     private static final int FILE_CHOOSER_REQUEST = 501;
+    private static final int CAMERA_REQUEST = 502;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -31,21 +43,101 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient());
         webView.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
-                if (fileCallback != null) fileCallback.onReceiveValue(null);
+                clearPendingCallback();
                 fileCallback = callback;
+
+                // An HTML input with capture="environment" must open the native camera,
+                // not Android's gallery/document picker.
+                if (params.isCaptureEnabled()) {
+                    launchRearCamera();
+                    return true;
+                }
+
                 Intent intent;
-                try { intent = params.createIntent(); }
-                catch (Exception ignored) { intent = new Intent(Intent.ACTION_GET_CONTENT); intent.addCategory(Intent.CATEGORY_OPENABLE); intent.setType("image/*"); }
-                try { startActivityForResult(intent, FILE_CHOOSER_REQUEST); }
-                catch (Exception e) { fileCallback = null; callback.onReceiveValue(null); return false; }
+                try {
+                    intent = params.createIntent();
+                } catch (Exception ignored) {
+                    intent = new Intent(Intent.ACTION_GET_CONTENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType("image/*");
+                }
+                try {
+                    startActivityForResult(intent, FILE_CHOOSER_REQUEST);
+                } catch (Exception e) {
+                    clearPendingCallback();
+                    Toast.makeText(MainActivity.this, "امکان باز کردن گالری وجود ندارد.", Toast.LENGTH_LONG).show();
+                    return false;
+                }
                 return true;
             }
         });
         webView.loadUrl("file:///android_asset/index.html");
     }
 
+    private void launchRearCamera() {
+        try {
+            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            if (intent.resolveActivity(getPackageManager()) == null) {
+                clearPendingCallback();
+                Toast.makeText(this, "برنامه دوربین روی گوشی پیدا نشد.", Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            cameraOutputFile = File.createTempFile("gomrokyar_scan_", ".jpg", getCacheDir());
+            cameraOutputUri = FileProvider.getUriForFile(
+                    this, getPackageName() + ".fileprovider", cameraOutputFile);
+
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, cameraOutputUri);
+            intent.putExtra("android.intent.extras.CAMERA_FACING", 0);
+            intent.putExtra("android.intent.extras.LENS_FACING_FRONT", false);
+            intent.putExtra("android.intent.extra.USE_FRONT_CAMERA", false);
+            intent.setClipData(ClipData.newRawUri("GomrokYar scan", cameraOutputUri));
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+
+            List<ResolveInfo> handlers = getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+            for (ResolveInfo handler : handlers) {
+                grantUriPermission(handler.activityInfo.packageName, cameraOutputUri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            }
+            startActivityForResult(intent, CAMERA_REQUEST);
+        } catch (Exception e) {
+            clearPendingCallback();
+            Toast.makeText(this, "باز کردن دوربین ناموفق بود؛ دوباره تلاش کن.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void clearPendingCallback() {
+        if (fileCallback != null) {
+            fileCallback.onReceiveValue(null);
+            fileCallback = null;
+        }
+    }
+
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == CAMERA_REQUEST) {
+            Uri result = null;
+            if (resultCode == Activity.RESULT_OK && cameraOutputFile != null
+                    && cameraOutputFile.exists() && cameraOutputFile.length() > 0) {
+                result = cameraOutputUri;
+            } else if (cameraOutputFile != null) {
+                cameraOutputFile.delete();
+            }
+
+            if (fileCallback != null) {
+                fileCallback.onReceiveValue(result == null ? null : new Uri[]{result});
+                fileCallback = null;
+            }
+            if (cameraOutputUri != null) {
+                revokeUriPermission(cameraOutputUri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            }
+            cameraOutputUri = null;
+            cameraOutputFile = null;
+            return;
+        }
+
         if (requestCode == FILE_CHOOSER_REQUEST && fileCallback != null) {
             Uri[] result = (resultCode == Activity.RESULT_OK && data != null && data.getData() != null)
                     ? new Uri[]{data.getData()} : null;
@@ -60,7 +152,8 @@ public class MainActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
-        if (fileCallback != null) fileCallback.onReceiveValue(null);
+        clearPendingCallback();
+        if (cameraOutputFile != null && cameraOutputFile.exists()) cameraOutputFile.delete();
         if (webView != null) webView.destroy();
         super.onDestroy();
     }
