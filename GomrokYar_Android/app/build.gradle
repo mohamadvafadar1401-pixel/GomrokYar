@@ -1,5 +1,14 @@
 plugins { id 'com.android.application' }
 
+configurations.configureEach {
+    resolutionStrategy.eachDependency { details ->
+        if (details.requested.group == 'org.jetbrains.kotlin') {
+            details.useVersion '1.8.22'
+            details.because 'Align Kotlin runtime modules to avoid duplicate classes'
+        }
+    }
+}
+
 dependencies {
     implementation 'androidx.core:core:1.13.1'
     implementation 'com.google.android.gms:play-services-mlkit-document-scanner:16.0.0'
