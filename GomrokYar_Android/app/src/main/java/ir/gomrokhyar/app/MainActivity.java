@@ -167,10 +167,8 @@ public class MainActivity extends Activity {
                 fileCallback.onReceiveValue(result == null ? null : new Uri[]{result});
                 fileCallback = null;
             }
-            if (cameraOutputUri != null) {
-                revokeUriPermission(cameraOutputUri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            }
+            // Keep the temporary photo URI readable by WebView after returning from camera.
+            // Revoking the URI grant here can happen before WebView finishes loading the selected image.
             cameraOutputUri = null;
             cameraOutputFile = null;
             return;
