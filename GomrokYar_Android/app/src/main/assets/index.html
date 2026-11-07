@@ -277,7 +277,7 @@ async function handleSelectedPhoto(e){
     $('preview').src=sourceData;$('preview').classList.remove('hide');
     $('selectTableBtn').classList.remove('hide');
     $('calStatus').textContent='عکس آماده است. محدوده جدول را خودت روی تصویر مشخص کن؛ نیازی به تشخیص کادر مشکی برگه نیست.';
-    $('tableSelectPanel').classList.add('hide');$('cropPanel').classList.add('hide');$('dataPanel').classList.add('hide');
+    $('tableSelectCanvas').classList.add('hide');$('tableSelectControls').classList.add('hide');$('cropPanel').classList.add('hide');$('dataPanel').classList.add('hide');
   }catch(err){alert('باز کردن عکس ناموفق بود. یک عکس JPG یا PNG دیگر انتخاب کن.');}
   e.target.value='';
 }
