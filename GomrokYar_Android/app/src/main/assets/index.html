@@ -252,22 +252,26 @@ async function handleSelectedPhoto(e){  let f=e.target.files[0];if(!f)return;
     alert('امکان باز کردن یا تراز کردن این تصویر وجود ندارد. لطفاً یک عکس JPG یا PNG دیگر انتخاب کن.');
     e.target.value='';return;
   }
-  const detectedFrame=detectBlackFrame(image);
-  if(detectedFrame){
+  let detectedFrame=null,gridReady=false;
+  try{
+    detectedFrame=detectBlackFrame(image);
+    if(!detectedFrame)throw new Error('کادر مشکی بیرونی فرم پیدا نشد');
     image=await cropToPaper(image,detectedFrame);
     frameRect={x:0,y:0,w:1,h:1};
-    regions=regionsFromTableGrid();
-    $('calStatus').textContent='برگه شناسایی شد؛ کادر فرم جدا شد؛ خطوط واقعی جدول ۱۰×۳ شناسایی و شش خانه از روی خطوط چاپ‌شده برش خوردند.';
-  }else{
-    frameRect={x:0,y:0,w:1,h:1};
-    regions={};
-    $('calStatus').textContent='کادر برگه پیدا نشد؛ برش خودکار انجام نشد تا اطلاعات از خانه اشتباه برداشته نشود. لطفاً عکس را از روبه‌رو و با هر چهار ضلع کادر بگیر.';
+    regions=regionsFromTableGrid(image);
+    gridReady=true;
+    $('calStatus').textContent='کادر واقعی فرم جدا شد؛ خطوط جدول ۱۰×۳ شناسایی شدند و شش خانه از روی مرزهای واقعی جدول برش می‌خورند.';
+  }catch(gridError){
+    detectedFrame=null;regions={};
+    $('calStatus').textContent='برش خودکار انجام نشد: '+gridError.message+'؛ لطفاً عکس را واضح‌تر و از روبه‌رو بگیر یا اصلاح چهارگوشه را انجام بده.';
+  }
+  if(!gridReady){
   }
   let c=$('work');c.width=image.naturalWidth;c.height=image.naturalHeight;c.getContext('2d').drawImage(image,0,0);
   sourceData=c.toDataURL('image/jpeg',.94);
   $('preview').src=sourceData;$('preview').classList.remove('hide');$('perspectiveBtn').classList.remove('hide');
   $('calibrate').disabled=true;$('cropPanel').classList.add('hide');$('dataPanel').classList.add('hide');
-  if(detectedFrame)makeCrops();
+  if(gridReady)makeCrops();
   e.target.value='';
 }
 $('photo').onchange=handleSelectedPhoto;$('cameraPhoto').onchange=handleSelectedPhoto;
