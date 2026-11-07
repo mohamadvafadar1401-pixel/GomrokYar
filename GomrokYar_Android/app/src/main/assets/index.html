@@ -333,7 +333,7 @@ $('confirmTableRegion').onclick=async()=>{
     sourceData=out.toDataURL('image/jpeg',.94);
     $('preview').src=sourceData;$('tableSelectCanvas').classList.add('hide');$('tableSelectControls').classList.add('hide');$('preview').classList.remove('hide');
     $('calStatus').textContent='محدوده بررسی شد؛ اطلاعات موردنیاز برای بازبینی آماده است.';
-    makeCrops();requestAnimationFrame(()=>$('plateKey').scrollIntoView({behavior:'smooth',block:'center'}));
+    makeCrops();requestAnimationFrame(()=>$('plateKeyEntry').scrollIntoView({behavior:'smooth',block:'center'}));
   }catch(err){
     $('tableSelectStatus').textContent='تشخیص جدول در این محدوده موفق نبود: '+(err&&err.message?err.message:'خطای نامشخص')+'؛ قاب را طوری تنظیم کن که خطوط بیرونی و همه ردیف‌ها داخل آن باشند.';
   }
