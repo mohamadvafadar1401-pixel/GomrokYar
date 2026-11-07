@@ -32,6 +32,11 @@ jobs:
           yes | sdkmanager --licenses || true
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
+      - name: Prepare full-size launcher logo
+        run: |
+          mkdir -p GomrokYar_Android/app/src/main/res/drawable-nodpi
+          cp GomrokYar_Android/app/src/main/res/mipmap-nodpi/ic_launcher.jpg GomrokYar_Android/app/src/main/res/drawable-nodpi/ic_launcher_logo.jpg
+
       - name: Build APK
         run: |
           gradle --no-daemon -p GomrokYar_Android assembleDebug
