@@ -10,10 +10,14 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
+
+import android.util.Base64;
+import java.io.OutputStream;
 
 import androidx.core.content.FileProvider;
 
@@ -27,6 +31,9 @@ public class MainActivity extends Activity {
     private File cameraOutputFile;
     private static final int FILE_CHOOSER_REQUEST = 501;
     private static final int CAMERA_REQUEST = 502;
+    private static final int REPORT_SAVE_REQUEST = 503;
+    private byte[] pendingReportBytes;
+    private String pendingReportName;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -40,6 +47,7 @@ public class MainActivity extends Activity {
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
         webView.setWebViewClient(new WebViewClient());
+        webView.addJavascriptInterface(new ReportBridge(), "AndroidBridge");
         webView.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 clearPendingCallback();
@@ -97,6 +105,29 @@ public class MainActivity extends Activity {
         }
     }
 
+    private class ReportBridge {
+        @JavascriptInterface public void saveReport(String fileName, String base64) {
+            try {
+                pendingReportBytes = Base64.decode(base64, Base64.DEFAULT);
+                pendingReportName = (fileName == null || fileName.trim().isEmpty()) ? "gomrokyar-report.html" : fileName;
+                runOnUiThread(() -> {
+                    Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType("text/html");
+                    intent.putExtra(Intent.EXTRA_TITLE, pendingReportName);
+                    try { startActivityForResult(intent, REPORT_SAVE_REQUEST); }
+                    catch (Exception e) {
+                        pendingReportBytes = null;
+                        pendingReportName = null;
+                        Toast.makeText(MainActivity.this, "امکان باز کردن محل ذخیره فایل وجود ندارد.", Toast.LENGTH_LONG).show();
+                    }
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "آماده‌سازی گزارش ناموفق بود.", Toast.LENGTH_LONG).show());
+            }
+        }
+    }
+
     private void clearPendingCallback() {
         if (fileCallback != null) {
             fileCallback.onReceiveValue(null);
@@ -106,6 +137,20 @@ public class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REPORT_SAVE_REQUEST) {
+            if (resultCode == Activity.RESULT_OK && data != null && data.getData() != null && pendingReportBytes != null) {
+                try (OutputStream out = getContentResolver().openOutputStream(data.getData())) {
+                    if (out == null) throw new java.io.IOException("Cannot open destination");
+                    out.write(pendingReportBytes);
+                    Toast.makeText(this, "فایل گزارش با موفقیت ذخیره شد.", Toast.LENGTH_LONG).show();
+                } catch (Exception e) {
+                    Toast.makeText(this, "ذخیره فایل گزارش ناموفق بود.", Toast.LENGTH_LONG).show();
+                }
+            }
+            pendingReportBytes = null;
+            pendingReportName = null;
+            return;
+        }
         if (requestCode == CAMERA_REQUEST) {
             Uri result = null;
             if (resultCode == Activity.RESULT_OK && cameraOutputFile != null
