@@ -5,7 +5,7 @@
 </style></head><body><header><h1>گمرکیار</h1><p>ثبت ورودی صادراتی، ورودی وارداتی با باسکول دستی، ورود کامیون خالی و خروج کامیون وارداتی ـ آفلاین</p></header><main class="wrap">
 <nav class="tabs" aria-label="بخش‌های ثبت"><button class="tabbtn active" data-tab="weighTab">ورود صادراتی با برگه باسکول</button><button class="tabbtn" data-tab="importEntryTab">ورود وارداتی با باسکول دستی</button><button class="tabbtn" data-tab="emptyTab">ورود کامیون خالی</button><button class="tabbtn" data-tab="exitTab">خروج کامیون وارداتی</button></nav>
 <div id="weighTab">
-<section class="panel"><h2>۱) انتخاب یا گرفتن عکس برگه</h2><div class="row"><label class="btn" for="photo">🖼️ انتخاب عکس از گالری</label><input id="photo" type="file" accept="image/*" class="hide"><label class="btn secondary" for="cameraPhoto">📷 گرفتن عکس با دوربین</label><input id="cameraPhoto" type="file" accept="image/*" capture="environment" class="hide"><button id="calibrate" class="secondary" disabled>تنظیم محل برش‌ها</button></div><p class="hint">فقط یک‌بار محل شش فیلد را روی برگه مشخص کن. برنامه کادر مشکی را پیدا می‌کند و مختصات فیلدها را نسبت به آن ذخیره می‌کند؛ از این پس برش‌ها روی برگه‌های بعدی خودکار انجام می‌شوند.</p><img id="preview" class="preview hide" alt="پیش‌نمایش برگه"><div id="calStatus" class="status"></div></section>
+<section class="panel"><h2>۱) انتخاب یا گرفتن عکس برگه</h2><div class="row"><label class="btn" for="photo">🖼️ انتخاب عکس از گالری</label><input id="photo" type="file" accept="image/*" class="hide"><label class="btn secondary" for="cameraPhoto">📷 گرفتن عکس با دوربین</label><input id="cameraPhoto" type="file" accept="image/*" capture="environment" class="hide"><button id="calibrate" class="secondary hide" disabled>تنظیم محل برش‌ها</button></div><p class="hint">برش خودکار فرم A5 فعال است؛ برنامه پس از تشخیص کادر برگه، شش خانه ثابت را طبق ردیف‌ها و ستون‌های فرم (شماره ستون‌ها از راست به چپ) جدا می‌کند. نیازی به تنظیم دستی یا تشخیص متن نیست.</p><img id="preview" class="preview hide" alt="پیش‌نمایش برگه"><div id="calStatus" class="status"></div></section>
 <section id="cropPanel" class="panel hide"><h2>۲) تنظیم محدوده برش</h2><p id="cropInstruction" class="hint">ابتدا دکمه فیلد را بزن تا انتخاب شود؛ سپس روی خود تصویر از گوشه اول تا گوشه مقابل آن فیلد انگشتت را بکش.</p><div class="row" id="fieldButtons"></div><canvas id="overlay" class="preview"></canvas><div class="row" style="margin-top:10px"><button id="saveTemplate">ذخیره الگو</button><button id="cancelCal" class="secondary">انصراف</button></div><p class="small">محدوده‌ها نسبت به کادر مشکی ذخیره می‌شوند؛ کادر باید در عکس‌های بعدی کامل و واضح دیده شود.</p></section>
 <section id="dataPanel" class="panel hide"><h2>۳) بازبینی و ثبت اطلاعات</h2><div class="grid" id="crops"></div><div class="grid"><div class="field"><label>شماره پلاک (اجباری؛ ورود دستی، ۵ رقم)</label><input id="plateKey" inputmode="numeric" maxlength="5" autocomplete="off" required placeholder="مثلاً 00469"></div><div class="field"><label>وزن خالص (ورود دستی، کیلوگرم)</label><input id="netWeight" inputmode="numeric" autocomplete="off" placeholder="مثلاً 24500"></div></div><label>توضیحات (اختیاری)</label><input id="notes" placeholder="توضیحات"><div class="row" style="margin-top:12px"><button id="saveRecord">ثبت اتوماتیک برگه و آماده‌سازی بعدی</button><button id="resetForm" class="secondary">پاک کردن فرم</button></div><div id="saveStatus" class="status"></div></section>
 </div>
@@ -17,6 +17,14 @@
 </main><canvas id="work"></canvas>
 <script>
 const FIELDS=[['goods','نوع کالا'],['permit','شماره مجوز بارگیری'],['first','توزین اول'],['second','توزین دوم'],['plate','شماره پلاک'],['net','وزن خالص']];
+const AUTO_REGIONS={
+  permit:{x:.761,y:.291,w:.216,h:.067},
+  plate:{x:.212,y:.369,w:.539,h:.066},
+  first:{x:.022,y:.291,w:.183,h:.067},
+  second:{x:.022,y:.560,w:.183,h:.065},
+  net:{x:.761,y:.635,w:.216,h:.101},
+  goods:{x:.212,y:.635,w:.539,h:.101}
+};
 const $=id=>document.getElementById(id);let image=null,sourceData='',regions={},active='plate',drag=null,crops={},db,frameRect={x:0,y:0,w:1,h:1},templateMode=false;
 const DB='gomrokyar_offline_v1';
 function openDB(){return new Promise((res,rej)=>{let q=indexedDB.open(DB,1);q.onupgradeneeded=()=>{q.result.createObjectStore('records',{keyPath:'id',autoIncrement:true});q.result.createObjectStore('settings')};q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
@@ -110,19 +118,35 @@ function toImageRect(r){return{x:frameRect.x+r.x*frameRect.w,y:frameRect.y+r.y*f
 function toFrameRect(r){return{x:clamp((r.x-frameRect.x)/frameRect.w),y:clamp((r.y-frameRect.y)/frameRect.h),w:clamp(r.w/frameRect.w,0,1),h:clamp(r.h/frameRect.h,0,1)}}
 async function handleSelectedPhoto(e){
   let f=e.target.files[0];if(!f)return;
-  try{image=await loadImage(f);const aligned=await straightenToBlackFrame(image);image=aligned.image;if(aligned.found){$('calStatus').textContent='کادر مشکی شناسایی و تصویر '+(aligned.angle>0?'به چپ':aligned.angle<0?'به راست':'')+' تراز شد.'+(aligned.angle?' (اصلاح چرخش '+Math.abs(aligned.angle).toFixed(2)+' درجه؛ محدوده تشخیص تا ۲۰ درجه)':'')}else{$('calStatus').textContent='زاویه تصویر قابل تشخیص نبود؛ عکس بدون اصلاح زاویه بررسی می‌شود.'}}catch(err){alert('امکان باز کردن یا تراز کردن این تصویر وجود ندارد. لطفاً یک عکس JPG یا PNG دیگر انتخاب کن.');e.target.value='';return}
+  try{
+    image=await loadImage(f);
+    const aligned=await straightenToBlackFrame(image);
+    image=aligned.image;
+    if(aligned.found){
+      $('calStatus').textContent='کادر برگه شناسایی و تصویر تراز شد.'+(aligned.angle?' اصلاح چرخش: '+Math.abs(aligned.angle).toFixed(2)+' درجه.':'');
+    }else{
+      $('calStatus').textContent='کادر بیرونی برگه شناسایی نشد؛ برای جلوگیری از برش اشتباه، عکس را صاف و کامل از روبه‌رو بگیر.';
+    }
+  }catch(err){
+    alert('امکان باز کردن یا تراز کردن این تصویر وجود ندارد. لطفاً یک عکس JPG یا PNG دیگر انتخاب کن.');
+    e.target.value='';return;
+  }
   const detectedFrame=detectBlackFrame(image);
-  regions=await setting('regions')||{};templateMode=(await setting('templateMode'))===true;
   if(detectedFrame){
-    // در الگوهای قدیمی، مختصات تمام‌عکس را پیش از برش به مختصات داخل کاغذ تبدیل می‌کنیم.
-    if(Object.keys(regions).length===6&&!templateMode){frameRect=detectedFrame;regions=Object.fromEntries(Object.entries(regions).map(([k,r])=>[k,toFrameRect(r)]));await setting('regions',regions);await setting('templateMode',true);templateMode=true}
-    image=await cropToPaper(image,detectedFrame);frameRect={x:0,y:0,w:1,h:1};$('calStatus').textContent+=' عکس به‌صورت خودکار از اطراف کادر بریده شد و فقط برگه ذخیره می‌شود.';
-  }else{frameRect={x:0,y:0,w:1,h:1};$('calStatus').textContent+=' کادر برگه پیدا نشد؛ عکس کامل نگه داشته شد تا بخشی از برگه اشتباهی حذف نشود.'}
-  let c=$('work');c.width=image.naturalWidth;c.height=image.naturalHeight;c.getContext('2d').drawImage(image,0,0);sourceData=c.toDataURL('image/jpeg',.94);
-  $('preview').src=sourceData;$('preview').classList.remove('hide');$('calibrate').disabled=false;$('cropPanel').classList.add('hide');$('dataPanel').classList.add('hide');
-  if(!detectedFrame)$('calStatus').textContent='کادر مشکی پیدا نشد؛ عکس کامل نگه داشته شد. لطفاً هر چهار ضلع کادر را واضح و بدون مانع بگیر.';
-  else $('calStatus').textContent='کادر مشکی شناسایی شد؛ اطراف عکس حذف و فقط برگه نگه داشته شد. '+(FIELDS.every(([k])=>regions[k])?'برش شش فیلد به‌صورت خودکار آماده می‌شود.':'برای شروع، یک‌بار محدوده فیلدها را تنظیم کن.');
-  if(FIELDS.every(([k])=>regions[k]))makeCrops();
+    image=await cropToPaper(image,detectedFrame);
+    frameRect={x:0,y:0,w:1,h:1};
+    regions=JSON.parse(JSON.stringify(AUTO_REGIONS));
+    $('calStatus').textContent='برگه شناسایی شد؛ شش خانه طبق الگوی ثابت A5 (ستون ۱ راست، ۲ وسط، ۳ چپ) به‌صورت خودکار برش داده می‌شوند.';
+  }else{
+    frameRect={x:0,y:0,w:1,h:1};
+    regions={};
+    $('calStatus').textContent='کادر برگه پیدا نشد؛ برش خودکار انجام نشد تا اطلاعات از خانه اشتباه برداشته نشود. لطفاً عکس را از روبه‌رو و با هر چهار ضلع کادر بگیر.';
+  }
+  let c=$('work');c.width=image.naturalWidth;c.height=image.naturalHeight;c.getContext('2d').drawImage(image,0,0);
+  sourceData=c.toDataURL('image/jpeg',.94);
+  $('preview').src=sourceData;$('preview').classList.remove('hide');
+  $('calibrate').disabled=true;$('cropPanel').classList.add('hide');$('dataPanel').classList.add('hide');
+  if(detectedFrame)makeCrops();
   e.target.value='';
 }
 $('photo').onchange=handleSelectedPhoto;$('cameraPhoto').onchange=handleSelectedPhoto;
@@ -135,7 +159,7 @@ $('saveTemplate').onclick=async()=>{if(FIELDS.some(([k])=>!regions[k])){alert('�
 function cropData(r){let q=toImageRect(r),sx=Math.max(0,Math.round(q.x*image.naturalWidth)),sy=Math.max(0,Math.round(q.y*image.naturalHeight)),sw=Math.max(1,Math.min(image.naturalWidth-sx,Math.round(q.w*image.naturalWidth))),sh=Math.max(1,Math.min(image.naturalHeight-sy,Math.round(q.h*image.naturalHeight))),c=document.createElement('canvas');c.width=sw;c.height=sh;c.getContext('2d').drawImage(image,sx,sy,sw,sh,0,0,sw,sh);return c.toDataURL('image/jpeg',.92)}
 function makeCrops(){if(!image||FIELDS.some(([k])=>!regions[k]))return;crops={};FIELDS.forEach(([k])=>crops[k]=cropData(regions[k]));let box=$('crops');box.innerHTML='';FIELDS.forEach(([k,n])=>{let d=document.createElement('div');d.className='crop';d.innerHTML=`<b>${n}</b><img src="${crops[k]}" alt="برش ${n}">`;box.append(d)});$('dataPanel').classList.remove('hide');$('saveStatus').textContent='برش‌ها آماده بازبینی هستند.'}
 async function resetForNext(){image=null;sourceData='';crops={};$('photo').value='';$('cameraPhoto').value='';$('plateKey').value='';$('netWeight').value='';$('notes').value='';$('preview').src='';$('preview').classList.add('hide');$('dataPanel').classList.add('hide');$('cropPanel').classList.add('hide');$('calibrate').disabled=true;$('crops').innerHTML='';$('saveStatus').textContent='';$('calStatus').textContent='آماده اسکن برگه بعدی هستید.';active='plate'}
-$('saveRecord').onclick=async()=>{if(!crops.plate){alert('ابتدا تصویر برگه را انتخاب کن تا برش‌های خودکار آماده شوند.');return}let key=$('plateKey').value.replace(/\D/g,'').slice(0,5);if(key.length!==5){alert('ثبت برگه بدون شماره پلاک امکان‌پذیر نیست. شماره پلاک پنج‌رقمی را وارد کن.');$('plateKey').focus();return}let existing=await allRecords(),now=Date.now(),limit=24*60*60*1000;let recent=existing.filter(x=>(x.eventType||'weighed')==='weighed'&&String(x.plateKey||'')===key).map(x=>({record:x,time:new Date(x.created).getTime()})).filter(x=>Number.isFinite(x.time)).sort((a,b)=>b.time-a.time)[0];if(recent&&now-recent.time<limit){let remain=Math.max(0,limit-(now-recent.time)),hours=Math.floor(remain/3600000),mins=Math.ceil((remain%3600000)/60000);alert('این پلاک در ۲۴ ساعت گذشته ثبت شده است و فعلاً امکان ثبت مجدد ندارد. زمان باقی‌مانده تقریبی: '+hours+' ساعت و '+mins+' دقیقه.');$('plateKey').focus();$('plateKey').select();return}let savedCounter=Number(await setting('nextEntryNo'))||1;let maxExisting=existing.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);let nextNo=Math.max(savedCounter,maxExisting+1);let item={entryNo:nextNo,eventType:'weighed',vehicleStatus:'weighed',created:new Date().toISOString(),plateKey:key,manualPlate:key,netWeight:$('netWeight').value,notes:$('notes').value,crops,original:sourceData};try{await new Promise((r,j)=>{let q=tx('records','readwrite').add(item);q.onsuccess=r;q.onerror=()=>j(q.error)});await setting('nextEntryNo',nextNo+1);await renderRecords();await resetForNext();alert('برگه با موفقیت ثبت شد. شماره ردیف ورود: '+nextNo+' . گمرکیار آماده اسکن کامیون بعدی است.')}catch(err){alert('ثبت برگه انجام نشد؛ دوباره تلاش کن.')}};
+$('saveRecord').onclick=async()=>{if(!crops.plate){alert('ابتدا عکس واضح برگه A5 را بگیر تا کادر شناسایی و شش خانه به‌صورت خودکار برش داده شوند.');return}let key=$('plateKey').value.replace(/\D/g,'').slice(0,5);if(key.length!==5){alert('ثبت برگه بدون شماره پلاک امکان‌پذیر نیست. شماره پلاک پنج‌رقمی را وارد کن.');$('plateKey').focus();return}let existing=await allRecords(),now=Date.now(),limit=24*60*60*1000;let recent=existing.filter(x=>(x.eventType||'weighed')==='weighed'&&String(x.plateKey||'')===key).map(x=>({record:x,time:new Date(x.created).getTime()})).filter(x=>Number.isFinite(x.time)).sort((a,b)=>b.time-a.time)[0];if(recent&&now-recent.time<limit){let remain=Math.max(0,limit-(now-recent.time)),hours=Math.floor(remain/3600000),mins=Math.ceil((remain%3600000)/60000);alert('این پلاک در ۲۴ ساعت گذشته ثبت شده است و فعلاً امکان ثبت مجدد ندارد. زمان باقی‌مانده تقریبی: '+hours+' ساعت و '+mins+' دقیقه.');$('plateKey').focus();$('plateKey').select();return}let savedCounter=Number(await setting('nextEntryNo'))||1;let maxExisting=existing.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);let nextNo=Math.max(savedCounter,maxExisting+1);let item={entryNo:nextNo,eventType:'weighed',vehicleStatus:'weighed',created:new Date().toISOString(),plateKey:key,manualPlate:key,netWeight:$('netWeight').value,notes:$('notes').value,crops,original:sourceData};try{await new Promise((r,j)=>{let q=tx('records','readwrite').add(item);q.onsuccess=r;q.onerror=()=>j(q.error)});await setting('nextEntryNo',nextNo+1);await renderRecords();await resetForNext();alert('برگه با موفقیت ثبت شد. شماره ردیف ورود: '+nextNo+' . گمرکیار آماده اسکن کامیون بعدی است.')}catch(err){alert('ثبت برگه انجام نشد؛ دوباره تلاش کن.')}};
 $('resetForm').onclick=resetForNext;
 $('search').oninput=renderRecords;
 async function renderRecords(){let all=await allRecords(),q=normalizePlate($('search').value);$('recordCount').textContent='تعداد کل خودروهای ثبت‌شده: '+all.length.toLocaleString('fa-IR');let data=all.filter(x=>!q||normalizePlate(x.manualPlate||x.plateKey).includes(q)||String(x.plateKey||'').includes(q)).sort((a,b)=>(Number(b.entryNo)||Number(b.id)||0)-(Number(a.entryNo)||Number(a.id)||0));let box=$('records');box.innerHTML='';if(!data.length){box.textContent='سابقه‌ای پیدا نشد.';return}data.forEach(x=>{let d=document.createElement('div');d.className='record';let dt=new Date(x.created).toLocaleString('fa-IR'),no=Number(x.entryNo)||Number(x.id)||0,t=x.eventType||'weighed',plate=x.manualPlate||x.plateKey||'ثبت نشده';let summary=`<b>ردیف ${no.toLocaleString('fa-IR')} ـ ${typeLabel(t)}</b><div>پلاک: ${plate}</div><div class="small">${dt} · وضعیت: ${statusLabel(x)}${x.goodsText?' · نوع کالا: '+x.goodsText:''}${x.permitNo?' · مجوز بارگیری: '+x.permitNo:''}${x.firstWeight?' · توزین اول: '+x.firstWeight:''}${x.secondWeight?' · توزین دوم: '+x.secondWeight:''}${x.netWeight?' · وزن خالص: '+x.netWeight:''}</div><div>${x.notes||''}</div>`;d.innerHTML=summary+`<div class="row" style="margin-top:8px">${x.crops?`<button class="secondary" data-id="${x.id}">نمایش برش‌ها و اصل برگه</button>`:''}<button class="danger" data-del="${x.id}">حذف</button></div>${x.crops?`<div class="hide" id="detail${x.id}"></div>`:''}`;box.append(d);if(x.crops){d.querySelector('[data-id]').onclick=()=>{let z=$('detail'+x.id);if(!z.classList.contains('hide')){z.classList.add('hide');return}z.classList.remove('hide');z.innerHTML=FIELDS.map(([k,n])=>x.crops[k]?`<div><b>${n}</b><br><img src="${x.crops[k]}"></div>`:'').join('')+(x.original?`<div><b>اصل برگه</b><br><img src="${x.original}"></div>`:'')}}d.querySelector('[data-del]').onclick=async()=>{if(confirm('این سابقه حذف شود؟')){await new Promise(r=>{let q=tx('records','readwrite').delete(x.id);q.onsuccess=r});renderRecords()}}})}
