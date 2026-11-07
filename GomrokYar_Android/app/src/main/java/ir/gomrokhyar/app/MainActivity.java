@@ -4,6 +4,14 @@ import android.app.Activity;
 import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.ContentValues;
+import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Base64;
+import android.webkit.JavascriptInterface;
+import java.io.OutputStream;
+import java.io.IOException;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
@@ -40,6 +48,7 @@ public class MainActivity extends Activity {
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
         webView.setWebViewClient(new WebViewClient());
+        webView.addJavascriptInterface(new DownloadBridge(), "GomrokYarDownload");
         webView.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 clearPendingCallback();
@@ -67,6 +76,46 @@ public class MainActivity extends Activity {
             }
         });
         webView.loadUrl("file:///android_asset/index.html");
+    }
+
+    private class DownloadBridge {
+        @JavascriptInterface
+        public void saveBase64(String fileName, String mimeType, String base64Data) {
+            try {
+                String safeName = fileName == null ? "gomrokyar-report.html" : fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
+                if (!safeName.toLowerCase().endsWith(".html")) safeName += ".html";
+                byte[] bytes = Base64.decode(base64Data, Base64.DEFAULT);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ContentValues values = new ContentValues();
+                    values.put(MediaStore.MediaColumns.DISPLAY_NAME, safeName);
+                    values.put(MediaStore.MediaColumns.MIME_TYPE, mimeType == null ? "text/html" : mimeType);
+                    values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/GomrokYar");
+                    values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+                    Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                    if (uri == null) throw new IOException("Cannot create download");
+                    try (OutputStream out = getContentResolver().openOutputStream(uri)) {
+                        if (out == null) throw new IOException("Cannot open download");
+                        out.write(bytes);
+                    }
+                    values.clear();
+                    values.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                    getContentResolver().update(uri, values, null, null);
+                } else {
+                    File dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                    if (dir == null) throw new IOException("Downloads folder unavailable");
+                    if (!dir.exists()) dir.mkdirs();
+                    File outFile = new File(dir, safeName);
+                    try (java.io.FileOutputStream out = new java.io.FileOutputStream(outFile)) {
+                        out.write(bytes);
+                    }
+                }
+                runOnUiThread(() -> Toast.makeText(MainActivity.this,
+                        "فایل گزارش در پوشه Download/GomrokYar ذخیره شد.", Toast.LENGTH_LONG).show());
+            } catch (Exception e) {
+                runOnUiThread(() -> Toast.makeText(MainActivity.this,
+                        "ذخیره گزارش ناموفق بود؛ دوباره تلاش کن.", Toast.LENGTH_LONG).show());
+            }
+        }
     }
 
     private void launchRearCamera() {
