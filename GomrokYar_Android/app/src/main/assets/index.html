@@ -522,7 +522,7 @@ let currentUser=null;
 const AUTH_KEY='localUsers_v1';
 const authRead=()=>setting(AUTH_KEY);
 const authWrite=v=>setting(AUTH_KEY,v);
-function authNormalize(v){return String(v||'').trim().toLowerCase().replace(/[^a-z0-9_.-]/g,'')}
+function authNormalize(v){return String(v||'').trim().toLowerCase().replace(/[^a-z0-9_.@-]/g,'')}
 async function hashPassword(password,salt){
  if(!window.crypto?.subtle)throw new Error('این نسخه از محیط برنامه امکان رمزنگاری امن را ندارد. برنامه را به‌روزرسانی کنید.');
  const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
@@ -551,7 +551,7 @@ async function initAuth(){
 async function unlockAs(user){currentUser=user;$('activeUserLabel').textContent='کاربر فعال: '+user.displayName+' ('+user.username+')';$('manageUsersBtn').style.display=user.role==='admin'?'block':'none';$('authGate').style.display='none';}
 $('createAdminBtn').onclick=async()=>{
  const username=authNormalize($('setupUsername').value),displayName=$('setupDisplayName').value.trim()||'مدیر سامانه',p=$('setupPassword').value,p2=$('setupPassword2').value;
- if(!/^[a-z0-9_.-]{3,32}$/.test(username)){$('authError').textContent='نام کاربری باید حداقل ۳ نویسه و شامل حروف انگلیسی، عدد یا . _ - باشد.';return}
+ if(!/^[a-z0-9_.@-]{3,64}$/.test(username)){$('authError').textContent='نام کاربری باید معتبر و شامل حروف انگلیسی، عدد یا . _ @ - باشد.';return}
  if(p.length<8){$('authError').textContent='رمز عبور باید حداقل ۸ نویسه باشد.';return}
  if(p!==p2){$('authError').textContent='تکرار رمز عبور با رمز اصلی یکسان نیست.';return}
  try{const admin=await makeUser(username,displayName,p,'admin');await authWrite([admin,...seedStaffUsers()]);$('setupPassword').value=$('setupPassword2').value='';await unlockAs(admin)}catch(e){$('authError').textContent=e.message||'ساخت حساب مدیر انجام نشد.'}
