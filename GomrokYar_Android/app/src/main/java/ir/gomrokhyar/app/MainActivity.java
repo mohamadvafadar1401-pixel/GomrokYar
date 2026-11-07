@@ -32,8 +32,10 @@ public class MainActivity extends Activity {
     private static final int FILE_CHOOSER_REQUEST = 501;
     private static final int CAMERA_REQUEST = 502;
     private static final int REPORT_SAVE_REQUEST = 503;
+    private static final int FILE_SAVE_REQUEST = 504;
     private byte[] pendingReportBytes;
     private String pendingReportName;
+    private String pendingMimeType = "application/octet-stream";
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -107,15 +109,22 @@ public class MainActivity extends Activity {
 
     private class ReportBridge {
         @JavascriptInterface public void saveReport(String fileName, String base64) {
+            saveFile(fileName, "text/html", base64);
+        }
+        @JavascriptInterface public void saveFile(String fileName, String mimeType, String base64) {
             try {
-                pendingReportBytes = Base64.decode(base64, Base64.DEFAULT);
-                pendingReportName = (fileName == null || fileName.trim().isEmpty()) ? "gomrokyar-report.html" : fileName;
+                byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
+                String safeName = (fileName == null || fileName.trim().isEmpty()) ? "gomrokyar-export.dat" : fileName.replaceAll("[\\\\/:*?\\\"<>|]", "_");
+                String safeMime = (mimeType == null || mimeType.trim().isEmpty()) ? "application/octet-stream" : mimeType;
                 runOnUiThread(() -> {
+                    pendingReportBytes = bytes;
+                    pendingReportName = safeName;
+                    pendingMimeType = safeMime;
                     Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
                     intent.addCategory(Intent.CATEGORY_OPENABLE);
-                    intent.setType("text/html");
+                    intent.setType(pendingMimeType);
                     intent.putExtra(Intent.EXTRA_TITLE, pendingReportName);
-                    try { startActivityForResult(intent, REPORT_SAVE_REQUEST); }
+                    try { startActivityForResult(intent, FILE_SAVE_REQUEST); }
                     catch (Exception e) {
                         pendingReportBytes = null;
                         pendingReportName = null;
@@ -123,7 +132,7 @@ public class MainActivity extends Activity {
                     }
                 });
             } catch (Exception e) {
-                runOnUiThread(() -> Toast.makeText(MainActivity.this, "آماده‌سازی گزارش ناموفق بود.", Toast.LENGTH_LONG).show());
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "آماده‌سازی فایل ناموفق بود.", Toast.LENGTH_LONG).show());
             }
         }
     }
@@ -137,7 +146,7 @@ public class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REPORT_SAVE_REQUEST) {
+        if (requestCode == REPORT_SAVE_REQUEST || requestCode == FILE_SAVE_REQUEST) {
             if (resultCode == Activity.RESULT_OK && data != null && data.getData() != null && pendingReportBytes != null) {
                 try (OutputStream out = getContentResolver().openOutputStream(data.getData())) {
                     if (out == null) throw new java.io.IOException("Cannot open destination");
@@ -149,6 +158,7 @@ public class MainActivity extends Activity {
             }
             pendingReportBytes = null;
             pendingReportName = null;
+            pendingMimeType = "application/octet-stream";
             return;
         }
         if (requestCode == CAMERA_REQUEST) {
