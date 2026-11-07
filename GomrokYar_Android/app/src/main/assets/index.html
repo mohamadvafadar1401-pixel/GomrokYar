@@ -5,7 +5,7 @@
 </style></head><body><header><h1>گمرکیار</h1><p>ثبت ورودی صادراتی، ورودی وارداتی با باسکول دستی، ورود کامیون خالی و خروج کامیون وارداتی ـ آفلاین</p></header><main class="wrap">
 <nav class="tabs" aria-label="بخش‌های ثبت"><button class="tabbtn active" data-tab="weighTab">ورود صادراتی با برگه باسکول</button><button class="tabbtn" data-tab="importEntryTab">ورود وارداتی با باسکول دستی</button><button class="tabbtn" data-tab="emptyTab">ورود کامیون خالی</button><button class="tabbtn" data-tab="exitTab">خروج کامیون وارداتی</button></nav>
 <div id="weighTab">
-<section class="panel"><h2>۱) انتخاب یا گرفتن عکس برگه</h2><div class="row"><label class="btn" for="photo">🖼️ انتخاب عکس از گالری</label><input id="photo" type="file" accept="image/*" class="hide"><label class="btn secondary" for="cameraPhoto">📷 گرفتن عکس با دوربین</label><input id="cameraPhoto" type="file" accept="image/*" capture="environment" class="hide"><button id="calibrate" class="secondary hide" disabled>تنظیم محل برش‌ها</button></div><p class="hint">پس از گرفتن عکس، محدوده جدول را با انگشت مشخص کن. برنامه فقط همان قسمت را برش می‌دهد، شبکه ۱۰×۳ را پیدا می‌کند و خانه‌های موردنیاز را جدا می‌سازد؛ متن داخل خانه‌ها به‌صورت OCR خوانده نمی‌شود.</p><img id="preview" class="preview hide" alt="پیش‌نمایش برگه"><canvas id="tableSelectCanvas" class="preview hide"></canvas><div class="row" style="margin-top:8px"><button id="selectTableBtn" class="hide" type="button">انتخاب محدوده جدول روی عکس</button><button id="perspectiveBtn" class="hide" type="button">اصلاح پرسپکتیو</button></div><div id="tableSelectControls" class="hide"><p class="hint">روی همین عکس، یک کادر دور کل جدول بکش.</p><div class="row" style="margin-top:10px"><button id="confirmTableRegion">تأیید محدوده و تشخیص خانه‌ها</button><button id="cancelTableRegion" class="secondary">انتخاب دوباره</button></div><div id="tableSelectStatus" class="status"></div></div><div id="calStatus" class="status"></div></section>
+<section class="panel"><h2>۱) انتخاب یا گرفتن عکس برگه</h2><div class="row"><label class="btn" for="photo">🖼️ انتخاب عکس از گالری</label><input id="photo" type="file" accept="image/*" class="hide"><label class="btn secondary" for="cameraPhoto">📷 گرفتن عکس با دوربین</label><input id="cameraPhoto" type="file" accept="image/*" capture="environment" class="hide"><button id="calibrate" class="secondary hide" disabled>تنظیم محل برش‌ها</button></div><p class="hint">پس از گرفتن عکس، محدوده جدول را با انگشت مشخص کن. برنامه فقط همان قسمت را برش می‌دهد، شبکه ۱۰×۳ را پیدا می‌کند و خانه‌های موردنیاز را جدا می‌سازد؛ متن داخل خانه‌ها به‌صورت OCR خوانده نمی‌شود.</p><img id="preview" class="preview hide" alt="پیش‌نمایش برگه"><canvas id="tableSelectCanvas" class="preview hide"></canvas><div id="tableSelectActionRow" class="row" style="margin-top:8px"><button id="selectTableBtn" class="hide" type="button">محدوده بررسی اطلاعات</button><button id="perspectiveBtn" class="hide" type="button">اصلاح پرسپکتیو</button></div><div id="tableSelectControls" class="hide"><div class="row" style="margin-top:10px"><button id="confirmTableRegion">تأیید محدوده و تشخیص اطلاعات</button></div><div id="tableSelectStatus" class="status"></div></div><div id="calStatus" class="status"></div></section>
 <section id="cropPanel" class="panel hide"><h2>۲) تنظیم محدوده برش</h2><p id="cropInstruction" class="hint">ابتدا دکمه فیلد را بزن تا انتخاب شود؛ سپس روی خود تصویر از گوشه اول تا گوشه مقابل آن فیلد انگشتت را بکش.</p><div class="row" id="fieldButtons"></div><canvas id="overlay" class="preview"></canvas><div class="row" style="margin-top:10px"><button id="saveTemplate">ذخیره الگو</button><button id="cancelCal" class="secondary">انصراف</button></div><p class="small">محدوده‌ها نسبت به کادر مشکی ذخیره می‌شوند؛ کادر باید در عکس‌های بعدی کامل و واضح دیده شود.</p></section>
 <section id="dataPanel" class="panel hide"><h2>۳) بازبینی و ثبت اطلاعات</h2><div class="grid" id="crops"></div><div class="grid"><div class="field"><label>شماره پلاک (اجباری؛ ورود دستی، ۵ رقم)</label><input id="plateKey" inputmode="numeric" maxlength="5" autocomplete="off" required placeholder="مثلاً 00469"></div><div class="field"><label>وزن خالص (ورود دستی، کیلوگرم)</label><input id="netWeight" inputmode="numeric" autocomplete="off" placeholder="مثلاً 24500"></div></div><label>توضیحات (اختیاری)</label><input id="notes" placeholder="توضیحات"><div class="row" style="margin-top:12px"><button id="saveRecord">ثبت اتوماتیک برگه و آماده‌سازی بعدی</button><button id="resetForm" class="secondary">پاک کردن فرم</button></div><div id="saveStatus" class="status"></div></section>
 </div>
@@ -275,8 +275,9 @@ async function handleSelectedPhoto(e){
     const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;c.getContext('2d').drawImage(image,0,0);
     sourceData=c.toDataURL('image/jpeg',.94);
     $('preview').src=sourceData;$('preview').classList.remove('hide');
-    $('selectTableBtn').classList.remove('hide');
-    $('calStatus').textContent='عکس آماده است. محدوده جدول را خودت روی تصویر مشخص کن؛ نیازی به تشخیص کادر مشکی برگه نیست.';
+    $('tableSelectActionRow').classList.remove('hide');$('selectTableBtn').classList.remove('hide');
+    $('calStatus').textContent='عکس آماده است. محدوده بررسی اطلاعات را روی همین تصویر مشخص کن.';
+    requestAnimationFrame(()=>$('selectTableBtn').scrollIntoView({behavior:'smooth',block:'center'}));
     $('tableSelectCanvas').classList.add('hide');$('tableSelectControls').classList.add('hide');$('cropPanel').classList.add('hide');$('dataPanel').classList.add('hide');
   }catch(err){alert('باز کردن عکس ناموفق بود. یک عکس JPG یا PNG دیگر انتخاب کن.');}
   e.target.value='';
@@ -285,7 +286,7 @@ $('selectTableBtn').onclick=()=>{
   if(!image)return;
   tableSelection=null;
   const c=$('tableSelectCanvas');c.width=image.naturalWidth;c.height=image.naturalHeight;
-  $('preview').classList.add('hide');$('tableSelectCanvas').classList.remove('hide');$('tableSelectControls').classList.remove('hide');$('cropPanel').classList.add('hide');$('dataPanel').classList.add('hide');
+  $('tableSelectActionRow').classList.add('hide');$('preview').classList.add('hide');$('tableSelectCanvas').classList.remove('hide');$('tableSelectControls').classList.remove('hide');$('cropPanel').classList.add('hide');$('dataPanel').classList.add('hide');
   $('tableSelectStatus').textContent='مستطیل را دور جدول بکش.';
   drawTableSelection();
 };
@@ -303,7 +304,6 @@ $('tableSelectCanvas').addEventListener('pointerup',ev=>{
   $('tableSelectStatus').textContent='کادر دور جدول مشخص شد. اگر کل جدول داخل کادر است، تأیید را بزن.';
 });
 $('tableSelectCanvas').addEventListener('pointercancel',()=>{tableDragStart=null;tableDragCurrent=null;drawTableSelection()});
-$('cancelTableRegion').onclick=()=>{tableSelection=null;tableDragStart=null;tableDragCurrent=null;drawTableSelection();$('tableSelectStatus').textContent='محدوده پاک شد؛ دوباره دور جدول را بکش.'};
 $('confirmTableRegion').onclick=async()=>{
   if(!image||!tableSelection){alert('ابتدا محدوده جدول را روی عکس مشخص کن.');return;}
   try{
@@ -315,8 +315,8 @@ $('confirmTableRegion').onclick=async()=>{
     const out=document.createElement('canvas');out.width=image.naturalWidth;out.height=image.naturalHeight;out.getContext('2d').drawImage(image,0,0);
     sourceData=out.toDataURL('image/jpeg',.94);
     $('preview').src=sourceData;$('tableSelectCanvas').classList.add('hide');$('tableSelectControls').classList.add('hide');$('preview').classList.remove('hide');
-    $('calStatus').textContent='محدوده انتخابی برش داده شد؛ شبکه ۱۰ ردیف و ۳ ستون داخل آن شناسایی شد.';
-    makeCrops();
+    $('calStatus').textContent='محدوده بررسی شد؛ اطلاعات موردنیاز برای بازبینی آماده است.';
+    makeCrops();requestAnimationFrame(()=>$('plateKey').scrollIntoView({behavior:'smooth',block:'center'}));
   }catch(err){
     $('tableSelectStatus').textContent='تشخیص جدول در این محدوده موفق نبود: '+(err&&err.message?err.message:'خطای نامشخص')+'؛ قاب را طوری تنظیم کن که خطوط بیرونی و همه ردیف‌ها داخل آن باشند.';
   }
