@@ -461,12 +461,15 @@ $('importFile').onchange=async e=>{
   try{
     const d=JSON.parse(await file.text());if(!Array.isArray(d.records)||!(d.version>=1))throw new Error('invalid');
     const existing=await allRecords(),known=new Set();
+    let nextImportedNo=existing.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0)+1;
     for(const x of existing){const key=x._syncKey||transferKey(x);known.add(key);if(!x._syncKey){x._syncKey=key;await new Promise((r,j)=>{const q=tx('records','readwrite').put(x);q.onsuccess=r;q.onerror=()=>j(q.error)})}}
     let added=0,duplicates=0;
     for(const raw of d.records){
       if(!raw||typeof raw!=='object'||!raw.created)continue;
       const x={...raw},key=x._syncKey||transferKey(x);
       if(known.has(key)){duplicates++;continue}
+      x.sourceEntryNo=x.sourceEntryNo??x.entryNo??null;
+      x.entryNo=nextImportedNo++;
       delete x.id;x._syncKey=key;
       await new Promise((r,j)=>{const q=tx('records','readwrite').add(x);q.onsuccess=r;q.onerror=()=>j(q.error)});
       known.add(key);added++;
