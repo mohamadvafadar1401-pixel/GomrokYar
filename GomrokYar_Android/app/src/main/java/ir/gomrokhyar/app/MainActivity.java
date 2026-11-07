@@ -18,6 +18,10 @@ import android.widget.Toast;
 
 import android.util.Base64;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 import androidx.core.content.FileProvider;
 
@@ -50,6 +54,7 @@ public class MainActivity extends Activity {
         settings.setAllowContentAccess(true);
         webView.setWebViewClient(new WebViewClient());
         webView.addJavascriptInterface(new ReportBridge(), "AndroidBridge");
+        webView.addJavascriptInterface(new AuthBridge(), "AndroidAuth");
         webView.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 clearPendingCallback();
@@ -104,6 +109,39 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             clearPendingCallback();
             Toast.makeText(this, "باز کردن دوربین ناموفق بود؛ دوباره تلاش کن.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private class AuthBridge {
+        @JavascriptInterface public String randomSalt() {
+            try {
+                byte[] bytes = new byte[16];
+                new SecureRandom().nextBytes(bytes);
+                return Base64.encodeToString(bytes, Base64.NO_WRAP);
+            } catch (Exception e) {
+                return "";
+            }
+        }
+
+        @JavascriptInterface public String derivePasswordHash(String password, String saltBase64) {
+            try {
+                byte[] key = password.getBytes(StandardCharsets.UTF_8);
+                byte[] salt = Base64.decode(saltBase64, Base64.DEFAULT);
+                Mac mac = Mac.getInstance("HmacSHA256");
+                mac.init(new SecretKeySpec(key, "HmacSHA256"));
+                byte[] firstInput = new byte[salt.length + 4];
+                System.arraycopy(salt, 0, firstInput, 0, salt.length);
+                firstInput[firstInput.length - 1] = 1;
+                byte[] u = mac.doFinal(firstInput);
+                byte[] derived = u.clone();
+                for (int i = 1; i < 150000; i++) {
+                    u = mac.doFinal(u);
+                    for (int k = 0; k < derived.length; k++) derived[k] ^= u[k];
+                }
+                return Base64.encodeToString(derived, Base64.NO_WRAP);
+            } catch (Exception e) {
+                return "ERROR:" + (e.getMessage() == null ? "خطای رمزنگاری" : e.getMessage());
+            }
         }
     }
 
