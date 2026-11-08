@@ -552,16 +552,20 @@ const AUTH_KEY='localUsers_v3';
 // بازیابی و ادغام امن حساب‌های ذخیره‌شده در نسخه‌های قبلی
 const authRead=async()=>{
  if(!db)throw new Error('پایگاه داده برنامه هنوز آماده نشده است. چند لحظه صبر کن و دوباره تلاش کن.');
- const keys=[AUTH_KEY,'localUsers_v2','localUsers_v1'],sources=[];
- for(const key of keys){const value=await setting(key);if(Array.isArray(value)&&value.length)sources.push({key,users:value});}
+ const current=await setting(AUTH_KEY);
+ if(Array.isArray(current)&&current.length)return current;
  const merged=[];
- for(const source of sources)for(const user of source.users){
-  if(!user||!user.username)continue;
-  const index=merged.findIndex(x=>x.username===user.username);
-  if(index<0)merged.push(user);
-  else if((!merged[index].passwordHash||!merged[index].salt)&&(user.passwordHash&&user.salt))merged[index]=user;
+ for(const key of ['localUsers_v2','localUsers_v1']){
+  const users=await setting(key);
+  if(!Array.isArray(users))continue;
+  for(const user of users){
+   if(!user||!user.username)continue;
+   const index=merged.findIndex(x=>x.username===user.username);
+   if(index<0)merged.push(user);
+   else if((!merged[index].passwordHash||!merged[index].salt)&&(user.passwordHash&&user.salt))merged[index]=user;
+  }
  }
- if(merged.length){const current=sources.find(x=>x.key===AUTH_KEY)?.users;if(!Array.isArray(current)||JSON.stringify(current)!==JSON.stringify(merged))await setting(AUTH_KEY,merged)}
+ if(merged.length)await setting(AUTH_KEY,merged);
  return merged;
 };
 const authWrite=v=>setting(AUTH_KEY,v);
