@@ -547,8 +547,9 @@ $('importFile').onchange=async e=>{
   }finally{e.target.value=''}
 };
 let currentUser=null;
-const AUTH_KEY='localUsers_v1';
-const authRead=()=>setting(AUTH_KEY);
+const AUTH_KEY='localUsers_v3';
+const LEGACY_AUTH_KEY='localUsers_v1';
+const authRead=async()=>{let users=await setting(AUTH_KEY);if(Array.isArray(users)&&users.length)return users;const legacy=await setting(LEGACY_AUTH_KEY);if(Array.isArray(legacy)&&legacy.length){await setting(AUTH_KEY,legacy);return legacy}return Array.isArray(users)?users:legacy};
 const authWrite=v=>setting(AUTH_KEY,v);
 function authNormalize(v){return String(v||'').trim().toLowerCase()}
 async function hashPassword(password,salt){
@@ -564,17 +565,16 @@ const STAFF_ACCOUNTS=[['irajhaghmoradi','کاربر ۱'],['rezakarimi','کارب
 function seedStaffUsers(){return STAFF_ACCOUNTS.map(([username,displayName])=>({username,displayName,role:'user',salt:null,passwordHash:null,createdAt:new Date().toISOString(),active:false,pendingPassword:true}))}
 async function initAuth(){
  let users=await authRead();
- if(!Array.isArray(users)||users.length===0){showAuth(true);$('setupUsername').value='muhamadvafadar22@gmail.com';}
- else{
-  const admin=users.find(x=>x.role==='admin');
-  if(admin&&admin.username!=='muhamadvafadar22@gmail.com'&&!users.some(x=>x.username==='muhamadvafadar22@gmail.com'&&x!==admin))admin.username='muhamadvafadar22@gmail.com';
-  if(admin){
-   const known=new Set(users.map(x=>x.username));const add=seedStaffUsers().filter(x=>!known.has(x.username)).slice(0,Math.max(0,6-users.length));
-   if(add.length)users=[...users,...add];
-   await authWrite(users);
-  }
-  showAuth(false);$('loginUsername').value=localStorage.getItem('gomrokyar_last_username')||'';if($('loginUsername').value)$('loginPassword').focus();else $('loginUsername').focus();
- }
+ const admin=Array.isArray(users)?users.find(x=>x&&x.role==='admin'&&x.passwordHash&&x.salt&&x.username):null;
+ if(!admin){showAuth(true);$('setupUsername').value='muhamadvafadar22@gmail.com';$('setupUsername').focus();return}
+ const known=new Set(users.map(x=>x.username));
+ const add=seedStaffUsers().filter(x=>!known.has(x.username)).slice(0,Math.max(0,6-users.length));
+ if(add.length){users=[...users,...add];await authWrite(users)}
+ let remembered='';try{remembered=localStorage.getItem('gomrokyar_last_username')||''}catch(e){}
+ const loginUser=users.find(x=>x.username===remembered)||admin;
+ $('loginUsername').value=loginUser.username;
+ try{localStorage.setItem('gomrokyar_last_username',loginUser.username)}catch(e){}
+ showAuth(false);$('loginPassword').value='';$('loginPassword').focus();
 }
 async function unlockAs(user){currentUser=user;try{localStorage.setItem('gomrokyar_last_username',user.username)}catch(e){}$('loginUsername').value=user.username;$('activeUserLabel').textContent='کاربر فعال: '+user.displayName+' ('+user.username+')';$('manageUsersBtn').style.display=user.role==='admin'?'block':'none';$('authGate').style.display='none';}
 $('createAdminBtn').onclick=async()=>{
