@@ -547,6 +547,7 @@ $('importFile').onchange=async e=>{
   }finally{e.target.value=''}
 };
 let currentUser=null;
+// Keep the previously installed app's account store; migrate v1 only when v3 is absent.
 const AUTH_KEY='localUsers_v3';
 const LEGACY_AUTH_KEY='localUsers_v1';
 const authRead=async()=>{let users=await setting(AUTH_KEY);if(Array.isArray(users)&&users.length)return users;const legacy=await setting(LEGACY_AUTH_KEY);if(Array.isArray(legacy)&&legacy.length){await setting(AUTH_KEY,legacy);return legacy}return Array.isArray(users)?users:legacy};
