@@ -471,32 +471,62 @@ $('exportDay').onclick=async()=>{
   downloadJson(data,'gomrokyar-daily-'+day+'.json');
   $('recordCount').textContent='خروجی روز '+day+' شامل '+records.length.toLocaleString('fa-IR')+' سابقه آماده ارسال شد.';
 };
+function readBackupFile(file){
+  return new Promise((resolve,reject)=>{
+    if(typeof FileReader==='undefined'){reject(new Error('FileReader unavailable'));return}
+    const reader=new FileReader();
+    reader.onload=()=>resolve(String(reader.result||''));
+    reader.onerror=()=>reject(reader.error||new Error('File read failed'));
+    reader.readAsText(file,'UTF-8');
+  });
+}
+function validBackupRecord(x){
+  return !!x&&typeof x==='object'&&!Array.isArray(x)&&typeof x.created==='string'&&Number.isFinite(new Date(x.created).getTime())&&
+    (typeof x.plateKey==='string'||typeof x.manualPlate==='string')&&typeof (x.eventType||'weighed')==='string';
+}
 $('importFile').onchange=async e=>{
-  const file=e.target.files[0];if(!file)return;
+  const file=e.target.files&&e.target.files[0];if(!file)return;
   try{
-    const d=JSON.parse(await file.text());if(!Array.isArray(d.records)||!(d.version>=1))throw new Error('invalid');
-    const existing=await allRecords(),known=new Set();
-    let nextImportedNo=existing.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0)+1;
-    for(const x of existing){const key=x._syncKey||transferKey(x);known.add(key);if(!x._syncKey){x._syncKey=key;await new Promise((r,j)=>{const q=tx('records','readwrite').put(x);q.onsuccess=r;q.onerror=()=>j(q.error)})}}
-    let added=0,duplicates=0;
-    for(const raw of d.records){
-      if(!raw||typeof raw!=='object'||!raw.created)continue;
+    if(file.size>50*1024*1024)throw new Error('too_large');
+    const rawText=await readBackupFile(file),d=JSON.parse(rawText);
+    if(!d||!Array.isArray(d.records)||!(Number(d.version)>=1)||!['gomrokyar-transfer',undefined].includes(d.format))throw new Error('invalid_format');
+    const incoming=d.records.filter(validBackupRecord);
+    if(incoming.length!==d.records.length)throw new Error('invalid_records');
+    if(!incoming.length){alert('این فایل هیچ سابقه معتبری ندارد.');return}
+    const existing=await allRecords(),known=new Set(existing.map(x=>x._syncKey||transferKey(x)));
+    const fresh=[];
+    for(const raw of incoming){
       const x={...raw},key=x._syncKey||transferKey(x);
-      if(known.has(key)){duplicates++;continue}
+      if(known.has(key))continue;
+      known.add(key);
       x.sourceEntryNo=x.sourceEntryNo??x.entryNo??null;
-      x.entryNo=nextImportedNo++;
-      delete x.id;x._syncKey=key;
-      await new Promise((r,j)=>{const q=tx('records','readwrite').add(x);q.onsuccess=r;q.onerror=()=>j(q.error)});
-      known.add(key);added++;
+      delete x.id;
+      x._syncKey=key;
+      fresh.push(x);
     }
-    if(d.regions)await setting('regions',d.regions);
-    if(typeof d.templateMode==='boolean')await setting('templateMode',d.templateMode);
-    const all=await allRecords(),maxNo=all.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);
-    await setting('nextEntryNo',Math.max(Number(await setting('nextEntryNo'))||1,Number(d.nextEntryNo)||1,maxNo+1));
+    if(!fresh.length){alert('همه '+incoming.length.toLocaleString('fa-IR')+' سابقه این فایل قبلاً در برنامه وجود دارند؛ اطلاعاتی اضافه نشد.');return}
+    const nextStart=existing.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0)+1;
+    fresh.forEach((x,i)=>{x.entryNo=nextStart+i});
+    await new Promise((resolve,reject)=>{
+      const transaction=db.transaction(['records','settings'],'readwrite'),store=transaction.objectStore('records'),settings=transaction.objectStore('settings');
+      fresh.forEach(x=>store.add(x));
+      const currentReq=settings.get('nextEntryNo');
+      currentReq.onsuccess=()=>settings.put(Math.max(Number(currentReq.result)||1,nextStart+fresh.length,Number(d.nextEntryNo)||1),'nextEntryNo');
+      if(d.exportType==='full_backup'){
+        if(Object.prototype.hasOwnProperty.call(d,'regions'))settings.put(d.regions,'regions');
+        if(typeof d.templateMode==='boolean')settings.put(d.templateMode,'templateMode');
+      }
+      transaction.oncomplete=resolve;
+      transaction.onerror=()=>reject(transaction.error||new Error('Import transaction failed'));
+      transaction.onabort=()=>reject(transaction.error||new Error('Import transaction aborted'));
+    });
     await renderRecords();await refreshReportPreview();
-    alert('ورود اطلاعات انجام شد.\nسوابق جدید: '+added+'\nسوابق تکراری و ردشده: '+duplicates);
-  }catch(err){alert('فایل معتبر نیست یا هنگام واردکردن آن خطایی رخ داد. هیچ سابقه‌ای را حذف نکن؛ فایل را دوباره بررسی کن.')}
-  e.target.value='';
+    alert('ورود اطلاعات با موفقیت انجام شد.\nسوابق بررسی‌شده: '+incoming.length.toLocaleString('fa-IR')+'\nسوابق جدید اضافه‌شده: '+fresh.length.toLocaleString('fa-IR')+'\nسوابق تکراری: '+(incoming.length-fresh.length).toLocaleString('fa-IR')+'\nاطلاعات قبلی برنامه حذف نشد.');
+  }catch(err){
+    console.error('GomrokYar import error',err);
+    const message=err&&err.message==='too_large'?'حجم فایل بیشتر از ۵۰ مگابایت است.':err&&err.message==='invalid_records'?'ساختار بعضی سوابق فایل معتبر نیست؛ هیچ تغییری اعمال نشد.':'فایل پشتیبان معتبر نیست یا خواندن آن انجام نشد؛ هیچ سابقه‌ای از برنامه حذف نشد.';
+    alert(message);
+  }finally{e.target.value=''}
 };
 function renderPlateHistory(){
   const q=normalizePlate($('plateHistoryQuery').value),from=$('plateHistoryFrom').value,to=$('plateHistoryTo').value;
