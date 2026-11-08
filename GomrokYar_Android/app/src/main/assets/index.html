@@ -611,7 +611,7 @@ createAdminButton.onclick=async(event)=>{
   if(p.length<8)throw new Error('رمز عبور باید حداقل ۸ نویسه باشد.');
   if(p!==p2)throw new Error('تکرار رمز عبور با رمز اصلی یکسان نیست.');
   const existing=await authRead(),existingAdmin=existing.some(x=>x&&x.role==='admin'&&x.passwordHash&&x.salt);
-  if(existingAdmin&&!adminRegistrationMode)throw new Error('حساب مدیر قبلاً ساخته شده است؛ برای ثبت‌نام مجدد از گزینه صفحه ورود استفاده کن.');
+  if(existingAdmin&&!adminRegistrationMode)throw new Error('حساب مدیر قبلاً ساخته شده است؛ از دکمه ثبت‌نام در صفحه ورود استفاده کن.');
   if(existing.some(x=>x&&x.username===username&&x.role!=='admin'))throw new Error('این نام کاربری قبلاً برای یکی از کاربران ثبت شده است.');
   const admin=await makeUser(username,displayName,p,'admin');
   // فقط حساب مدیر جایگزین می‌شود؛ کاربران و سوابق برنامه حفظ می‌شوند.
@@ -645,14 +645,28 @@ async function handleLogin(event){
 $('loginBtn').type='button';$('loginBtn').onclick=handleLogin;
 $('loginPassword').addEventListener('keydown',e=>{if(e.key==='Enter')$('loginBtn').click()});
 $('setupPassword2').addEventListener('keydown',e=>{if(e.key==='Enter')$('createAdminBtn').click()});
-$('registerAdminBtn').onclick=async()=>{
- const users=await authRead(),admin=users.find(x=>x&&x.role==='admin'&&x.passwordHash&&x.salt);
- adminRegistrationMode=true;showAuth(true);
- $('setupUsername').value=admin?admin.username:'';
- $('setupDisplayName').value=admin?admin.displayName:'';
- $('setupPassword').value='';$('setupPassword2').value='';
- $('createAdminBtn').textContent='ثبت‌نام مجدد مدیر';
- $('setupCancelBtn').classList.remove('hide');$('setupUsername').focus();
+// دکمه ثبت‌نام همیشه بلافاصله فرم ساخت حساب مدیر را باز می‌کند؛
+ // خواندن حساب‌های قبلی بعد از نمایش فرم انجام می‌شود تا کلیک بی‌پاسخ نماند.
+$('registerAdminBtn').type='button';
+$('registerAdminBtn').onclick=(event)=>{
+ event.preventDefault();event.stopPropagation();
+ adminRegistrationMode=true;
+ showAuth(true);
+ $('setupUsername').value='';
+ $('setupDisplayName').value='';
+ $('setupPassword').value='';
+ $('setupPassword2').value='';
+ $('createAdminBtn').textContent='ثبت‌نام و ساخت حساب مدیر';
+ $('setupCancelBtn').classList.remove('hide');
+ $('authError').textContent='در این صفحه نام کاربری و رمز جدید مدیر را وارد و ثبت‌نام را انتخاب کن. حساب‌های کاربران و سوابق خودروها حفظ می‌شوند.';
+ $('setupUsername').focus();
+ authRead().then(users=>{
+  const admin=users.find(x=>x&&x.role==='admin'&&x.passwordHash&&x.salt);
+  if(admin&&adminRegistrationMode&&$('firstAdminSetup').classList.contains('hide')===false&&!$('setupUsername').value){
+   $('setupUsername').value=admin.username||'';
+   $('setupDisplayName').value=admin.displayName||'';
+  }
+ }).catch(error=>console.warn('Existing account lookup skipped:',error));
 };
 $('setupCancelBtn').onclick=()=>{
  adminRegistrationMode=false;$('setupCancelBtn').classList.add('hide');$('createAdminBtn').textContent='ساخت حساب مدیر';
