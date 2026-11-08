@@ -2,7 +2,7 @@ name: Build GomrokYar APK
 
 on:
   push:
-    branches: [ main, master, stable/v74-login-baseline, feature/v112-redo-features-no-auth ]
+    branches: [ main, master, stable/v74-login-baseline, feature/v112-redo-features-no-auth, fix/v113-restore-registration-button ]
   workflow_dispatch:
 
 permissions:
