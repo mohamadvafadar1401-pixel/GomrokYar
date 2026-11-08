@@ -443,8 +443,18 @@ function transferKey(x){
   return JSON.stringify([String(x.created||''),String(x.eventType||'weighed'),normalizePlate(x.plateKey||x.manualPlate),String(x.permitNo||''),String(x.firstWeight||''),String(x.secondWeight||''),String(x.netWeight||''),String(x.goodsText||''),String(x.vehicleStatus||'')]);
 }
 function downloadJson(data,name){
-  const a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));
-  a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),30000);
+  const content=JSON.stringify(data,null,2),mime='application/json;charset=utf-8';
+  try{
+    if(window.AndroidBridge&&typeof AndroidBridge.saveFile==='function'){
+      const bytes=new TextEncoder().encode(content);let binary='';
+      for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+      AndroidBridge.saveFile(name,mime,btoa(binary));
+      return true;
+    }
+  }catch(err){console.error('Android backup save failed',err)}
+  const blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+  return true;
 }
 function localISODate(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+day}
 $('transferDate').value=localISODate();
