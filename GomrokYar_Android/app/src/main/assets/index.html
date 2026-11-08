@@ -645,28 +645,14 @@ async function handleLogin(event){
 $('loginBtn').type='button';$('loginBtn').onclick=handleLogin;
 $('loginPassword').addEventListener('keydown',e=>{if(e.key==='Enter')$('loginBtn').click()});
 $('setupPassword2').addEventListener('keydown',e=>{if(e.key==='Enter')$('createAdminBtn').click()});
-// دکمه ثبت‌نام همیشه بلافاصله فرم ساخت حساب مدیر را باز می‌کند؛
- // خواندن حساب‌های قبلی بعد از نمایش فرم انجام می‌شود تا کلیک بی‌پاسخ نماند.
-$('registerAdminBtn').type='button';
-$('registerAdminBtn').onclick=(event)=>{
- event.preventDefault();event.stopPropagation();
- adminRegistrationMode=true;
- showAuth(true);
- $('setupUsername').value='';
- $('setupDisplayName').value='';
- $('setupPassword').value='';
- $('setupPassword2').value='';
- $('createAdminBtn').textContent='ثبت‌نام و ساخت حساب مدیر';
- $('setupCancelBtn').classList.remove('hide');
- $('authError').textContent='در این صفحه نام کاربری و رمز جدید مدیر را وارد و ثبت‌نام را انتخاب کن. حساب‌های کاربران و سوابق خودروها حفظ می‌شوند.';
- $('setupUsername').focus();
- authRead().then(users=>{
-  const admin=users.find(x=>x&&x.role==='admin'&&x.passwordHash&&x.salt);
-  if(admin&&adminRegistrationMode&&$('firstAdminSetup').classList.contains('hide')===false&&!$('setupUsername').value){
-   $('setupUsername').value=admin.username||'';
-   $('setupDisplayName').value=admin.displayName||'';
-  }
- }).catch(error=>console.warn('Existing account lookup skipped:',error));
+$('registerAdminBtn').onclick=async()=>{
+ const users=await authRead(),admin=users.find(x=>x&&x.role==='admin'&&x.passwordHash&&x.salt);
+ adminRegistrationMode=true;showAuth(true);
+ $('setupUsername').value=admin?admin.username:'';
+ $('setupDisplayName').value=admin?admin.displayName:'';
+ $('setupPassword').value='';$('setupPassword2').value='';
+ $('createAdminBtn').textContent='ثبت‌نام مجدد مدیر';
+ $('setupCancelBtn').classList.remove('hide');$('setupUsername').focus();
 };
 $('setupCancelBtn').onclick=()=>{
  adminRegistrationMode=false;$('setupCancelBtn').classList.add('hide');$('createAdminBtn').textContent='ساخت حساب مدیر';
