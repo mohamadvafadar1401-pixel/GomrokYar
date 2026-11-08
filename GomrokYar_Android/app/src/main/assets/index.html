@@ -611,7 +611,7 @@ async function renderUserManager(){
  $('userList').appendChild(line)});
  $('userManagerError').textContent='تعداد حساب‌ها: '+users.length+' از ۶';
 }
-$('manageUsersBtn').onclick=async()=>{if(currentUser?.role!=='admin')return;await renderUserManager();$('userManager').style.display='flex'};
+$('manageUsersBtn').onclick=async()=>{if(currentUser?.role!=='admin')return;closeDrawer();await renderUserManager();$('userManager').style.display='flex'};
 $('closeUserManager').onclick=()=>$('userManager').style.display='none';
 $('addUserBtn').onclick=async()=>{
  if(currentUser?.role!=='admin')return;
