@@ -2,7 +2,7 @@ name: Build GomrokYar APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, stable/v74-login-baseline ]
   workflow_dispatch:
 
 permissions:
