@@ -42,4 +42,4 @@ jobs:
           name: GomrokYar-APK
           path: GomrokYar_Android/app/build/outputs/apk/debug/app-debug.apk
 
-# Rebuild APK for the latest manual table-selection update.
+# Build the isolated v74 login baseline with tested backup transfer support.
