@@ -18,6 +18,9 @@ import android.widget.Toast;
 
 import android.util.Base64;
 import java.io.OutputStream;
+import java.security.SecureRandom;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 
 import androidx.core.content.FileProvider;
 
@@ -50,6 +53,7 @@ public class MainActivity extends Activity {
         settings.setAllowContentAccess(true);
         webView.setWebViewClient(new WebViewClient());
         webView.addJavascriptInterface(new ReportBridge(), "AndroidBridge");
+        webView.addJavascriptInterface(new PasswordBridge(), "AndroidAuth");
         webView.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 clearPendingCallback();
@@ -104,6 +108,37 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             clearPendingCallback();
             Toast.makeText(this, "باز کردن دوربین ناموفق بود؛ دوباره تلاش کن.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    // Secure password hashing bridge for Android WebView environments without WebCrypto.
+    private class PasswordBridge {
+        private final SecureRandom secureRandom = new SecureRandom();
+
+        @JavascriptInterface public String randomSalt() {
+            try {
+                byte[] salt = new byte[16];
+                secureRandom.nextBytes(salt);
+                return Base64.encodeToString(salt, Base64.NO_WRAP);
+            } catch (Exception e) {
+                return "ERROR:ساخت مقدار امنیتی حساب ناموفق بود.";
+            }
+        }
+
+        @JavascriptInterface public String derivePasswordHash(String password, String saltBase64) {
+            PBEKeySpec spec = null;
+            try {
+                if (password == null || saltBase64 == null) return "ERROR:اطلاعات رمز عبور ناقص است.";
+                byte[] salt = Base64.decode(saltBase64, Base64.DEFAULT);
+                spec = new PBEKeySpec(password.toCharArray(), salt, 150000, 256);
+                SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+                byte[] hash = factory.generateSecret(spec).getEncoded();
+                return Base64.encodeToString(hash, Base64.NO_WRAP);
+            } catch (Exception e) {
+                return "ERROR:محاسبه امن رمز عبور ناموفق بود.";
+            } finally {
+                if (spec != null) spec.clearPassword();
+            }
         }
     }
 
