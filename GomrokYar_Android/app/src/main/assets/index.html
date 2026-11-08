@@ -637,17 +637,18 @@ const STAFF_ACCOUNTS=[['irajhaghmoradi','کاربر ۱'],['rezakarimi','کارب
 function seedStaffUsers(){return STAFF_ACCOUNTS.map(([username,displayName])=>({username,displayName,role:'user',salt:null,passwordHash:null,createdAt:new Date().toISOString(),active:false,pendingPassword:true}))}
 async function initAuth(){
  let users=await authRead();
- if(!Array.isArray(users)||users.length===0){showAuth(true);$('setupUsername').value='muhamadvafadar22@gmail.com';}
- else{
-  const admin=users.find(x=>x.role==='admin');
-  if(admin&&admin.username!=='muhamadvafadar22@gmail.com'&&!users.some(x=>x.username==='muhamadvafadar22@gmail.com'&&x!==admin))admin.username='muhamadvafadar22@gmail.com';
-  if(admin){
-   const known=new Set(users.map(x=>x.username));const add=seedStaffUsers().filter(x=>!known.has(x.username)).slice(0,Math.max(0,6-users.length));
-   if(add.length)users=[...users,...add];
-   await authWrite(users);
-  }
-  showAuth(false);$('loginUsername').focus();
+ if(!Array.isArray(users))users=[];
+ const admin=users.find(x=>x&&x.role==='admin');
+ if(!admin){
+  showAuth(true);$('setupUsername').value='muhamadvafadar22@gmail.com';
+  return;
  }
+ if(admin.username!=='muhamadvafadar22@gmail.com'&&!users.some(x=>x.username==='muhamadvafadar22@gmail.com'&&x!==admin))admin.username='muhamadvafadar22@gmail.com';
+ const known=new Set(users.map(x=>authNormalize(x.username)));
+ const add=seedStaffUsers().filter(x=>!known.has(authNormalize(x.username))).slice(0,Math.max(0,6-users.length));
+ if(add.length)users=[...users,...add];
+ await authWrite(users);
+ showAuth(false);$('loginUsername').focus();
 }
 async function unlockAs(user){currentUser=user;$('activeUserLabel').textContent='کاربر فعال: '+user.displayName+' ('+user.username+')';$('manageUsersBtn').style.display=user.role==='admin'?'block':'none';$('authGate').style.display='none';}
 $('createAdminBtn').onclick=async()=>{
@@ -655,7 +656,18 @@ $('createAdminBtn').onclick=async()=>{
  if(!/^[a-z0-9_.@-]{3,64}$/.test(username)){$('authError').textContent='نام کاربری باید حداقل ۳ نویسه و شامل حروف انگلیسی، عدد یا @، . _ - باشد.';return}
  if(p.length<8){$('authError').textContent='رمز عبور باید حداقل ۸ نویسه باشد.';return}
  if(p!==p2){$('authError').textContent='تکرار رمز عبور با رمز اصلی یکسان نیست.';return}
- try{const admin=await makeUser(username,displayName,p,'admin');await authWrite([admin,...seedStaffUsers()]);$('setupPassword').value=$('setupPassword2').value='';await unlockAs(admin)}catch(e){$('authError').textContent=e.message||'ساخت حساب مدیر انجام نشد.'}
+ try{
+  const stored=await authRead(),users=Array.isArray(stored)?stored:[];
+  if(users.some(x=>x&&x.role==='admin')){$('authError').textContent='حساب مدیر قبلاً ساخته شده است. لطفاً وارد شوید.';await initAuth();return}
+  if(users.some(x=>authNormalize(x.username)===username)){$('authError').textContent='این نام کاربری قبلاً تعریف شده است.';return}
+  const admin=await makeUser(username,displayName,p,'admin');
+  const known=new Set(users.map(x=>authNormalize(x.username)));
+  const missingStaff=seedStaffUsers().filter(x=>!known.has(authNormalize(x.username))&&authNormalize(x.username)!==username);
+  const merged=[admin,...users,...missingStaff.slice(0,Math.max(0,5-users.length))];
+  await authWrite(merged);
+  $('setupPassword').value=$('setupPassword2').value='';
+  await unlockAs(admin)
+ }catch(e){$('authError').textContent=e.message||'ساخت حساب مدیر انجام نشد.'}
 };
 $('loginBtn').onclick=async()=>{
  const username=authNormalize($('loginUsername').value),p=$('loginPassword').value,users=await authRead()||[],user=users.find(x=>x.username===username);
