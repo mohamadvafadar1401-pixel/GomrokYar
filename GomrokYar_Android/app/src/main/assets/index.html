@@ -501,7 +501,7 @@ $('exportDay').onclick=async()=>{
   if(!records.length){alert('برای این تاریخ سابقه‌ای ثبت نشده است.');return}
   const data={format:'gomrokyar-transfer',version:4,exportType:'daily',date:day,exportedAt:new Date().toISOString(),records:records.map(x=>({...x,_syncKey:transferKey(x)}))};
   downloadJson(data,'gomrokyar-daily-'+day+'.json');
-  $('recordCount').textContent='خروجی روز '+day+' شامل '+records.length.toLocaleString('fa-IR')+' سابقه آماده ارسال شد.';
+  $('backupStatus').textContent='خروجی روز '+day+' شامل '+records.length.toLocaleString('fa-IR')+' سابقه آماده ارسال شد.';
 };
 $('exportRange').onclick=async()=>{
   const fromText=$('backupFrom').value.trim(),toText=$('backupTo').value.trim(),from=parseJalaliDate(fromText),to=parseJalaliDate(toText);
