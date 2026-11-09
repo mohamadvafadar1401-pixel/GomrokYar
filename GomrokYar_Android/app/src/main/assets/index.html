@@ -653,15 +653,46 @@ $('importFile').onchange=async e=>{
 };
 
 async function authRead(){
+ // حساب مدیر ممکن است در نسخه‌های قبلی فقط در یکی از دو حافظه ثبت شده باشد.
+ // هر دو منبع خوانده می‌شوند تا فهرست خالی AndroidBridge باعث نمایش دوباره ثبت‌نام نشود.
+ let nativeUsers=null,localUsers=null,nativeRaw=null;
  if(window.AndroidBridge){
   if(typeof AndroidBridge.readAuthUsers!=='function'||typeof AndroidBridge.writeAuthUsers!=='function'){
    throw new Error('ارتباط امن با حافظه اندروید برقرار نیست. برنامه را به‌روزرسانی و دوباره اجرا کن.');
   }
-  const raw=AndroidBridge.readAuthUsers();
-  if(raw){const saved=JSON.parse(raw);if(Array.isArray(saved))return saved;}
-  return setting('localUsers_v1');
+  try{
+   nativeRaw=AndroidBridge.readAuthUsers();
+   if(nativeRaw){const parsed=JSON.parse(nativeRaw);if(Array.isArray(parsed))nativeUsers=parsed;}
+  }catch(error){console.warn('Android auth storage read failed; checking local database.',error);}
  }
- return setting('localUsers_v1');
+ try{
+  const saved=await setting('localUsers_v1');
+  if(Array.isArray(saved))localUsers=saved;
+ }catch(error){console.warn('Local auth database read failed.',error);}
+ const hasAdmin=list=>Array.isArray(list)&&list.some(x=>x&&x.role==='admin');
+ let users;
+ if(hasAdmin(nativeUsers)){
+  users=nativeUsers;
+ }else if(hasAdmin(localUsers)){
+  // بازیابی حساب مدیر از پایگاه داده داخلی، اگر حافظه اندروید خالی/ناقص باشد.
+  const merged=[...localUsers];
+  for(const item of (nativeUsers||[])){
+   const key=authNormalize(item&&item.username);
+   if(key&&!merged.some(x=>authNormalize(x&&x.username)===key))merged.push(item);
+  }
+  users=merged;
+  try{
+   const json=JSON.stringify(users);
+   if(AndroidBridge&&AndroidBridge.writeAuthUsers(json)!==true)console.warn('Could not repair Android auth storage from local database.');
+  }catch(error){console.warn('Android auth storage repair failed.',error);}
+ }else{
+  users=Array.isArray(nativeUsers)?nativeUsers:(Array.isArray(localUsers)?localUsers:[]);
+ }
+ // همیشه نسخه بازیابی‌شده را نیز در پایگاه داده داخلی همگام نگه دار.
+ if(Array.isArray(users)){
+  try{await setting('localUsers_v1',users);}catch(error){console.warn('Local auth mirror failed.',error);}
+ }
+ return users;
 }
 async function authWrite(v){
  if(window.AndroidBridge){
