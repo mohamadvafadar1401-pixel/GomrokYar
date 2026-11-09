@@ -112,11 +112,42 @@ public class MainActivity extends Activity {
             return getSharedPreferences("gomrokyar_auth", MODE_PRIVATE)
                     .getString("localUsers_v1", null);
         }
+        // نشانگر مستقل باعث می‌شود صفحه ثبت‌نام در اجرای بعدی، حتی اگر خواندن
+        // فهرست کاربران از WebView موقتاً خالی برگردد، دوباره نمایش داده نشود.
+        @JavascriptInterface public boolean hasAdminAccount() {
+            android.content.SharedPreferences prefs =
+                    getSharedPreferences("gomrokyar_auth", MODE_PRIVATE);
+            if (prefs.getBoolean("admin_created_v1", false)) return true;
+            try {
+                String json = prefs.getString("localUsers_v1", null);
+                if (json == null) return false;
+                org.json.JSONArray users = new org.json.JSONArray(json);
+                for (int i = 0; i < users.length(); i++) {
+                    org.json.JSONObject user = users.optJSONObject(i);
+                    if (user != null && "admin".equals(user.optString("role"))) {
+                        prefs.edit().putBoolean("admin_created_v1", true).commit();
+                        return true;
+                    }
+                }
+            } catch (Exception ignored) { }
+            return false;
+        }
         @JavascriptInterface public boolean writeAuthUsers(String json) {
             try {
-                new org.json.JSONArray(json);
-                return getSharedPreferences("gomrokyar_auth", MODE_PRIVATE)
-                        .edit().putString("localUsers_v1", json).commit();
+                org.json.JSONArray users = new org.json.JSONArray(json);
+                boolean hasAdmin = false;
+                for (int i = 0; i < users.length(); i++) {
+                    org.json.JSONObject user = users.optJSONObject(i);
+                    if (user != null && "admin".equals(user.optString("role"))) {
+                        hasAdmin = true;
+                        break;
+                    }
+                }
+                android.content.SharedPreferences.Editor editor =
+                        getSharedPreferences("gomrokyar_auth", MODE_PRIVATE).edit()
+                                .putString("localUsers_v1", json);
+                if (hasAdmin) editor.putBoolean("admin_created_v1", true);
+                return editor.commit();
             } catch (Exception e) {
                 return false;
             }
