@@ -646,18 +646,23 @@ $('importFile').onchange=async e=>{
 };
 
 async function authRead(){
- if(window.AndroidBridge&&typeof AndroidBridge.readAuthUsers==='function'){
-  try{
-   const raw=AndroidBridge.readAuthUsers();
-   if(raw){const saved=JSON.parse(raw);if(Array.isArray(saved))return saved;}
-  }catch(e){console.warn('Native auth read failed',e);}
+ if(window.AndroidBridge){
+  if(typeof AndroidBridge.readAuthUsers!=='function'||typeof AndroidBridge.writeAuthUsers!=='function'){
+   throw new Error('ارتباط امن با حافظه اندروید برقرار نیست. برنامه را به‌روزرسانی و دوباره اجرا کن.');
+  }
+  const raw=AndroidBridge.readAuthUsers();
+  if(raw){const saved=JSON.parse(raw);if(Array.isArray(saved))return saved;}
+  return setting('localUsers_v1');
  }
  return setting('localUsers_v1');
 }
 async function authWrite(v){
- if(window.AndroidBridge&&typeof AndroidBridge.writeAuthUsers==='function'){
+ if(window.AndroidBridge){
+  if(typeof AndroidBridge.readAuthUsers!=='function'||typeof AndroidBridge.writeAuthUsers!=='function'){
+   throw new Error('ارتباط امن با حافظه اندروید برقرار نیست. برنامه را به‌روزرسانی و دوباره اجرا کن.');
+  }
   const json=JSON.stringify(v);
-  if(!AndroidBridge.writeAuthUsers(json))throw new Error('ذخیره حساب در حافظه داخلی گوشی ناموفق بود؛ دوباره تلاش کن.');
+  if(AndroidBridge.writeAuthUsers(json)!==true)throw new Error('ذخیره حساب در حافظه داخلی گوشی ناموفق بود؛ دوباره تلاش کن.');
   const raw=AndroidBridge.readAuthUsers(),saved=raw?JSON.parse(raw):null;
   if(!Array.isArray(saved)||saved.length!==v.length||!saved.some(x=>x&&x.role==='admin')){
    throw new Error('اطلاعات حساب در حافظه داخلی گوشی تأیید نشد؛ دوباره تلاش کن.');
@@ -668,7 +673,7 @@ async function authWrite(v){
  await setting('localUsers_v1',v);
  const saved=await setting('localUsers_v1');
  if(!Array.isArray(saved)||saved.length!==v.length||!saved.some(x=>x&&x.role==='admin')){
-  throw new Error('اطلاعات حساب در حافظه گوشی تأیید نشد؛ دوباره تلاش کن.');
+  throw new Error('ذخیره حساب در حافظه مرورگر تأیید نشد؛ دوباره تلاش کن.');
  }
  return saved;
 }
