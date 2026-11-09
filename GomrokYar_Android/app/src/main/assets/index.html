@@ -730,21 +730,31 @@ async function makeUser(username,displayName,password,role='user'){const salt=ra
 function showAuth(setup){$('firstAdminSetup').classList.toggle('hide',!setup);$('userLogin').classList.toggle('hide',setup);$('authGate').style.display='flex';$('authError').textContent='';}
 function seedStaffUsers(){const staffList=[['irajhaghmoradi','کاربر ۱'],['rezakarimi','کاربر ۲'],['mohsenparvin','کاربر ۳'],['samanshahabi','کاربر ۴'],['shomalzaherinia','کاربر ۵']];return staffList.map(([username,displayName])=>({username,displayName,role:'user',salt:null,passwordHash:null,createdAt:new Date().toISOString(),active:false,pendingPassword:true}))}
 async function initAuth(){
- let users=await authRead();
+ // ابتدا نشانگر مستقل اندروید را بررسی کن؛ این بررسی به IndexedDB وابسته نیست.
+ let nativeAdminExists=false;
+ try{
+  if(window.AndroidBridge&&typeof AndroidBridge.hasAdminAccount==='function'){
+   nativeAdminExists=AndroidBridge.hasAdminAccount()===true;
+  }
+ }catch(error){console.warn('Native admin marker read failed.',error);}
+ let users=[];
+ try{users=await authRead();}catch(error){console.warn('Auth list read failed during startup.',error);}
  if(!Array.isArray(users))users=[];
- const admin=users.find(x=>x&&x.role==='admin');
- if(!admin){
+ let admin=users.find(x=>x&&x.role==='admin');
+ // اگر نشانگر پایدار مدیر وجود دارد، هرگز صفحه ساخت مدیر را دوباره نشان نده.
+ if(!admin&&!nativeAdminExists){
   showAuth(true);$('setupUsername').value='muhamadvafadar22@gmail.com';
   return;
  }
- // وجود مدیر قطعی است؛ صفحه ورود را پیش از عملیات تکمیلی ذخیره‌سازی نمایش بده
  showAuth(false);
  $('loginUsername').focus();
+ // در صورت موجود بودن نشانگر ولی اختلال موقت در خواندن فهرست، ورود را نمایش بده
+ // و از ایجاد مجدد حساب جلوگیری کن؛ بررسی اعتبار رمز هنگام ورود انجام می‌شود.
+ if(!admin)return;
  if(admin.username!=='muhamadvafadar22@gmail.com'&&!users.some(x=>authNormalize(x.username)==='muhamadvafadar22@gmail.com'&&x!==admin))admin.username='muhamadvafadar22@gmail.com';
  const known=new Set(users.map(x=>authNormalize(x.username)));
  const add=seedStaffUsers().filter(x=>!known.has(authNormalize(x.username))).slice(0,Math.max(0,6-users.length));
  if(add.length)users=[...users,...add];
- // تکمیل فهرست کاربران نباید مانع ورود مدیر شود
  try{await authWrite(users);}catch(error){console.warn('Auth user-list maintenance failed; login remains available.',error);}
 }
 async function unlockAs(user){currentUser=user;$('activeUserLabel').textContent='کاربر فعال: '+user.displayName+' ('+user.username+')';$('manageUsersBtn').style.display=user.role==='admin'?'block':'none';$('authGate').style.display='none';}
