@@ -734,7 +734,7 @@ async function initAuth(){
  let nativeAdminExists=false;
  try{
   if(window.AndroidBridge&&typeof AndroidBridge.hasAdminAccount==='function'){
-   nativeAdminExists=AndroidBridge.hasAdminAccount()===true;
+   nativeAdminExists=String(AndroidBridge.hasAdminAccount()).toLowerCase()==='true';
   }
  }catch(error){console.warn('Native admin marker read failed.',error);}
  let users=[];
@@ -774,6 +774,10 @@ async function createAdminAccount(){
   const missingStaff=seedStaffUsers().filter(x=>!known.has(authNormalize(x.username))&&authNormalize(x.username)!==username);
   const merged=[admin,...users,...missingStaff.slice(0,Math.max(0,5-users.length))];
   await authWrite(merged);
+  // ثبت نهایی نشانگر مدیر به‌صورت مستقل از فهرست کاربران و IndexedDB
+  if(window.AndroidBridge&&typeof AndroidBridge.markAdminCreated==='function'){
+   if(String(AndroidBridge.markAdminCreated()).toLowerCase()!=='true')throw new Error('ثبت دائمی حساب مدیر در حافظه گوشی تأیید نشد؛ دوباره تلاش کن.');
+  }
   $('setupPassword').value=$('setupPassword2').value='';
   await unlockAs(admin);
  }catch(e){$('authError').textContent=e&&e.message?e.message:'ساخت حساب مدیر انجام نشد.';}
