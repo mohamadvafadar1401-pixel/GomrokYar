@@ -636,8 +636,7 @@ async function hashPassword(password,salt){
 function randomSalt(){if(window.AndroidBridge&&typeof AndroidBridge.randomSalt==='function')return AndroidBridge.randomSalt();const a=new Uint8Array(16);crypto.getRandomValues(a);return btoa(String.fromCharCode(...a))}
 async function makeUser(username,displayName,password,role='user'){const salt=randomSalt();return {username,displayName,role,salt,passwordHash:await hashPassword(password,salt),createdAt:new Date().toISOString(),active:true}}
 function showAuth(setup){$('firstAdminSetup').classList.toggle('hide',!setup);$('userLogin').classList.toggle('hide',setup);$('authGate').style.display='flex';$('authError').textContent='';}
-const STAFF_ACCOUNTS=[['irajhaghmoradi','کاربر ۱'],['rezakarimi','کاربر ۲'],['mohsenparvin','کاربر ۳'],['samanshahabi','کاربر ۴'],['shomalzaherinia','کاربر ۵']];
-function seedStaffUsers(){return STAFF_ACCOUNTS.map(([username,displayName])=>({username,displayName,role:'user',salt:null,passwordHash:null,createdAt:new Date().toISOString(),active:false,pendingPassword:true}))}
+function seedStaffUsers(){const staffList=[['irajhaghmoradi','کاربر ۱'],['rezakarimi','کاربر ۲'],['mohsenparvin','کاربر ۳'],['samanshahabi','کاربر ۴'],['shomalzaherinia','کاربر ۵']];return staffList.map(([username,displayName])=>({username,displayName,role:'user',salt:null,passwordHash:null,createdAt:new Date().toISOString(),active:false,pendingPassword:true}))}
 async function initAuth(){
  let users=await authRead();
  if(!Array.isArray(users))users=[];
