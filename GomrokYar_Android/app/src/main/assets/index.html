@@ -620,9 +620,8 @@ $('importFile').onchange=async e=>{
   }finally{e.target.value=''}
 };
 let currentUser=null;
-const AUTH_KEY='localUsers_v1';
-const authRead=()=>setting(AUTH_KEY);
-const authWrite=v=>setting(AUTH_KEY,v);
+function authRead(){return setting('localUsers_v1')}
+function authWrite(v){return setting('localUsers_v1',v)}
 function authNormalize(v){return String(v||'').trim().toLowerCase()}
 async function hashPassword(password,salt){
  if(window.crypto?.subtle){
