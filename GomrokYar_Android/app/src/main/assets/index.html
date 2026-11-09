@@ -441,10 +441,10 @@ async function renderHistoryResults(){
  let start=-Infinity,end=Infinity;
  if(from&&to){from.setHours(0,0,0,0);to.setHours(23,59,59,999);start=from.getTime();end=to.getTime();if(start>end){$('recordCount').textContent='بازه تاریخ معتبر نیست.';box.textContent='تاریخ «از» نمی‌تواند بعد از تاریخ «تا» باشد.';return}}
  const data=all.filter(x=>normalizePlate(x.plateKey||x.manualPlate)===p.key).filter(x=>{const t=Date.parse(x.created);return Number.isFinite(t)&&t>=start&&t<=end}).sort((a,b)=>(Number(a.entryNo)||Number(a.id)||0)-(Number(b.entryNo)||Number(b.id)||0));
- $('recordCount').textContent='گزارش جامع پلاک '+p.display+' · تعداد دفعات ورود: '+data.length.toLocaleString('fa-IR')+(from&&to?' · بازه '+fromText+' تا '+toText:' · تمام سوابق');
+ $('recordCount').textContent='گزارش جامع پلاک '+p.display+' · تعداد دفعات ورود: '+entryCount.toLocaleString('fa-IR')+(from&&to?' · بازه '+fromText+' تا '+toText:' · تمام سوابق');
  if(!data.length){box.textContent='برای این پلاک در بازه انتخاب‌شده سابقه‌ای پیدا نشد.';return}
  const toKg=v=>{let z=String(v??'').replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c))).replace(/[٠-٩]/g,c=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))).replace(/[٬،,]/g,'').replace(/٫/g,'.').replace(/[^\d.+-]/g,'');let n=Number(z);return Number.isFinite(n)?n:0};
- const entryCount=data.length;
+ const entryCount=data.filter(x=>(x.eventType||'weighed')!=='import_exit').length;
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const cropCell=(x,k,fallback)=>{let v=x.crops&&x.crops[k];if(v&&String(v).startsWith('data:image/'))return '<img class="cropimg" alt="" src="'+v+'">';return esc(fallback||((v)?'تصویر برش ذخیره شده':''))};
  const rows=data.map((x,i)=>{let t=x.eventType||'weighed',num=(Number(x.entryNo)||Number(x.id)||i+1).toLocaleString('fa-IR'),plate=x.manualPlate||x.plateKey||p.display,goods=x.goodsText||'',permit=x.permitNo||'',first=x.firstWeight||'',second=x.secondWeight||'',net=x.netWeight||'',created=new Date(x.created).toLocaleString('fa-IR');return '<tr><td>'+num+'</td><td>'+esc(typeLabel(t))+'</td><td>'+esc(plate)+'</td><td>'+cropCell(x,'goods',goods)+'</td><td>'+cropCell(x,'permit',permit)+'</td><td>'+cropCell(x,'first',first)+'</td><td>'+cropCell(x,'second',second)+'</td><td>'+cropCell(x,'net',net)+'</td><td>'+esc(created)+'</td><td>'+esc(x.createdByName||x.createdBy||'نامشخص')+'</td><td>'+esc(x.notes||'')+'</td></tr>'}).join('');
@@ -505,7 +505,7 @@ function zipStore(files){
 }
 function downloadHistoryExcel(rows,meta){
  const headers=['ردیف','نوع ثبت','شماره پلاک','نوع کالا','شماره مجوز بارگیری','توزین اول','توزین دوم','وزن خالص','تاریخ و ساعت','ثبت‌کننده','توضیحات'];
- const metadata=[['گزارش جامع سوابق پلاک',meta.plate],['از تاریخ',meta.from||'تمام سوابق'],['تا تاریخ',meta.to||'تمام سوابق'],['تعداد دفعات ورود',rows.length.toLocaleString('fa-IR')]];
+ const metadata=[['گزارش جامع سوابق پلاک',meta.plate],['از تاریخ',meta.from||'تمام سوابق'],['تا تاریخ',meta.to||'تمام سوابق'],['تعداد دفعات ورود',rows.filter(x=>(x.eventType||'weighed')!=='import_exit').length.toLocaleString('fa-IR')]];
  const imageFields=[['goods',3],['permit',4],['first',5],['second',6],['net',7]],images=[],drawings=[],drawingRels=[];
  const rowsXml=[];
  const cellRef=(col,row)=>{let n=col+1,out='';while(n){let r=(n-1)%26;out=String.fromCharCode(65+r)+out;n=Math.floor((n-1)/26)}return out+(row+1)};
