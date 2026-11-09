@@ -108,6 +108,19 @@ public class MainActivity extends Activity {
     }
 
     private class ReportBridge {
+        @JavascriptInterface public String readAuthUsers() {
+            return getSharedPreferences("gomrokyar_auth", MODE_PRIVATE)
+                    .getString("localUsers_v1", null);
+        }
+        @JavascriptInterface public boolean writeAuthUsers(String json) {
+            try {
+                new org.json.JSONArray(json);
+                return getSharedPreferences("gomrokyar_auth", MODE_PRIVATE)
+                        .edit().putString("localUsers_v1", json).commit();
+            } catch (Exception e) {
+                return false;
+            }
+        }
         @JavascriptInterface public String randomSalt() {
             byte[] salt = new byte[16];
             new java.security.SecureRandom().nextBytes(salt);
