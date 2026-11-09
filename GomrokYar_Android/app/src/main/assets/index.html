@@ -42,6 +42,8 @@
 <p class="hint">اطلاعات فقط در حافظه همین مرورگر ذخیره می‌شود. با پاک کردن داده‌های مرورگر یا حذف برنامه ممکن است سوابق از بین برود؛ مرتباً خروجی پشتیبان بگیر. در بخش باسکول، تصویر برگه برش داده می‌شود و متن یا عدد از روی تصویر به‌صورت خودکار تشخیص داده نمی‌شود.</p>
 </main><footer class="app-credit"><details><summary>درباره سامانه</summary><div class="about-card"><div class="about-title">گمرکیار</div><div class="about-sub">برنامه‌نویسی و توسعه</div><div class="about-name">محمد وفادار</div></div></details><div class="signature">برنامه‌نویسی و توسعه محمد وفادار</div></footer><canvas id="work"></canvas>
 <script>
+// Declare session state before any app code or callbacks can access it.
+let currentUser=null;
 const FIELDS=[['goods','نوع کالا'],['permit','شماره مجوز بارگیری'],['first','توزین اول'],['second','توزین دوم'],['plate','شماره پلاک'],['net','وزن خالص']];
 // شبکه فرم A5 بر اساس کادر مشکی بیرونی اندازه‌گیری شده است؛ نه مختصات کل عکس.
 // جدول داخلی: ۱۰ ردیف و ۳ ستون؛ ستون ۱ راست، ستون ۲ وسط، ستون ۳ چپ.
@@ -620,7 +622,7 @@ $('importFile').onchange=async e=>{
     alert(message);
   }finally{e.target.value=''}
 };
-let currentUser=null;
+
 function authRead(){return setting('localUsers_v1')}
 function authWrite(v){return setting('localUsers_v1',v)}
 function authNormalize(v){return String(v||'').trim().toLowerCase()}
