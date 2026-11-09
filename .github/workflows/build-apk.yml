@@ -2,7 +2,9 @@ name: Build GomrokYar APK
 
 on:
   push:
-    branches: [ main, master, stable/v74-login-baseline, feature/v106-daily-stats-report-drawer, feature/v106-requested-ui-updates ]
+    branches: [ main, master, stable/v74-login-baseline, feature/v106-daily-stats-report-drawer, feature/v106-requested-ui-updates, feature/v127-final-dashboard-history-reports ]
+  pull_request:
+    branches: [ feature/v106-requested-ui-updates ]
   workflow_dispatch:
 
 permissions:
@@ -31,6 +33,11 @@ jobs:
         run: |
           yes | sdkmanager --licenses || true
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Check embedded JavaScript syntax
+        run: |
+          node -e "const fs=require('fs'); const h=fs.readFileSync('GomrokYar_Android/app/src/main/assets/index.html','utf8'); const a=h.indexOf('<script>')+8; const b=h.lastIndexOf('</script>'); if(a<8||b<a) throw new Error('Embedded script tag not found'); fs.writeFileSync('/tmp/gomrokyar.js',h.slice(a,b));"
+          node --check /tmp/gomrokyar.js
 
       - name: Build APK
         run: |
