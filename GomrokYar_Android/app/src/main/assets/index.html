@@ -645,10 +645,28 @@ $('importFile').onchange=async e=>{
   }finally{e.target.value=''}
 };
 
-function authRead(){return setting('localUsers_v1')}
+async function authRead(){
+ if(window.AndroidBridge&&typeof AndroidBridge.readAuthUsers==='function'){
+  try{
+   const raw=AndroidBridge.readAuthUsers();
+   if(raw){const saved=JSON.parse(raw);if(Array.isArray(saved))return saved;}
+  }catch(e){console.warn('Native auth read failed',e);}
+ }
+ return setting('localUsers_v1');
+}
 async function authWrite(v){
+ if(window.AndroidBridge&&typeof AndroidBridge.writeAuthUsers==='function'){
+  const json=JSON.stringify(v);
+  if(!AndroidBridge.writeAuthUsers(json))throw new Error('ذخیره حساب در حافظه داخلی گوشی ناموفق بود؛ دوباره تلاش کن.');
+  const raw=AndroidBridge.readAuthUsers(),saved=raw?JSON.parse(raw):null;
+  if(!Array.isArray(saved)||saved.length!==v.length||!saved.some(x=>x&&x.role==='admin')){
+   throw new Error('اطلاعات حساب در حافظه داخلی گوشی تأیید نشد؛ دوباره تلاش کن.');
+  }
+  try{await setting('localUsers_v1',saved);}catch(e){console.warn('IndexedDB auth mirror failed',e);}
+  return saved;
+ }
  await setting('localUsers_v1',v);
- const saved=await authRead();
+ const saved=await setting('localUsers_v1');
  if(!Array.isArray(saved)||saved.length!==v.length||!saved.some(x=>x&&x.role==='admin')){
   throw new Error('اطلاعات حساب در حافظه گوشی تأیید نشد؛ دوباره تلاش کن.');
  }
