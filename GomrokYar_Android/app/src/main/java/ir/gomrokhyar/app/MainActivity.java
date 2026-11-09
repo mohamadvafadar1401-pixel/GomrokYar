@@ -132,6 +132,14 @@ public class MainActivity extends Activity {
             } catch (Exception ignored) { }
             return false;
         }
+        @JavascriptInterface public boolean markAdminCreated() {
+            try {
+                return getSharedPreferences("gomrokyar_auth", MODE_PRIVATE)
+                        .edit().putBoolean("admin_created_v1", true).commit();
+            } catch (Exception e) {
+                return false;
+            }
+        }
         @JavascriptInterface public boolean writeAuthUsers(String json) {
             try {
                 org.json.JSONArray users = new org.json.JSONArray(json);
