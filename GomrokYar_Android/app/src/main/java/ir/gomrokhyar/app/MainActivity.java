@@ -107,7 +107,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    private class ReportBridge {
+    public final class ReportBridge {
         @JavascriptInterface public String readAuthUsers() {
             return getSharedPreferences("gomrokyar_auth", MODE_PRIVATE)
                     .getString("localUsers_v1", null);
