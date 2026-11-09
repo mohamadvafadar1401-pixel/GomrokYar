@@ -108,6 +108,24 @@ public class MainActivity extends Activity {
     }
 
     private class ReportBridge {
+        @JavascriptInterface public String randomSalt() {
+            byte[] salt = new byte[16];
+            new java.security.SecureRandom().nextBytes(salt);
+            return Base64.encodeToString(salt, Base64.NO_WRAP);
+        }
+        @JavascriptInterface public String hashPassword(String password, String saltBase64) {
+            try {
+                byte[] salt = Base64.decode(saltBase64, Base64.DEFAULT);
+                javax.crypto.spec.PBEKeySpec spec = new javax.crypto.spec.PBEKeySpec(
+                        password.toCharArray(), salt, 150000, 256);
+                byte[] hash = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+                        .generateSecret(spec).getEncoded();
+                spec.clearPassword();
+                return Base64.encodeToString(hash, Base64.NO_WRAP);
+            } catch (Exception e) {
+                throw new RuntimeException("Password hashing failed", e);
+            }
+        }
         @JavascriptInterface public void saveReport(String fileName, String base64) {
             saveFile(fileName, "text/html", base64);
         }
