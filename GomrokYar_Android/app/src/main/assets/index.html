@@ -123,10 +123,11 @@ function regionsFromTableGrid(im){
 }
 const $=id=>document.getElementById(id);let image=null,sourceData='',regions={},active='plate',drag=null,crops={},db,frameRect={x:0,y:0,w:1,h:1},templateMode=false,perspectiveSource=null,perspectiveSelecting=false,perspectivePoints=[];
 const DB='gomrokyar_offline_v1';
-function openDB(){return new Promise((res,rej)=>{let q=indexedDB.open(DB,1);q.onupgradeneeded=()=>{q.result.createObjectStore('records',{keyPath:'id',autoIncrement:true});q.result.createObjectStore('settings')};q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
-function tx(store,mode='readonly'){return db.transaction(store,mode).objectStore(store)}
-async function setting(k,v){if(arguments.length>1)return new Promise((r,j)=>{let q=tx('settings','readwrite').put(v,k);q.onsuccess=()=>r();q.onerror=()=>j(q.error)});return new Promise((r,j)=>{let q=tx('settings').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}
-async function allRecords(){return new Promise((r,j)=>{let q=tx('records').getAll();q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}
+function openDB(){return new Promise((res,rej)=>{let q=indexedDB.open(DB,1);q.onupgradeneeded=()=>{if(!q.result.objectStoreNames.contains('records'))q.result.createObjectStore('records',{keyPath:'id',autoIncrement:true});if(!q.result.objectStoreNames.contains('settings'))q.result.createObjectStore('settings')};q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+let dbReady=openDB().then(value=>(db=value));
+function tx(store,mode='readonly'){if(!db)throw new Error('پایگاه داده هنوز آماده نشده است.');return db.transaction(store,mode).objectStore(store)}
+async function setting(k,v){await dbReady;if(arguments.length>1)return new Promise((r,j)=>{let q=tx('settings','readwrite').put(v,k);q.onsuccess=()=>r();q.onerror=()=>j(q.error)});return new Promise((r,j)=>{let q=tx('settings').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}
+async function allRecords(){await dbReady;return new Promise((r,j)=>{let q=tx('records').getAll();q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}
 function onlyPlateDigits(v){return String(v||'').replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c))).replace(/[٠-٩]/g,c=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))).replace(/\D/g,'')}
 function normalizePlate(v){return onlyPlateDigits(v)}
 function persianPlateDigits(v){return String(v).replace(/\\d/g,c=>'۰۱۲۳۴۵۶۷۸۹'[Number(c)])}
@@ -703,5 +704,5 @@ $('addUserBtn').onclick=async()=>{
 $('changeMyPasswordBtn').onclick=async()=>{closeDrawer();if(!currentUser)return;const old=prompt('رمز فعلی را وارد کن:');if(old===null)return;const users=await authRead()||[],target=users.find(x=>x.username===currentUser.username);if(!target)return;const oldHash=await hashPassword(old,target.salt);if(oldHash!==target.passwordHash){alert('رمز فعلی صحیح نیست.');return}const next=prompt('رمز جدید (حداقل ۸ نویسه):');if(next===null)return;if(next.length<8){alert('رمز جدید باید حداقل ۸ نویسه باشد.');return}const confirmNext=prompt('رمز جدید را دوباره وارد کن:');if(confirmNext!==next){alert('تکرار رمز با رمز جدید یکسان نیست.');return}target.salt=randomSalt();target.passwordHash=await hashPassword(next,target.salt);await authWrite(users);currentUser=target;alert('رمز عبور با موفقیت تغییر کرد.');};
 $('lockAppBtn').onclick=()=>{closeDrawer();currentUser=null;$('loginUsername').value='';$('loginPassword').value='';showAuth(false)};
 
-(async()=>{db=await openDB();await initAuth();regions=await setting('regions')||{};templateMode=(await setting('templateMode'))===true;await renderRecords();await refreshReportPreview();renderDailyRecords()})();
+(async()=>{await dbReady;await initAuth();regions=await setting('regions')||{};templateMode=(await setting('templateMode'))===true;await renderRecords();await refreshReportPreview();renderDailyRecords()})();
 </script></body></html>
