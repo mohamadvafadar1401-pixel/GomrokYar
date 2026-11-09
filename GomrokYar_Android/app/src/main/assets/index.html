@@ -625,12 +625,15 @@ const authRead=()=>setting(AUTH_KEY);
 const authWrite=v=>setting(AUTH_KEY,v);
 function authNormalize(v){return String(v||'').trim().toLowerCase()}
 async function hashPassword(password,salt){
- if(!window.crypto?.subtle)throw new Error('این نسخه از محیط برنامه امکان رمزنگاری امن را ندارد. برنامه را به‌روزرسانی کنید.');
- const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
- const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:Uint8Array.from(atob(salt),c=>c.charCodeAt(0)),iterations:150000,hash:'SHA-256'},material,256);
- return btoa(String.fromCharCode(...new Uint8Array(bits)));
+ if(window.crypto?.subtle){
+  const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:Uint8Array.from(atob(salt),c=>c.charCodeAt(0)),iterations:150000,hash:'SHA-256'},material,256);
+  return btoa(String.fromCharCode(...new Uint8Array(bits)));
+ }
+ if(window.AndroidBridge&&typeof AndroidBridge.hashPassword==='function')return AndroidBridge.hashPassword(password,salt);
+ throw new Error('امکان رمزنگاری رمز عبور در این گوشی فراهم نیست.');
 }
-function randomSalt(){const a=new Uint8Array(16);crypto.getRandomValues(a);return btoa(String.fromCharCode(...a))}
+function randomSalt(){if(window.AndroidBridge&&typeof AndroidBridge.randomSalt==='function')return AndroidBridge.randomSalt();const a=new Uint8Array(16);crypto.getRandomValues(a);return btoa(String.fromCharCode(...a))}
 async function makeUser(username,displayName,password,role='user'){const salt=randomSalt();return {username,displayName,role,salt,passwordHash:await hashPassword(password,salt),createdAt:new Date().toISOString(),active:true}}
 function showAuth(setup){$('firstAdminSetup').classList.toggle('hide',!setup);$('userLogin').classList.toggle('hide',setup);$('authGate').style.display='flex';$('authError').textContent='';}
 const STAFF_ACCOUNTS=[['irajhaghmoradi','کاربر ۱'],['rezakarimi','کاربر ۲'],['mohsenparvin','کاربر ۳'],['samanshahabi','کاربر ۴'],['shomalzaherinia','کاربر ۵']];
