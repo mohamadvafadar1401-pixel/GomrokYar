@@ -563,7 +563,7 @@ function renderDailyRecords(){
   const exports=dayEntries.filter(x=>(x.eventType||'weighed')==='weighed').length,imports=dayEntries.filter(x=>x.eventType==='import_entry_manual').length,empty=dayEntries.filter(x=>x.eventType==='empty_entry').length,exits=dayEntries.filter(x=>x.eventType==='import_exit').length;
   $('dailySummary').innerHTML='<b>'+entries.length.toLocaleString('fa-IR')+'</b> مورد در فیلتر انتخاب‌شده از مجموع <b>'+dayEntries.length.toLocaleString('fa-IR')+'</b> ثبت روز · مجموع وزن خالص موارد نمایش‌داده‌شده: <b>'+(totalKg/1000).toLocaleString('fa-IR',{maximumFractionDigits:2})+'</b> تن <div class="small">ورود صادرات: '+exports.toLocaleString('fa-IR')+' · ورود واردات: '+imports.toLocaleString('fa-IR')+' · کامیون خالی: '+empty.toLocaleString('fa-IR')+' · خروج واردات: '+exits.toLocaleString('fa-IR')+'</div>';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const card=x=>'<div class="record"><b>ردیف '+(Number(x.entryNo)||Number(x.id)||0).toLocaleString('fa-IR')+' ـ '+esc(typeLabel(x.eventType||'weighed'))+'</b><div>پلاک: '+esc(x.manualPlate||x.plateKey||'ثبت نشده')+'</div><div class="small">'+esc(new Date(x.created).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'}))+' · وزن خالص: '+esc(x.netWeight||'—')+' · '+esc(x.goodsText||'')+'</div><div class="daily-record-actions"><button type="button" class="secondary" data-daily-action="info" data-record-id="'+Number(x.id)+'">اطلاعات</button><button type="button" class="danger" data-daily-action="delete" data-record-id="'+Number(x.id)+'">حذف</button></div></div>';
+  const card=x=>'<div class="record"><b>ردیف '+(Number(x.entryNo)||Number(x.id)||0).toLocaleString('fa-IR')+' ـ '+esc(typeLabel(x.eventType||'weighed'))+'</b><div>پلاک: '+esc(x.manualPlate||x.plateKey||'ثبت نشده')+'</div><div class="small">'+esc(new Date(x.created).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'}))+' · وزن خالص: '+esc(x.netWeight||'—')+' · '+esc(x.goodsText||'')+'</div><div class="daily-record-actions"><button type="button" class="secondary" data-daily-action="info" data-record-id="'+Number(x.id)+'">اطلاعات</button><button type="button" data-daily-action="edit" data-record-id="'+Number(x.id)+'">ویرایش</button><button type="button" class="danger" data-daily-action="delete" data-record-id="'+Number(x.id)+'">حذف</button></div></div>';
   $('dailyVehicleList').innerHTML=entries.length?entries.map(card).join(''):'<div class="hint">برای این روز و نوع آمار انتخاب‌شده موردی ثبت نشده است.</div>';
   const matched=q?dayEntries.filter(x=>(x.eventType||'weighed')!=='import_exit'&&normalizePlate(x.plateKey||x.manualPlate).includes(q)):[];
   $('dailyPlateSummary').textContent=q?'نتیجه جست‌وجوی «'+q.replace(/[0-9]/g,ch=>'۰۱۲۳۴۵۶۷۸۹'[Number(ch)])+'»: '+matched.length.toLocaleString('fa-IR')+' مورد':'برای جست‌وجو، هر تعداد رقم از پلاک را وارد کن.';
@@ -581,19 +581,74 @@ function showDailyRecordInfo(x){
  if(images.length)$('dailyInfoContent').innerHTML+='<div class="daily-info-images">'+images.join('')+'</div>';
  $('dailyInfoModal').classList.remove('hide');
 }
+let pendingDailyDeleteId=null,pendingDailyEditId=null;
+function openDailyDelete(record){
+ pendingDailyDeleteId=Number(record.id);$('dailyDeleteReason').value='';$('dailyDeleteStatus').textContent='';
+ $('dailyDeleteTarget').textContent='ردیف '+(Number(record.entryNo)||record.id)+' · '+(record.manualPlate||record.plateKey||'بدون پلاک')+' · '+typeLabel(record.eventType||'weighed');
+ $('dailyDeleteModal').classList.remove('hide');$('dailyDeleteReason').focus();
+}
+function openDailyEdit(record){
+ pendingDailyEditId=Number(record.id);const kind=record.eventType||'weighed',digits=onlyPlateDigits(record.plateKey||record.manualPlate);
+ $('editPlateCity').value=digits.length>=7?digits.slice(0,2):'';$('editPlateMiddle').value=digits.length>=7?digits.slice(2,5):'';$('editPlateSuffix').value=digits.length>=7?digits.slice(5,7):'';
+ updatePlatePreview('editPlate');
+ const show=(id,yes)=>$(id).classList.toggle('hide',!yes);
+ show('editGoodsField',kind==='import_entry_manual'||kind==='import_exit');
+ show('editPermitField',kind==='import_entry_manual');show('editFirstField',kind==='import_entry_manual');show('editSecondField',kind==='import_entry_manual');
+ show('editNetField',kind==='weighed'||kind==='import_entry_manual');
+ $('editGoods').value=record.goodsText||'';$('editPermit').value=record.permitNo||'';$('editFirst').value=record.firstWeight||'';$('editSecond').value=record.secondWeight||'';$('editNet').value=record.netWeight||'';
+ $('dailyEditTitle').textContent='ویرایش '+typeLabel(kind)+' ـ ردیف '+(Number(record.entryNo)||record.id);
+ $('dailyEditStatus').textContent='';$('dailyEditModal').classList.remove('hide');
+}
+async function saveDailyEdit(){
+ const id=pendingDailyEditId;if(!id)return;
+ const all=await allRecords(),record=all.find(x=>Number(x.id)===id);if(!record)return;
+ const plate=plateData('editPlate');if(!plate.complete){$('dailyEditStatus').textContent='شماره پلاک را کامل وارد کن.';return}
+ const kind=record.eventType||'weighed',updated={...record,manualPlate:plate.display,plateKey:plate.key};
+ if(kind==='weighed'){const net=$('editNet').value.trim();if(!net){$('dailyEditStatus').textContent='وزن خالص را وارد کن.';return}updated.netWeight=net}
+ if(kind==='import_entry_manual'){
+  const fields=[['goodsText','editGoods'],['permitNo','editPermit'],['firstWeight','editFirst'],['secondWeight','editSecond'],['netWeight','editNet']];
+  for(const [key,idField] of fields){const value=$(idField).value.trim();if(!value){$('dailyEditStatus').textContent='لطفاً همه خانه‌های دستی را تکمیل کن.';return}updated[key]=value}
+ }
+ if(kind==='import_exit'){const goods=$('editGoods').value.trim();if(!goods){$('dailyEditStatus').textContent='نوع کالا را وارد کن.';return}updated.goodsText=goods}
+ try{
+  await new Promise((resolve,reject)=>{const req=tx('records','readwrite').put(updated);req.onsuccess=resolve;req.onerror=()=>reject(req.error)});
+  $('dailyEditModal').classList.add('hide');pendingDailyEditId=null;
+  await renderRecords();await refreshReportPreview();renderDailyRecords();
+ }catch(e){$('dailyEditStatus').textContent='ذخیره ویرایش انجام نشد؛ دوباره تلاش کن.'}
+}
+async function confirmDailyDelete(){
+ const id=pendingDailyDeleteId;if(!id)return;
+ const reason=$('dailyDeleteReason').value.trim();if(!reason){$('dailyDeleteStatus').textContent='نوشتن علت حذف الزامی است.';return}
+ const all=await allRecords(),record=all.find(x=>Number(x.id)===id);if(!record)return;
+ const updated={...record,isDeleted:true,deletedAt:new Date().toISOString(),deletionReason:reason};
+ try{
+  await new Promise((resolve,reject)=>{const req=tx('records','readwrite').put(updated);req.onsuccess=resolve;req.onerror=()=>reject(req.error)});
+  $('dailyDeleteModal').classList.add('hide');$('dailyInfoModal').classList.add('hide');pendingDailyDeleteId=null;
+  await renderRecords();await refreshReportPreview();renderDailyRecords();await renderDeletedRecords();
+ }catch(e){$('dailyDeleteStatus').textContent='حذف ثبت انجام نشد؛ دوباره تلاش کن.'}
+}
+async function renderDeletedRecords(){
+ const all=await allRecords(true),deleted=all.filter(x=>x.isDeleted).sort((a,b)=>new Date(b.deletedAt||0)-new Date(a.deletedAt||0));
+ $('deletedRecordCount').textContent='تعداد سوابق حذف‌شده: '+deleted.length.toLocaleString('fa-IR');
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ $('deletedRecordList').innerHTML=deleted.length?deleted.map(x=>'<div class="record"><b>ردیف '+(Number(x.entryNo)||Number(x.id)||0).toLocaleString('fa-IR')+' ـ '+esc(typeLabel(x.eventType||'weighed'))+'</b><div>پلاک: '+esc(x.manualPlate||x.plateKey||'ثبت نشده')+'</div><div class="small">زمان حذف: '+esc(x.deletedAt?new Date(x.deletedAt).toLocaleString('fa-IR'):'—')+'</div><div class="daily-record-actions"><button type="button" class="secondary" data-deleted-action="info" data-record-id="'+Number(x.id)+'">اطلاعات</button><button type="button" data-deleted-action="reason" data-record-id="'+Number(x.id)+'">علت حذف</button></div></div>').join(''):'<div class="hint">هنوز موردی در سوابق حذف ثبت نشده است.</div>';
+}
+async function handleDeletedRecordAction(event){
+ const button=event.target.closest('[data-deleted-action]');if(!button)return;
+ const id=Number(button.dataset.recordId),all=await allRecords(true),record=all.find(x=>Number(x.id)===id&&x.isDeleted);if(!record)return;
+ if(button.dataset.deletedAction==='info'){showDailyRecordInfo(record);return}
+ $('deletedReasonTitle').textContent='علت حذف ردیف '+(Number(record.entryNo)||record.id)+' ـ '+(record.manualPlate||record.plateKey||'بدون پلاک');
+ const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ $('deletedReasonContent').innerHTML='<div><b>زمان حذف</b>'+esc(record.deletedAt?new Date(record.deletedAt).toLocaleString('fa-IR'):'—')+'</div><div><b>توضیحات</b>'+esc(record.deletionReason||'علتی ثبت نشده')+'</div>';
+ $('deletedReasonModal').classList.remove('hide');
+}
 async function handleDailyRecordAction(event){
  const button=event.target.closest('[data-daily-action]');if(!button)return;
  const id=Number(button.dataset.recordId);if(!Number.isFinite(id)||id<=0)return;
  const all=await allRecords(),record=all.find(x=>Number(x.id)===id);if(!record)return;
  if(button.dataset.dailyAction==='info'){showDailyRecordInfo(record);return}
- if(button.dataset.dailyAction==='delete'){
-  const plate=record.manualPlate||record.plateKey||'بدون پلاک',no=Number(record.entryNo)||id;
-  if(!confirm('این ثبت به‌طور کامل از اطلاعات برنامه حذف شود؟\nردیف: '+no+'\nپلاک: '+plate+'\nنوع: '+typeLabel(record.eventType||'weighed')+'\nاین عملیات قابل بازگشت نیست.'))return;
-  await new Promise((resolve,reject)=>{const req=tx('records','readwrite').delete(id);req.onsuccess=resolve;req.onerror=()=>reject(req.error)});
-  $('dailyInfoModal').classList.add('hide');
-  await renderRecords();await refreshReportPreview();renderDailyRecords();
-  alert('این ثبت به‌طور کامل حذف شد و آمار به‌روزرسانی شد.');
- }
+ if(button.dataset.dailyAction==='edit'){openDailyEdit(record);return}
+ if(button.dataset.dailyAction==='delete'){openDailyDelete(record);return}
 }
 $('dailyDate').value=jalaliDisplay(new Date());
 $('dailyDate').addEventListener('change',renderDailyRecords);
