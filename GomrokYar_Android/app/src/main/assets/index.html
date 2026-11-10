@@ -37,7 +37,7 @@ button.danger{background:#a33b36!important;color:#fff!important}.daily-info-card
 <div id="dailyDeleteModal" class="daily-info-modal hide" role="dialog" aria-modal="true" aria-labelledby="dailyDeleteTitle"><div class="daily-info-card"><div class="daily-info-head"><h3 id="dailyDeleteTitle">ثبت علت حذف</h3><button id="closeDailyDelete" class="secondary" type="button">بستن</button></div><p class="hint" id="dailyDeleteTarget"></p><label for="dailyDeleteReason">توضیحات</label><textarea id="dailyDeleteReason" rows="4" maxlength="1000" placeholder="علت حذف این ثبت را بنویس..." style="width:100%;padding:11px;border:1px solid #cbd8d2;border-radius:9px;font:inherit"></textarea><div class="row" style="margin-top:12px"><button id="confirmDailyDelete" class="danger" type="button">تأیید حذف</button><button id="cancelDailyDelete" class="secondary" type="button">انصراف</button></div><div id="dailyDeleteStatus" class="status"></div></div></div>
 <div id="deletedReasonModal" class="daily-info-modal hide" role="dialog" aria-modal="true" aria-labelledby="deletedReasonTitle"><div class="daily-info-card"><div class="daily-info-head"><h3 id="deletedReasonTitle">علت حذف</h3><button id="closeDeletedReason" class="secondary" type="button">بستن</button></div><div id="deletedReasonContent" class="daily-info-grid"></div></div></div>
 <div id="deletedTab" class="hide"><section class="panel"><h2>سوابق حذف</h2><p class="hint">ثبت‌هایی که از آمار روزانه حذف شده‌اند، همراه با زمان و علت حذف در این بخش نگهداری می‌شوند.</p><div id="deletedRecordCount" class="status"></div><div id="deletedRecordList" class="daily-vehicle-scroll"></div></section></div><div id="historyTab" class="hide"><section class="panel"><h2>فیلتر سوابق</h2><p class="hint">جست‌وجوی سوابق ثبت‌شده در تمام روزها بر اساس تمام یا بخشی از شماره پلاک.</p><label>جست‌وجوی پلاک کامل</label><div class="plate-entry" id="historyPlateEntry"><input id="historyPlateSuffix" inputmode="numeric" maxlength="2" placeholder="۳۳" aria-label="دو رقم آخر"><span>ع</span><input id="historyPlateMiddle" inputmode="numeric" maxlength="3" placeholder="۵۵۵" aria-label="سه رقم میانی"><span>ایران</span><input id="historyPlateCity" inputmode="numeric" maxlength="2" placeholder="۲۹" aria-label="کد شهر"></div><div class="plate-preview" id="historyPlatePreview">پلاک: —</div><div class="date-filter" style="margin-top:12px"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:8px">بازه زمانی سوابق پلاک</div><div class="grid"><div><label for="historyFrom">از تاریخ (شمسی)</label><input id="historyFrom" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۵" autocomplete="off"></div><div><label for="historyTo">تا تاریخ (شمسی)</label><input id="historyTo" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۲۰" autocomplete="off"></div></div><p class="small">با انتخاب هر دو تاریخ، سوابق پلاک در بازه مشخص‌شده به‌صورت خودکار نمایش داده می‌شود.</p></div><div id="recordCount" class="status">تعداد کل خودروهای ثبت‌شده: ۰</div><div id="records" class="history-results-scroll"></div><div class="row" style="margin-top:10px"><button id="exportHistoryExcel" class="hide">خروجی سوابق</button></div><div id="historyExportStatus" class="status"></div></section></div>
-<div id="reportTab" class="hide"><section class="panel"><h2>گزارش‌گیری</h2><div class="date-filter" style="margin:0 0 12px"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:8px">تنظیم بازه زمانی گزارش</div><div class="grid"><div><label for="reportFrom">از تاریخ (شمسی)</label><input id="reportFrom" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۵" autocomplete="off"></div><div><label for="reportTo">تا تاریخ (شمسی)</label><input id="reportTo" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۵" autocomplete="off"></div></div></div><div class="grid" style="margin-top:12px"><div><label for="reportMode">نوع گزارش‌گیری</label><select id="reportMode"><option value="export_tonnage">۱) گزارش تناژ صادرات</option><option value="import_tonnage">۲) گزارش تناژ واردات</option><option value="overview">۳) گزارش کلی آمار</option><option value="comprehensive">۴) گزارش جامع کامیون‌ها</option></select></div></div><div class="row" style="margin-top:12px"><button id="report" class="secondary">دریافت فایل گزارش</button></div><div id="reportPreview" class="report-preview"><div class="small">نوع گزارش را انتخاب کن تا پیش‌نمایش آن همین‌جا نمایش داده شود.</div></div></section></div><div id="backupTab" class="hide"><section class="panel"><h2>پشتیبان و انتقال اطلاعات</h2><p class="hint">برای انتقال سوابق ثبت‌شده توسط نیروها، خروجی روزانه یا بازه‌ای بگیر و فایل دریافتی را از قسمت بازیابی پشتیبان وارد کن. اطلاعات قبلی گوشی حذف نمی‌شود و سوابق تکراری دوباره ثبت نمی‌شوند.</p><div class="row backup-actions" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center"><button id="export">خروجی کامل پشتیبان</button><label class="btn secondary" for="importFile">بازیابی پشتیبان</label><input id="importFile" type="file" accept="application/json" class="hide"></div><div class="date-filter" style="margin-top:16px"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:8px">خروجی اطلاعات یک روز</div><div class="row" style="display:flex;flex-wrap:wrap;gap:8px;align-items:end"><button id="exportDay" class="secondary">خروجی اطلاعات این روز</button><div style="min-width:190px;flex:1"><label for="transferDate">تاریخ (شمسی)</label><input id="transferDate" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۷" autocomplete="off"></div></div></div><div class="date-filter" style="margin-top:16px"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:8px">خروجی اطلاعات در بازه زمانی</div><div class="grid"><div><label for="backupFrom">از تاریخ (شمسی)</label><input id="backupFrom" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۷" autocomplete="off"></div><div><label for="backupTo">تا تاریخ (شمسی)</label><input id="backupTo" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۹" autocomplete="off"></div></div><div class="row" style="margin-top:10px"><button id="exportRange" class="secondary">خروجی اطلاعات این بازه</button></div></div><div id="backupStatus" class="status"></div></section></div><div id="jalaliPicker" class="jalali-picker hide" aria-label="تقویم شمسی"><div class="jp-head"><button type="button" id="jpPrev" class="secondary">ماه قبل</button><strong id="jpTitle"></strong><button type="button" id="jpNext" class="secondary">ماه بعد</button></div><div class="jp-grid" id="jpWeek"></div><div class="jp-grid" id="jpDays"></div><div class="jp-foot"><button type="button" id="jpToday" class="secondary">امروز</button><button type="button" id="jpClose" class="secondary">بستن تقویم</button></div></div><p class="hint">اطلاعات فقط در حافظه همین مرورگر ذخیره می‌شود. با پاک کردن داده‌های مرورگر یا حذف برنامه ممکن است سوابق از بین برود؛ مرتباً خروجی پشتیبان بگیر. در بخش باسکول، تصویر برگه برش داده می‌شود و متن یا عدد از روی تصویر به‌صورت خودکار تشخیص داده نمی‌شود.</p>
+<div id="reportTab" class="hide"><section class="panel"><h2>گزارش‌گیری</h2><div class="date-filter" style="margin:0 0 12px"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:8px">تنظیم بازه زمانی گزارش</div><div class="grid"><div><label for="reportFrom">از تاریخ (شمسی)</label><input id="reportFrom" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۵" autocomplete="off"></div><div><label for="reportTo">تا تاریخ (شمسی)</label><input id="reportTo" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۵" autocomplete="off"></div></div></div><div class="grid" style="margin-top:12px"><div><label for="reportMode">نوع گزارش‌گیری</label><select id="reportMode"><option value="export_tonnage">۱) گزارش تناژ صادرات</option><option value="import_tonnage">۲) گزارش تناژ واردات</option><option value="overview">۳) گزارش کلی آمار</option><option value="comprehensive">۴) گزارش جامع کامیون‌ها</option></select></div></div><div class="row" style="margin-top:12px"><button id="report" class="secondary">دریافت فایل گزارش</button></div><div id="reportPreview" class="report-preview"><div class="small">نوع گزارش را انتخاب کن تا پیش‌نمایش آن همین‌جا نمایش داده شود.</div></div></section></div><div id="backupTab" class="hide"><section class="panel"><h2>پشتیبان و انتقال اطلاعات</h2><p class="hint">برای انتقال سوابق ثبت‌شده توسط نیروها، خروجی روزانه یا بازه‌ای بگیر و فایل دریافتی را از قسمت بازیابی پشتیبان وارد کن. اطلاعات قبلی گوشی حذف نمی‌شود و سوابق تکراری دوباره ثبت نمی‌شوند.</p><div class="row backup-actions" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center"><button id="export">خروجی کامل پشتیبان</button><label class="btn secondary" for="importFile">بازیابی پشتیبان</label><input id="importFile" type="file" accept=".json,.gz,application/json,application/gzip" class="hide"></div><div class="date-filter" style="margin-top:16px"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:8px">خروجی اطلاعات یک روز</div><div class="row" style="display:flex;flex-wrap:wrap;gap:8px;align-items:end"><button id="exportDay" class="secondary">خروجی اطلاعات این روز</button><div style="min-width:190px;flex:1"><label for="transferDate">تاریخ (شمسی)</label><input id="transferDate" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۷" autocomplete="off"></div></div></div><div class="date-filter" style="margin-top:16px"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:8px">خروجی اطلاعات در بازه زمانی</div><div class="grid"><div><label for="backupFrom">از تاریخ (شمسی)</label><input id="backupFrom" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۷" autocomplete="off"></div><div><label for="backupTo">تا تاریخ (شمسی)</label><input id="backupTo" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۹" autocomplete="off"></div></div><div class="row" style="margin-top:10px"><button id="exportRange" class="secondary">خروجی اطلاعات این بازه</button></div></div><div id="backupStatus" class="status"></div></section></div><div id="jalaliPicker" class="jalali-picker hide" aria-label="تقویم شمسی"><div class="jp-head"><button type="button" id="jpPrev" class="secondary">ماه قبل</button><strong id="jpTitle"></strong><button type="button" id="jpNext" class="secondary">ماه بعد</button></div><div class="jp-grid" id="jpWeek"></div><div class="jp-grid" id="jpDays"></div><div class="jp-foot"><button type="button" id="jpToday" class="secondary">امروز</button><button type="button" id="jpClose" class="secondary">بستن تقویم</button></div></div><p class="hint">اطلاعات فقط در حافظه همین مرورگر ذخیره می‌شود. با پاک کردن داده‌های مرورگر یا حذف برنامه ممکن است سوابق از بین برود؛ مرتباً خروجی پشتیبان بگیر. در بخش باسکول، تصویر برگه برش داده می‌شود و متن یا عدد از روی تصویر به‌صورت خودکار تشخیص داده نمی‌شود.</p>
 </main><footer class="app-credit"><details><summary>درباره سامانه</summary><div class="about-card"><div class="about-title">سامانه ثبت و پایش تردد کامیون‌ها</div><div>حوزه نظارت گمرکات استان کرمانشاه</div><div>گمرک شیخ صله</div><div class="about-sub">طراحی، برنامه‌نویسی و اجرای سامانه</div><div class="about-name">محمد وفادار</div></div></details><div class="signature">توسعه و برنامه‌نویسی و اجرا: محمد وفادار</div></footer><canvas id="work"></canvas>
 <script>
 const FIELDS=[['goods','نوع کالا'],['permit','شماره مجوز بارگیری'],['first','توزین اول'],['second','توزین دوم'],['plate','شماره پلاک'],['net','وزن خالص']];
@@ -219,6 +219,8 @@ async function straightenToBlackFrame(im){
   const fixed=await loadImageData(out.toDataURL('image/jpeg',.94));return {image:fixed,angle:best.angle,found:true};
 }
 function loadImageData(src){return new Promise((resolve,reject)=>{let im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=src})}
+// ذخیره عکس برگه با ابعاد کنترل‌شده؛ پردازش تشخیص همچنان از تصویر اصلی و پُروضوح انجام می‌شود.
+function canvasJpegDataUrl(canvas,maxSide,quality){const scale=Math.min(1,maxSide/Math.max(canvas.width,canvas.height));if(scale>=1)return canvas.toDataURL('image/jpeg',quality);const out=document.createElement('canvas');out.width=Math.max(1,Math.round(canvas.width*scale));out.height=Math.max(1,Math.round(canvas.height*scale));out.getContext('2d').drawImage(canvas,0,0,out.width,out.height);return out.toDataURL('image/jpeg',quality)}
 function solveLinearSystem(A,b){
   const n=b.length,m=A.map((r,i)=>r.slice().concat(b[i]));
   for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(m[r][c])>Math.abs(m[p][c]))p=r;
@@ -278,7 +280,7 @@ $('preview').addEventListener('click',async ev=>{
     if(!frame)throw new Error('پس از اصلاح، کادر برگه پیدا نشد؛ چهار گوشه را دقیقاً روی خط بیرونی مشکی انتخاب کن');
     image=await cropToPaper(image,frame);frameRect={x:0,y:0,w:1,h:1};regions=regionsFromTableGrid(image);
     const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;c.getContext('2d').drawImage(image,0,0);
-    sourceData=c.toDataURL('image/jpeg',.94);$('preview').src=sourceData;
+    sourceData=canvasJpegDataUrl(c,2000,.82);$('preview').src=sourceData;
     $('calStatus').textContent='پرسپکتیو اصلاح شد؛ کادر فرم جدا و شبکه واقعی جدول ۱۰×۳ دوباره تشخیص داده شد.';
     $('dataPanel').classList.add('hide');makeCrops();
   }catch(err){perspectiveSelecting=false;$('calStatus').textContent=err.message+'؛ دوباره دکمه اصلاح پرسپکتیو را بزن.';}
@@ -312,7 +314,7 @@ async function handleSelectedPhoto(e){
   try{
     image=await loadImage(f);perspectiveSource=image;tableSelection=null;tableDragStart=null;
     const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;c.getContext('2d').drawImage(image,0,0);
-    sourceData=c.toDataURL('image/jpeg',.94);
+    sourceData=canvasJpegDataUrl(c,2000,.82);
     $('preview').src=sourceData;$('preview').classList.remove('hide');
     $('tableSelectActionRow').classList.remove('hide');$('selectTableBtn').classList.remove('hide');
     $('calStatus').textContent='عکس آماده است. محدوده بررسی اطلاعات را روی همین تصویر مشخص کن.';
@@ -367,7 +369,7 @@ function renderOverlay(){let c=$('overlay'),ctx=c.getContext('2d');ctx.clearRect
 function point(e){let r=$('overlay').getBoundingClientRect();return{x:Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),y:Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))}}
 $('overlay').addEventListener('pointerdown',e=>{if(!image)return;e.preventDefault();let p=point(e);drag={x:clamp((p.x-frameRect.x)/frameRect.w),y:clamp((p.y-frameRect.y)/frameRect.h)};if($('overlay').setPointerCapture)$('overlay').setPointerCapture(e.pointerId)});$('overlay').addEventListener('pointerup',e=>{if(!drag)return;e.preventDefault();let p0=point(e),p={x:clamp((p0.x-frameRect.x)/frameRect.w),y:clamp((p0.y-frameRect.y)/frameRect.h)},x=Math.min(drag.x,p.x),y=Math.min(drag.y,p.y),w=Math.abs(p.x-drag.x),h=Math.abs(p.y-drag.y);if(w>.006&&h>.003){regions[active]={x,y,w,h};let n=FIELDS.find(([k])=>k===active)?.[1]||active;$('cropInstruction').textContent='محدوده «'+n+'» ثبت شد. فیلد بعدی را انتخاب کن.'}else{$('cropInstruction').textContent='محدوده خیلی کوچک بود؛ دوباره یک مستطیل بزرگ‌تر رسم کن.'}drag=null;renderOverlay()});$('overlay').addEventListener('pointercancel',()=>{drag=null});
 $('saveTemplate').onclick=async()=>{if(FIELDS.some(([k])=>!regions[k])){alert('لطفاً محدوده هر شش فیلد را مشخص کن.');return}await setting('regions',regions);await setting('templateMode',true);templateMode=true;$('cropPanel').classList.add('hide');makeCrops()};$('cancelCal').onclick=()=>$('cropPanel').classList.add('hide');
-function cropData(r){let q=toImageRect(r),sx=Math.max(0,Math.round(q.x*image.naturalWidth)),sy=Math.max(0,Math.round(q.y*image.naturalHeight)),sw=Math.max(1,Math.min(image.naturalWidth-sx,Math.round(q.w*image.naturalWidth))),sh=Math.max(1,Math.min(image.naturalHeight-sy,Math.round(q.h*image.naturalHeight))),c=document.createElement('canvas');c.width=sw;c.height=sh;c.getContext('2d').drawImage(image,sx,sy,sw,sh,0,0,sw,sh);return c.toDataURL('image/jpeg',.92)}
+function cropData(r){let q=toImageRect(r),sx=Math.max(0,Math.round(q.x*image.naturalWidth)),sy=Math.max(0,Math.round(q.y*image.naturalHeight)),sw=Math.max(1,Math.min(image.naturalWidth-sx,Math.round(q.w*image.naturalWidth))),sh=Math.max(1,Math.min(image.naturalHeight-sy,Math.round(q.h*image.naturalHeight))),c=document.createElement('canvas');c.width=sw;c.height=sh;c.getContext('2d').drawImage(image,sx,sy,sw,sh,0,0,sw,sh);return canvasJpegDataUrl(c,1400,.84)}
 function makeCrops(){if(!image||FIELDS.some(([k])=>!regions[k]))return;crops={};FIELDS.forEach(([k])=>crops[k]=cropData(regions[k]));let box=$('crops');box.innerHTML='';FIELDS.forEach(([k,n])=>{let d=document.createElement('div');d.className='crop';d.innerHTML=`<b>${n}</b><img src="${crops[k]}" alt="برش ${n}">`;box.append(d)});$('dataPanel').classList.remove('hide');$('saveStatus').textContent='برش‌ها آماده بازبینی هستند.'}
 async function resetForNext(){image=null;sourceData='';crops={};$('photo').value='';$('cameraPhoto').value='';clearPlate('plateKey');$('netWeight').value='';$('recordDate').value=jalaliDisplay(new Date());$('preview').src='';$('preview').classList.add('hide');$('dataPanel').classList.add('hide');$('cropPanel').classList.add('hide');$('calibrate').disabled=true;$('crops').innerHTML='';$('saveStatus').textContent='';$('calStatus').textContent='آماده اسکن برگه بعدی هستید.';active='plate';window.scrollTo({top:0,behavior:'smooth'})}
 $('saveRecord').onclick=async()=>{if(!crops.plate){alert('ابتدا عکس را بگیر، محدوده جدول را انتخاب کن و تشخیص خانه‌ها را انجام بده.');return}let plate=plateData('plateKey'),key=plate.key;if(!plate.complete){alert('ثبت برگه بدون پلاک کامل امکان‌پذیر نیست. دو رقم آخر، سه رقم میانی و کد شهر را وارد کن.');$('plateKeySuffix').focus();return}const selectedDate=parseJalaliDate($('recordDate').value);if(!selectedDate){alert('لطفاً تاریخ شمسی معتبر برگه را انتخاب کن.');$('recordDate').focus();return}const enteredAt=new Date(),recordDateTime=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),selectedDate.getDate(),enteredAt.getHours(),enteredAt.getMinutes(),enteredAt.getSeconds(),enteredAt.getMilliseconds());let existing=await allRecords(),now=Date.now(),limit=24*60*60*1000;let recent=existing.filter(x=>(x.eventType||'weighed')==='weighed'&&normalizePlate(x.plateKey||x.manualPlate)===key).map(x=>({record:x,time:new Date(x.created).getTime()})).filter(x=>Number.isFinite(x.time)&&x.time<=now).sort((a,b)=>b.time-a.time)[0];if(recent&&now-recent.time<limit){let remain=Math.max(0,limit-(now-recent.time)),hours=Math.floor(remain/3600000),mins=Math.ceil((remain%3600000)/60000);alert('این پلاک در ۲۴ ساعت گذشته ثبت شده است و فعلاً امکان ثبت مجدد ندارد. زمان باقی‌مانده تقریبی: '+hours+' ساعت و '+mins+' دقیقه.');$('plateKeySuffix').focus();return}let savedCounter=Number(await setting('nextEntryNo'))||1;let maxExisting=existing.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);let nextNo=Math.max(savedCounter,maxExisting+1);let item={createdBy:currentUser?.username||'',createdByName:currentUser?.displayName||'',entryNo:nextNo,eventType:'weighed',vehicleStatus:'weighed',created:recordDateTime.toISOString(),enteredAt:enteredAt.toISOString(),plateKey:key,manualPlate:plate.display,netWeight:$('netWeight').value,crops,original:sourceData};try{await new Promise((r,j)=>{let q=tx('records','readwrite').add(item);q.onsuccess=r;q.onerror=()=>j(q.error)});await setting('nextEntryNo',nextNo+1);await renderRecords();await resetForNext();alert('برگه با موفقیت ثبت شد. شماره ردیف ورود: '+nextNo+' . گمرکیار آماده اسکن کامیون بعدی است.')}catch(err){alert('ثبت برگه انجام نشد؛ دوباره تلاش کن.')}};
@@ -482,19 +484,54 @@ $('reportMode').addEventListener('change',refreshReportPreview);['reportFrom','r
 function transferKey(x){
   return JSON.stringify([String(x.created||''),String(x.eventType||'weighed'),normalizePlate(x.plateKey||x.manualPlate),String(x.permitNo||''),String(x.firstWeight||''),String(x.secondWeight||''),String(x.netWeight||''),String(x.goodsText||''),String(x.vehicleStatus||'')]);
 }
-function downloadJson(data,name){
-  const content=JSON.stringify(data,null,2),mime='application/json;charset=utf-8';
+async function optimizeBackupImage(dataUrl,maxSide,quality,minLength){
+  if(typeof dataUrl!=='string'||!dataUrl.startsWith('data:image/')||dataUrl.length<minLength)return dataUrl;
+  return new Promise(resolve=>{
+    const im=new Image();im.onload=()=>{
+      try{
+        const scale=Math.min(1,maxSide/Math.max(im.naturalWidth,im.naturalHeight));
+        const c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.naturalWidth*scale));c.height=Math.max(1,Math.round(im.naturalHeight*scale));
+        c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+        const optimized=c.toDataURL('image/jpeg',quality);resolve(optimized.length<dataUrl.length?optimized:dataUrl);
+      }catch(err){resolve(dataUrl)}
+    };im.onerror=()=>resolve(dataUrl);im.src=dataUrl;
+  });
+}
+async function optimizeBackupRecords(records){
+  const output=[];
+  for(const record of records){
+    const item={...record};
+    item.original=await optimizeBackupImage(item.original,2000,.82,90000);
+    if(item.crops&&typeof item.crops==='object'){
+      const crops={...item.crops};
+      for(const key of Object.keys(crops))crops[key]=await optimizeBackupImage(crops[key],1400,.84,24000);
+      item.crops=crops;
+    }
+    output.push(item);
+  }
+  return output;
+}
+async function prepareBackupData(data){return {...data,records:await optimizeBackupRecords(data.records||[])}}
+function formatBackupSize(bytes){if(bytes<1024)return bytes+' بایت';if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' کیلوبایت';return (bytes/(1024*1024)).toFixed(2)+' مگابایت'}
+async function downloadJson(data,name){
+  const content=JSON.stringify(data);
+  let blob,fileName=name,mime='application/json;charset=utf-8',compressed=false;
+  if(typeof CompressionStream==='function'){
+    const stream=new Blob([content]).stream().pipeThrough(new CompressionStream('gzip'));
+    blob=new Blob([await new Response(stream).arrayBuffer()],{type:'application/gzip'});
+    fileName=name+'.gz';mime='application/gzip';compressed=true;
+  }else blob=new Blob([content],{type:mime});
   try{
     if(window.AndroidBridge&&typeof AndroidBridge.saveFile==='function'){
-      const bytes=new TextEncoder().encode(content);let binary='';
-      for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
-      AndroidBridge.saveFile(name,mime,btoa(binary));
-      return true;
+      const bytes=new Uint8Array(await blob.arrayBuffer());let binary='';
+      for(let i=0;i<bytes.length;i+=0x6000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x6000,bytes.length)));
+      AndroidBridge.saveFile(fileName,mime,btoa(binary));
+      return {size:blob.size,compressed,fileName};
     }
   }catch(err){console.error('Android backup save failed',err)}
-  const blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
-  return true;
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=fileName;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+  return {size:blob.size,compressed,fileName};
 }
 
 function excelXmlText(value){return String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;')}
@@ -682,30 +719,46 @@ document.querySelectorAll('[data-daily-view]').forEach(b=>b.addEventListener('cl
 }));
 
 $('export').onclick=async()=>{
-  const records=await allRecords(true),maxNo=records.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);
-  const data={format:'gomrokyar-transfer',version:4,exportType:'full_backup',exportedAt:new Date().toISOString(),records:records.map(x=>({...x,_syncKey:transferKey(x)})),regions:await setting('regions'),templateMode:await setting('templateMode'),nextEntryNo:Math.max(Number(await setting('nextEntryNo'))||1,maxNo+1)};
-  downloadJson(data,'gomrokyar-full-backup-'+localISODate()+'.json');
+  try{
+    $('backupStatus').textContent='در حال آماده‌سازی و فشرده‌سازی تصاویر و سوابق...';
+    const records=await allRecords(true),maxNo=records.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);
+    const data=await prepareBackupData({format:'gomrokyar-transfer',version:4,exportType:'full_backup',exportedAt:new Date().toISOString(),records:records.map(x=>({...x,_syncKey:transferKey(x)})),regions:await setting('regions'),templateMode:await setting('templateMode'),nextEntryNo:Math.max(Number(await setting('nextEntryNo'))||1,maxNo+1)});
+    const result=await downloadJson(data,'gomrokyar-full-backup-'+localISODate()+'.json');
+    $('backupStatus').textContent='پشتیبان '+records.length.toLocaleString('fa-IR')+' سابقه آماده ذخیره است؛ حجم فایل: '+formatBackupSize(result.size)+(result.compressed?' (فشرده‌شده)':'')+'.';
+  }catch(err){console.error('GomrokYar backup export error',err);alert('ساخت پشتیبان کامل ناموفق بود؛ اطلاعات برنامه تغییر نکرد. '+(err&&err.message?err.message:''));$('backupStatus').textContent='ساخت پشتیبان ناموفق بود.'}
 };
 $('exportDay').onclick=async()=>{
   const selected=parseJalaliDate($('transferDate').value),day=selected?localISODate(selected):'';if(!day){alert('تاریخ شمسی معتبر را انتخاب کن.');return}
-  const all=await allRecords(true),records=all.filter(x=>localISODate(new Date(x.created))===day);
-  if(!records.length){alert('برای این تاریخ سابقه‌ای ثبت نشده است.');return}
-  const data={format:'gomrokyar-transfer',version:4,exportType:'daily',date:day,exportedAt:new Date().toISOString(),records:records.map(x=>({...x,_syncKey:transferKey(x)}))};
-  downloadJson(data,'gomrokyar-daily-'+day+'.json');
-  $('backupStatus').textContent='خروجی روز '+day+' شامل '+records.length.toLocaleString('fa-IR')+' سابقه آماده ارسال شد.';
+  try{
+    $('backupStatus').textContent='در حال بهینه‌سازی عکس‌ها و آماده‌سازی پشتیبان روز '+day+'...';
+    const all=await allRecords(true),records=all.filter(x=>localISODate(new Date(x.created))===day);
+    if(!records.length){$('backupStatus').textContent='برای این تاریخ سابقه‌ای ثبت نشده است.';alert('برای این تاریخ سابقه‌ای ثبت نشده است.');return}
+    const data=await prepareBackupData({format:'gomrokyar-transfer',version:4,exportType:'daily',date:day,exportedAt:new Date().toISOString(),records:records.map(x=>({...x,_syncKey:transferKey(x)}))});
+    const result=await downloadJson(data,'gomrokyar-daily-'+day+'.json');
+    $('backupStatus').textContent='پشتیبان روز '+day+' شامل '+records.length.toLocaleString('fa-IR')+' سابقه آماده ذخیره است؛ حجم: '+formatBackupSize(result.size)+(result.compressed?' (فشرده‌شده)':'')+'.';
+  }catch(err){console.error('GomrokYar daily backup error',err);alert('ساخت پشتیبان روزانه ناموفق بود؛ اطلاعات برنامه تغییر نکرد.');$('backupStatus').textContent='ساخت پشتیبان روزانه ناموفق بود.'}
 };
 $('exportRange').onclick=async()=>{
   const fromText=$('backupFrom').value.trim(),toText=$('backupTo').value.trim(),from=parseJalaliDate(fromText),to=parseJalaliDate(toText);
   if(!fromText||!toText||!from||!to){alert('لطفاً هر دو تاریخ شمسی معتبر را انتخاب کن.');return}
   const start=localISODate(from),end=localISODate(to);
   if(start>end){alert('تاریخ شروع بازه نمی‌تواند بعد از تاریخ پایان باشد.');return}
-  const all=await allRecords(true),records=all.filter(x=>{const day=localISODate(new Date(x.created));return day>=start&&day<=end});
-  if(!records.length){alert('در بازه انتخاب‌شده سابقه‌ای ثبت نشده است.');return}
-  const data={format:'gomrokyar-transfer',version:4,exportType:start===end?'daily':'date_range',date:start===end?start:undefined,rangeStart:start,rangeEnd:end,exportedAt:new Date().toISOString(),records:records.map(x=>({...x,_syncKey:transferKey(x)}))};
-  downloadJson(data,'gomrokyar-'+(start===end?'daily-':'range-')+start+'-'+end+'.json');
-  $('backupStatus').textContent='خروجی بازه '+start+' تا '+end+' شامل '+records.length.toLocaleString('fa-IR')+' سابقه آماده ارسال شد.';
+  try{
+    $('backupStatus').textContent='در حال بهینه‌سازی عکس‌ها و آماده‌سازی پشتیبان بازه...';
+    const all=await allRecords(true),records=all.filter(x=>{const day=localISODate(new Date(x.created));return day>=start&&day<=end});
+    if(!records.length){$('backupStatus').textContent='در بازه انتخاب‌شده سابقه‌ای ثبت نشده است.';alert('در بازه انتخاب‌شده سابقه‌ای ثبت نشده است.');return}
+    const data=await prepareBackupData({format:'gomrokyar-transfer',version:4,exportType:start===end?'daily':'date_range',date:start===end?start:undefined,rangeStart:start,rangeEnd:end,exportedAt:new Date().toISOString(),records:records.map(x=>({...x,_syncKey:transferKey(x)}))});
+    const result=await downloadJson(data,'gomrokyar-'+(start===end?'daily-':'range-')+start+'-'+end+'.json');
+    $('backupStatus').textContent='پشتیبان بازه '+start+' تا '+end+' شامل '+records.length.toLocaleString('fa-IR')+' سابقه آماده ذخیره است؛ حجم: '+formatBackupSize(result.size)+(result.compressed?' (فشرده‌شده)':'')+'.';
+  }catch(err){console.error('GomrokYar range backup error',err);alert('ساخت پشتیبان بازه ناموفق بود؛ اطلاعات برنامه تغییر نکرد.');$('backupStatus').textContent='ساخت پشتیبان بازه ناموفق بود.'}
 };
-function readBackupFile(file){
+async function readBackupFile(file){
+  const compressed=/\.gz$/i.test(file.name||'')||file.type==='application/gzip';
+  if(compressed){
+    if(typeof DecompressionStream!=='function')throw new Error('gzip_unsupported');
+    const stream=file.stream().pipeThrough(new DecompressionStream('gzip'));
+    return await new Response(stream).text();
+  }
   return new Promise((resolve,reject)=>{
     if(typeof FileReader==='undefined'){reject(new Error('FileReader unavailable'));return}
     const reader=new FileReader();
@@ -758,7 +811,7 @@ $('importFile').onchange=async e=>{
     alert('ورود اطلاعات با موفقیت انجام شد.\nسوابق بررسی‌شده: '+incoming.length.toLocaleString('fa-IR')+'\nسوابق جدید اضافه‌شده: '+fresh.length.toLocaleString('fa-IR')+'\nسوابق تکراری: '+(incoming.length-fresh.length).toLocaleString('fa-IR')+'\nاطلاعات قبلی برنامه حذف نشد.');
   }catch(err){
     console.error('GomrokYar import error',err);
-    const message=err&&err.message==='too_large'?'حجم فایل بیشتر از ۵۰ مگابایت است.':err&&err.message==='invalid_records'?'ساختار بعضی سوابق فایل معتبر نیست؛ هیچ تغییری اعمال نشد.':'فایل پشتیبان معتبر نیست یا خواندن آن انجام نشد؛ هیچ سابقه‌ای از برنامه حذف نشد.';
+    const message=err&&err.message==='too_large'?'حجم فایل بیشتر از ۵۰ مگابایت است.':err&&err.message==='gzip_unsupported'?'این نسخه اندروید امکان بازکردن پشتیبان فشرده را ندارد؛ فایل JSON قدیمی همچنان قابل بازیابی است.':err&&err.message==='invalid_records'?'ساختار بعضی سوابق فایل معتبر نیست؛ هیچ تغییری اعمال نشد.':'فایل پشتیبان معتبر نیست یا خواندن آن انجام نشد؛ هیچ سابقه‌ای از برنامه حذف نشد.';
     alert(message);
   }finally{e.target.value=''}
 };
