@@ -2,7 +2,7 @@ name: Build GomrokYar APK
 
 on:
   push:
-    branches: [ main, master, stable/v74-login-baseline, feature/v106-daily-stats-report-drawer, feature/v106-requested-ui-updates, feature/recent-vehicles-only-v106, feature/daily-jalali-partial-plate-search, feature/original-v3-report-daily-transfer, feature/original-v4-plate-history-export, feature/original-v5-branding-colors ]
+    branches: [ main, master, stable/v74-login-baseline, feature/v106-daily-stats-report-drawer, feature/v106-requested-ui-updates, feature/recent-vehicles-only-v106, feature/daily-jalali-partial-plate-search, feature/original-v3-report-daily-transfer, feature/original-v4-plate-history-export, feature/original-v5-branding-colors, feature/backup-image-optimization ]
   workflow_dispatch:
 
 permissions:
