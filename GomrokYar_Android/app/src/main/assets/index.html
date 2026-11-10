@@ -512,13 +512,20 @@ async function optimizeBackupRecords(records){
   return output;
 }
 async function prepareBackupData(data){return {...data,records:await optimizeBackupRecords(data.records||[])}}
+async function readStreamBytes(stream){
+  const reader=stream.getReader(),chunks=[];let total=0;
+  while(true){const part=await reader.read();if(part.done)break;chunks.push(part.value);total+=part.value.length}
+  const output=new Uint8Array(total);let offset=0;
+  for(const chunk of chunks){output.set(chunk,offset);offset+=chunk.length}
+  return output;
+}
 function formatBackupSize(bytes){if(bytes<1024)return bytes+' بایت';if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' کیلوبایت';return (bytes/(1024*1024)).toFixed(2)+' مگابایت'}
 async function downloadJson(data,name){
   const content=JSON.stringify(data);
   let blob,fileName=name,mime='application/json;charset=utf-8',compressed=false;
   if(typeof CompressionStream==='function'){
     const stream=new Blob([content]).stream().pipeThrough(new CompressionStream('gzip'));
-    blob=new Blob([await new Response(stream).arrayBuffer()],{type:'application/gzip'});
+    blob=new Blob([await readStreamBytes(stream)],{type:'application/gzip'});
     fileName=name+'.gz';mime='application/gzip';compressed=true;
   }else blob=new Blob([content],{type:mime});
   try{
@@ -757,7 +764,7 @@ async function readBackupFile(file){
   if(compressed){
     if(typeof DecompressionStream!=='function')throw new Error('gzip_unsupported');
     const stream=file.stream().pipeThrough(new DecompressionStream('gzip'));
-    return await new Response(stream).text();
+    return new TextDecoder('utf-8').decode(await readStreamBytes(stream));
   }
   return new Promise((resolve,reject)=>{
     if(typeof FileReader==='undefined'){reject(new Error('FileReader unavailable'));return}
