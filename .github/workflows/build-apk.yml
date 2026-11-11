@@ -41,6 +41,41 @@ jobs:
           echo "$GOMROKYAR_KEYSTORE_BASE64" | base64 --decode > GomrokYar_Android/gomrokyar-release.jks
           test -s GomrokYar_Android/gomrokyar-release.jks
 
+      - name: Diagnose permanent signing credentials
+        env:
+          GOMROKYAR_KEYSTORE_FILE: ${{ github.workspace }}/GomrokYar_Android/gomrokyar-release.jks
+          GOMROKYAR_KEYSTORE_PASSWORD: ${{ secrets.GOMROKYAR_KEYSTORE_PASSWORD }}
+          GOMROKYAR_KEY_ALIAS: ${{ secrets.GOMROKYAR_KEY_ALIAS }}
+          GOMROKYAR_KEY_PASSWORD: ${{ secrets.GOMROKYAR_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          EXPECTED_SHA256="ecfd84fdd4f909bd627044faef64df92821cb644cec6df57a865885ddcbcd926"
+          ACTUAL_SHA256="$(sha256sum "$GOMROKYAR_KEYSTORE_FILE" | awk '{print $1}')"
+          if [ "$ACTUAL_SHA256" != "$EXPECTED_SHA256" ]; then
+            echo "DIAGNOSIS: KEYSTORE_FILE_MISMATCH - decoded file is not the original permanent key."
+            exit 21
+          fi
+          echo "CHECK 1 PASSED: decoded keystore matches the original file."
+          if ! keytool -list -keystore "$GOMROKYAR_KEYSTORE_FILE" -storepass "$GOMROKYAR_KEYSTORE_PASSWORD" >/dev/null 2>&1; then
+            echo "DIAGNOSIS: KEYSTORE_PASSWORD_MISMATCH - GOMROKYAR_KEYSTORE_PASSWORD does not open this keystore."
+            exit 22
+          fi
+          echo "CHECK 2 PASSED: keystore password is correct."
+          if ! keytool -list -keystore "$GOMROKYAR_KEYSTORE_FILE" -storepass "$GOMROKYAR_KEYSTORE_PASSWORD" -alias "$GOMROKYAR_KEY_ALIAS" >/dev/null 2>&1; then
+            echo "DIAGNOSIS: KEY_ALIAS_MISMATCH - GOMROKYAR_KEY_ALIAS does not identify a key in this keystore."
+            exit 23
+          fi
+          echo "CHECK 3 PASSED: key alias exists."
+          PROBE_STORE="$(openssl rand -hex 24)"
+          PROBE_FILE="$(mktemp --suffix=.p12)"
+          if ! keytool -importkeystore -noprompt -srckeystore "$GOMROKYAR_KEYSTORE_FILE" -srcstoretype JKS -srcstorepass "$GOMROKYAR_KEYSTORE_PASSWORD" -srcalias "$GOMROKYAR_KEY_ALIAS" -srckeypass "$GOMROKYAR_KEY_PASSWORD" -destkeystore "$PROBE_FILE" -deststoretype PKCS12 -deststorepass "$PROBE_STORE" -destkeypass "$PROBE_STORE" >/dev/null 2>&1; then
+            rm -f "$PROBE_FILE"
+            echo "DIAGNOSIS: KEY_PASSWORD_MISMATCH - GOMROKYAR_KEY_PASSWORD cannot unlock the private key for this alias."
+            exit 24
+          fi
+          rm -f "$PROBE_FILE"
+          echo "CHECK 4 PASSED: private-key password is correct. Signing credentials are valid."
+          
       - name: Build signed release APK
         env:
           GOMROKYAR_KEYSTORE_FILE: ${{ github.workspace }}/GomrokYar_Android/gomrokyar-release.jks
