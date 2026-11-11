@@ -279,7 +279,7 @@ $('preview').addEventListener('click',async ev=>{
     if(!frame)throw new Error('پس از اصلاح، کادر برگه پیدا نشد؛ چهار گوشه را دقیقاً روی خط بیرونی مشکی انتخاب کن');
     image=await cropToPaper(image,frame);frameRect={x:0,y:0,w:1,h:1};regions=regionsFromTableGrid(image);
     const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;c.getContext('2d').drawImage(image,0,0);
-    sourceData=c.toDataURL('image/jpeg',.94);$('preview').src=sourceData;
+    sourceData=optimizedJpegData(image,1800,.84);$('preview').src=sourceData;
     $('calStatus').textContent='پرسپکتیو اصلاح شد؛ کادر فرم جدا و شبکه واقعی جدول ۱۰×۳ دوباره تشخیص داده شد.';
     $('dataPanel').classList.add('hide');makeCrops();
   }catch(err){perspectiveSelecting=false;$('calStatus').textContent=err.message+'؛ دوباره دکمه اصلاح پرسپکتیو را بزن.';}
@@ -313,7 +313,7 @@ async function handleSelectedPhoto(e){
   try{
     image=await loadImage(f);perspectiveSource=image;tableSelection=null;tableDragStart=null;
     const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;c.getContext('2d').drawImage(image,0,0);
-    sourceData=c.toDataURL('image/jpeg',.94);
+    sourceData=optimizedJpegData(image,1800,.84);
     $('preview').src=sourceData;$('preview').classList.remove('hide');
     $('tableSelectActionRow').classList.remove('hide');$('selectTableBtn').classList.remove('hide');
     $('calStatus').textContent='عکس آماده است. محدوده بررسی اطلاعات را روی همین تصویر مشخص کن.';
@@ -353,7 +353,7 @@ $('confirmTableRegion').onclick=async()=>{
     const detected=regionsFromTableGrid(cropped);
     image=cropped;frameRect={x:0,y:0,w:1,h:1};regions=detected;
     const out=document.createElement('canvas');out.width=image.naturalWidth;out.height=image.naturalHeight;out.getContext('2d').drawImage(image,0,0);
-    sourceData=out.toDataURL('image/jpeg',.94);
+    sourceData=optimizedJpegData(image,1800,.84);
     $('preview').src=sourceData;$('tableSelectCanvas').classList.add('hide');$('tableSelectControls').classList.add('hide');$('preview').classList.remove('hide');
     $('calStatus').textContent='محدوده بررسی شد؛ اطلاعات موردنیاز برای بازبینی آماده است.';
     makeCrops();requestAnimationFrame(()=>$('plateKeyEntry').scrollIntoView({behavior:'smooth',block:'center'}));
@@ -368,7 +368,8 @@ function renderOverlay(){let c=$('overlay'),ctx=c.getContext('2d');ctx.clearRect
 function point(e){let r=$('overlay').getBoundingClientRect();return{x:Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),y:Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))}}
 $('overlay').addEventListener('pointerdown',e=>{if(!image)return;e.preventDefault();let p=point(e);drag={x:clamp((p.x-frameRect.x)/frameRect.w),y:clamp((p.y-frameRect.y)/frameRect.h)};if($('overlay').setPointerCapture)$('overlay').setPointerCapture(e.pointerId)});$('overlay').addEventListener('pointerup',e=>{if(!drag)return;e.preventDefault();let p0=point(e),p={x:clamp((p0.x-frameRect.x)/frameRect.w),y:clamp((p0.y-frameRect.y)/frameRect.h)},x=Math.min(drag.x,p.x),y=Math.min(drag.y,p.y),w=Math.abs(p.x-drag.x),h=Math.abs(p.y-drag.y);if(w>.006&&h>.003){regions[active]={x,y,w,h};let n=FIELDS.find(([k])=>k===active)?.[1]||active;$('cropInstruction').textContent='محدوده «'+n+'» ثبت شد. فیلد بعدی را انتخاب کن.'}else{$('cropInstruction').textContent='محدوده خیلی کوچک بود؛ دوباره یک مستطیل بزرگ‌تر رسم کن.'}drag=null;renderOverlay()});$('overlay').addEventListener('pointercancel',()=>{drag=null});
 $('saveTemplate').onclick=async()=>{if(FIELDS.some(([k])=>!regions[k])){alert('لطفاً محدوده هر شش فیلد را مشخص کن.');return}await setting('regions',regions);await setting('templateMode',true);templateMode=true;$('cropPanel').classList.add('hide');makeCrops()};$('cancelCal').onclick=()=>$('cropPanel').classList.add('hide');
-function cropData(r){let q=toImageRect(r),sx=Math.max(0,Math.round(q.x*image.naturalWidth)),sy=Math.max(0,Math.round(q.y*image.naturalHeight)),sw=Math.max(1,Math.min(image.naturalWidth-sx,Math.round(q.w*image.naturalWidth))),sh=Math.max(1,Math.min(image.naturalHeight-sy,Math.round(q.h*image.naturalHeight))),c=document.createElement('canvas');c.width=sw;c.height=sh;c.getContext('2d').drawImage(image,sx,sy,sw,sh,0,0,sw,sh);return c.toDataURL('image/jpeg',.92)}
+function optimizedJpegData(source,maxSide,quality){const w=source.naturalWidth||source.width,h=source.naturalHeight||source.height,scale=Math.min(1,maxSide/Math.max(w,h)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(w*scale));c.height=Math.max(1,Math.round(h*scale));c.getContext('2d',{alpha:false}).drawImage(source,0,0,w,h,0,0,c.width,c.height);return c.toDataURL('image/jpeg',quality)}
+function cropData(r){let q=toImageRect(r),sx=Math.max(0,Math.round(q.x*image.naturalWidth)),sy=Math.max(0,Math.round(q.y*image.naturalHeight)),sw=Math.max(1,Math.min(image.naturalWidth-sx,Math.round(q.w*image.naturalWidth))),sh=Math.max(1,Math.min(image.naturalHeight-sy,Math.round(q.h*image.naturalHeight))),c=document.createElement('canvas');c.width=sw;c.height=sh;c.getContext('2d').drawImage(image,sx,sy,sw,sh,0,0,sw,sh);return optimizedJpegData(c,1100,.86)}
 function makeCrops(){if(!image||FIELDS.some(([k])=>!regions[k]))return;crops={};FIELDS.forEach(([k])=>crops[k]=cropData(regions[k]));let box=$('crops');box.innerHTML='';FIELDS.forEach(([k,n])=>{let d=document.createElement('div');d.className='crop';d.innerHTML=`<b>${n}</b><img src="${crops[k]}" alt="برش ${n}">`;box.append(d)});$('dataPanel').classList.remove('hide');$('saveStatus').textContent='برش‌ها آماده بازبینی هستند.'}
 async function resetForNext(){image=null;sourceData='';crops={};$('photo').value='';$('cameraPhoto').value='';clearPlate('plateKey');$('netWeight').value='';$('recordDate').value=jalaliDisplay(new Date());$('preview').src='';$('preview').classList.add('hide');$('dataPanel').classList.add('hide');$('cropPanel').classList.add('hide');$('calibrate').disabled=true;$('crops').innerHTML='';$('saveStatus').textContent='';$('calStatus').textContent='آماده اسکن برگه بعدی هستید.';active='plate';window.scrollTo({top:0,behavior:'smooth'})}
 $('saveRecord').onclick=async()=>{if(!crops.plate){alert('ابتدا عکس را بگیر، محدوده جدول را انتخاب کن و تشخیص خانه‌ها را انجام بده.');return}let plate=plateData('plateKey'),key=plate.key;if(!plate.complete){alert('ثبت برگه بدون پلاک کامل امکان‌پذیر نیست. دو رقم آخر، سه رقم میانی و کد شهر را وارد کن.');$('plateKeySuffix').focus();return}const selectedDate=parseJalaliDate($('recordDate').value);if(!selectedDate){alert('لطفاً تاریخ شمسی معتبر برگه را انتخاب کن.');$('recordDate').focus();return}const enteredAt=new Date(),recordDateTime=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),selectedDate.getDate(),enteredAt.getHours(),enteredAt.getMinutes(),enteredAt.getSeconds(),enteredAt.getMilliseconds());let existing=await allRecords(),now=Date.now(),limit=24*60*60*1000;let recent=existing.filter(x=>(x.eventType||'weighed')==='weighed'&&normalizePlate(x.plateKey||x.manualPlate)===key).map(x=>({record:x,time:new Date(x.created).getTime()})).filter(x=>Number.isFinite(x.time)&&x.time<=now).sort((a,b)=>b.time-a.time)[0];if(recent&&now-recent.time<limit){let remain=Math.max(0,limit-(now-recent.time)),hours=Math.floor(remain/3600000),mins=Math.ceil((remain%3600000)/60000);alert('این پلاک در ۲۴ ساعت گذشته ثبت شده است و فعلاً امکان ثبت مجدد ندارد. زمان باقی‌مانده تقریبی: '+hours+' ساعت و '+mins+' دقیقه.');$('plateKeySuffix').focus();return}let savedCounter=Number(await setting('nextEntryNo'))||1;let maxExisting=existing.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);let nextNo=Math.max(savedCounter,maxExisting+1);let item={createdBy:currentUser?.username||'',createdByName:currentUser?.displayName||'',entryNo:nextNo,eventType:'weighed',vehicleStatus:'weighed',created:recordDateTime.toISOString(),enteredAt:enteredAt.toISOString(),plateKey:key,manualPlate:plate.display,netWeight:$('netWeight').value,crops,original:sourceData};try{await new Promise((r,j)=>{let q=tx('records','readwrite').add(item);q.onsuccess=r;q.onerror=()=>j(q.error)});await setting('nextEntryNo',nextNo+1);await renderRecords();await resetForNext();alert('برگه با موفقیت ثبت شد. شماره ردیف ورود: '+nextNo+' . گمرکیار آماده اسکن کامیون بعدی است.')}catch(err){alert('ثبت برگه انجام نشد؛ دوباره تلاش کن.')}};
@@ -484,13 +485,49 @@ function transferKey(x){
   return JSON.stringify([String(x.created||''),String(x.eventType||'weighed'),normalizePlate(x.plateKey||x.manualPlate),String(x.permitNo||''),String(x.firstWeight||''),String(x.secondWeight||''),String(x.netWeight||''),String(x.goodsText||''),String(x.vehicleStatus||'')]);
 }
 function downloadJson(data,name){
-  const content=JSON.stringify(data,null,2),mime='application/json;charset=utf-8';
+  const mime='application/json;charset=utf-8';
+  const bridge=window.AndroidBridge;
+  if(bridge&&typeof bridge.beginFileSave==='function'&&typeof bridge.appendFileSaveChunk==='function'&&typeof bridge.finishFileSave==='function'){
+    let begun=false;
+    try{
+      if(!bridge.beginFileSave(name,mime))throw new Error('شروع ذخیره مرحله‌ای ناموفق بود');
+      begun=true;
+      let pending='';
+      const flush=()=>{
+        if(!pending)return;
+        const bytes=new TextEncoder().encode(pending);let binary='';
+        for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+        if(!bridge.appendFileSaveChunk(btoa(binary)))throw new Error('ارسال بخشی از فایل ناموفق بود');
+        pending='';
+      };
+      const write=value=>{pending+=value;if(pending.length>=12000)flush()};
+      write('{');let first=true;
+      for(const key of Object.keys(data)){
+        const value=data[key];if(value===undefined)continue;
+        if(!first)write(',');first=false;
+        write(JSON.stringify(key)+':');
+        if(key==='records'&&Array.isArray(value)){
+          write('[');
+          for(let i=0;i<value.length;i++){if(i)write(',');write(JSON.stringify(value[i]));}
+          write(']');
+        }else write(JSON.stringify(value));
+      }
+      write('}');flush();
+      if(!bridge.finishFileSave())throw new Error('پایان ذخیره مرحله‌ای ناموفق بود');
+      return true;
+    }catch(err){
+      if(begun&&typeof bridge.cancelFileSave==='function')bridge.cancelFileSave();
+      console.error('Android chunked backup save failed',err);
+      alert('آماده‌سازی خروجی ناموفق بود. اطلاعات ثبت‌شده حذف نشده‌اند؛ دوباره تلاش کن.');
+      return false;
+    }
+  }
+  const content=JSON.stringify(data);
   try{
-    if(window.AndroidBridge&&typeof AndroidBridge.saveFile==='function'){
+    if(bridge&&typeof bridge.saveFile==='function'){
       const bytes=new TextEncoder().encode(content);let binary='';
       for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
-      AndroidBridge.saveFile(name,mime,btoa(binary));
-      return true;
+      bridge.saveFile(name,mime,btoa(binary));return true;
     }
   }catch(err){console.error('Android backup save failed',err)}
   const blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');
