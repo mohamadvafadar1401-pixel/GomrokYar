@@ -14,6 +14,11 @@ dependencies {
     implementation 'com.google.android.gms:play-services-mlkit-document-scanner:16.0.0'
 }
 
+def releaseStoreFile = System.getenv('GOMROKYAR_KEYSTORE_FILE') ?: "${rootDir}/gomrokyar-release.jks"
+def releaseStorePassword = System.getenv('GOMROKYAR_KEYSTORE_PASSWORD')
+def releaseKeyAlias = System.getenv('GOMROKYAR_KEY_ALIAS')
+def releaseKeyPassword = System.getenv('GOMROKYAR_KEY_PASSWORD')
+
 android {
     namespace 'ir.gomrokhyar.app'
     compileSdk 35
@@ -21,7 +26,23 @@ android {
         applicationId 'ir.gomrokhyar.app'
         minSdk 23
         targetSdk 28
-        versionCode 106
-        versionName '1.0.6'
+        versionCode 107
+        versionName '1.0.7'
+    }
+
+    signingConfigs {
+        release {
+            storeFile file(releaseStoreFile)
+            storePassword releaseStorePassword
+            keyAlias releaseKeyAlias
+            keyPassword releaseKeyPassword
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
     }
 }
