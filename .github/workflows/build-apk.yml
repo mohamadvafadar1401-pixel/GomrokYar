@@ -46,7 +46,7 @@ jobs:
           GOMROKYAR_KEYSTORE_FILE: ${{ github.workspace }}/GomrokYar_Android/gomrokyar-release.jks
           GOMROKYAR_KEYSTORE_PASSWORD: ${{ secrets.GOMROKYAR_KEYSTORE_PASSWORD }}
           GOMROKYAR_KEY_ALIAS: ${{ secrets.GOMROKYAR_KEY_ALIAS }}
-          GOMROKYAR_KEY_PASSWORD: ${{ secrets.GOMROKYAR_KEY_PASSWORD }}
+          GOMROKYAR_KEY_PASSWORD: ${{ secrets.GOMROKYAR_KEYSTORE_PASSWORD }}
         run: |
           set -euo pipefail
           EXPECTED_SHA256="ecfd84fdd4f909bd627044faef64df92821cb644cec6df57a865885ddcbcd926"
@@ -81,11 +81,10 @@ jobs:
           GOMROKYAR_KEYSTORE_FILE: ${{ github.workspace }}/GomrokYar_Android/gomrokyar-release.jks
           GOMROKYAR_KEYSTORE_PASSWORD: ${{ secrets.GOMROKYAR_KEYSTORE_PASSWORD }}
           GOMROKYAR_KEY_ALIAS: ${{ secrets.GOMROKYAR_KEY_ALIAS }}
-          GOMROKYAR_KEY_PASSWORD: ${{ secrets.GOMROKYAR_KEY_PASSWORD }}
+          GOMROKYAR_KEY_PASSWORD: ${{ secrets.GOMROKYAR_KEYSTORE_PASSWORD }}
         run: |
           test -n "$GOMROKYAR_KEYSTORE_PASSWORD" || (echo "Missing GOMROKYAR_KEYSTORE_PASSWORD repository secret" && exit 1)
           test -n "$GOMROKYAR_KEY_ALIAS" || (echo "Missing GOMROKYAR_KEY_ALIAS repository secret" && exit 1)
-          test -n "$GOMROKYAR_KEY_PASSWORD" || (echo "Missing GOMROKYAR_KEY_PASSWORD repository secret" && exit 1)
           gradle --no-daemon -p GomrokYar_Android assembleRelease
 
       - name: Upload signed APK
