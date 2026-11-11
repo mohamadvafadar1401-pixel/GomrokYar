@@ -688,7 +688,7 @@ $('export').onclick=async()=>{
 };
 $('exportDay').onclick=async()=>{
   const selected=parseJalaliDate($('transferDate').value),day=selected?localISODate(selected):'';if(!day){alert('تاریخ شمسی معتبر را انتخاب کن.');return}
-  const all=await allRecords(true),records=all.filter(x=>localISODate(new Date(x.created))===day);
+  const all=await allRecords(true),records=all.filter(x=>!x.isDeleted&&localISODate(new Date(x.created))===day);
   if(!records.length){alert('برای این تاریخ سابقه‌ای ثبت نشده است.');return}
   const data={format:'gomrokyar-transfer',version:4,exportType:'daily',date:day,exportedAt:new Date().toISOString(),records:records.map(x=>({...x,_syncKey:transferKey(x)}))};
   downloadJson(data,'gomrokyar-daily-'+day+'.json');
@@ -699,7 +699,7 @@ $('exportRange').onclick=async()=>{
   if(!fromText||!toText||!from||!to){alert('لطفاً هر دو تاریخ شمسی معتبر را انتخاب کن.');return}
   const start=localISODate(from),end=localISODate(to);
   if(start>end){alert('تاریخ شروع بازه نمی‌تواند بعد از تاریخ پایان باشد.');return}
-  const all=await allRecords(true),records=all.filter(x=>{const day=localISODate(new Date(x.created));return day>=start&&day<=end});
+  const all=await allRecords(true),records=all.filter(x=>!x.isDeleted&&(()=>{const day=localISODate(new Date(x.created));return day>=start&&day<=end})());
   if(!records.length){alert('در بازه انتخاب‌شده سابقه‌ای ثبت نشده است.');return}
   const data={format:'gomrokyar-transfer',version:4,exportType:start===end?'daily':'date_range',date:start===end?start:undefined,rangeStart:start,rangeEnd:end,exportedAt:new Date().toISOString(),records:records.map(x=>({...x,_syncKey:transferKey(x)}))};
   downloadJson(data,'gomrokyar-'+(start===end?'daily-':'range-')+start+'-'+end+'.json');
