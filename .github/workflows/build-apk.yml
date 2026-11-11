@@ -43,7 +43,7 @@ jobs:
 
       - name: Build signed release APK
         env:
-          GOMROKYAR_KEYSTORE_FILE: gomrokyar-release.jks
+          GOMROKYAR_KEYSTORE_FILE: ${{ github.workspace }}/GomrokYar_Android/gomrokyar-release.jks
           GOMROKYAR_KEYSTORE_PASSWORD: ${{ secrets.GOMROKYAR_KEYSTORE_PASSWORD }}
           GOMROKYAR_KEY_ALIAS: ${{ secrets.GOMROKYAR_KEY_ALIAS }}
           GOMROKYAR_KEY_PASSWORD: ${{ secrets.GOMROKYAR_KEY_PASSWORD }}
