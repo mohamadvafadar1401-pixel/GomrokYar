@@ -2,7 +2,7 @@ name: Build GomrokYar APK
 
 on:
   push:
-    branches: [ main, master, stable/v74-login-baseline, feature/v106-daily-stats-report-drawer, feature/v106-requested-ui-updates, feature/recent-vehicles-only-v106, feature/daily-jalali-partial-plate-search, feature/original-v3-report-daily-transfer, feature/original-v4-plate-history-export, feature/original-v5-branding-colors ]
+    branches: [ main, master, stable/v74-login-baseline, feature/v106-daily-stats-report-drawer, feature/v106-requested-ui-updates, feature/recent-vehicles-only-v106, feature/daily-jalali-partial-plate-search, feature/original-v3-report-daily-transfer, feature/original-v4-plate-history-export, feature/original-v5-branding-colors, feature/release-signing-updates ]
   workflow_dispatch:
 
 permissions:
@@ -32,14 +32,31 @@ jobs:
           yes | sdkmanager --licenses || true
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Build APK
+      - name: Prepare permanent release signing key
+        env:
+          GOMROKYAR_KEYSTORE_BASE64: ${{ secrets.GOMROKYAR_KEYSTORE_BASE64 }}
         run: |
-          gradle --no-daemon -p GomrokYar_Android assembleDebug
+          test -n "$GOMROKYAR_KEYSTORE_BASE64" || (echo "Missing GOMROKYAR_KEYSTORE_BASE64 repository secret" && exit 1)
+          mkdir -p GomrokYar_Android
+          echo "$GOMROKYAR_KEYSTORE_BASE64" | base64 --decode > GomrokYar_Android/gomrokyar-release.jks
+          test -s GomrokYar_Android/gomrokyar-release.jks
 
-      - name: Upload APK
+      - name: Build signed release APK
+        env:
+          GOMROKYAR_KEYSTORE_FILE: gomrokyar-release.jks
+          GOMROKYAR_KEYSTORE_PASSWORD: ${{ secrets.GOMROKYAR_KEYSTORE_PASSWORD }}
+          GOMROKYAR_KEY_ALIAS: ${{ secrets.GOMROKYAR_KEY_ALIAS }}
+          GOMROKYAR_KEY_PASSWORD: ${{ secrets.GOMROKYAR_KEY_PASSWORD }}
+        run: |
+          test -n "$GOMROKYAR_KEYSTORE_PASSWORD" || (echo "Missing GOMROKYAR_KEYSTORE_PASSWORD repository secret" && exit 1)
+          test -n "$GOMROKYAR_KEY_ALIAS" || (echo "Missing GOMROKYAR_KEY_ALIAS repository secret" && exit 1)
+          test -n "$GOMROKYAR_KEY_PASSWORD" || (echo "Missing GOMROKYAR_KEY_PASSWORD repository secret" && exit 1)
+          gradle --no-daemon -p GomrokYar_Android assembleRelease
+
+      - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
           name: GomrokYar-APK
-          path: GomrokYar_Android/app/build/outputs/apk/debug/app-debug.apk
+          path: GomrokYar_Android/app/build/outputs/apk/release/app-release.apk
 
-# Build the isolated v74 login baseline with tested backup transfer support.
+# All future updates must use this same permanent signing key and keep applicationId unchanged.
