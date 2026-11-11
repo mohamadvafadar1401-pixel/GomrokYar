@@ -66,15 +66,7 @@ jobs:
             exit 23
           fi
           echo "CHECK 3 PASSED: key alias exists."
-          PROBE_STORE="$(openssl rand -hex 24)"
-          PROBE_FILE="$(mktemp --suffix=.p12)"
-          if ! keytool -importkeystore -noprompt -srckeystore "$GOMROKYAR_KEYSTORE_FILE" -srcstoretype JKS -srcstorepass "$GOMROKYAR_KEYSTORE_PASSWORD" -srcalias "$GOMROKYAR_KEY_ALIAS" -srckeypass "$GOMROKYAR_KEY_PASSWORD" -destkeystore "$PROBE_FILE" -deststoretype PKCS12 -deststorepass "$PROBE_STORE" -destkeypass "$PROBE_STORE" >/dev/null 2>&1; then
-            rm -f "$PROBE_FILE"
-            echo "DIAGNOSIS: KEY_PASSWORD_MISMATCH - GOMROKYAR_KEY_PASSWORD cannot unlock the private key for this alias."
-            exit 24
-          fi
-          rm -f "$PROBE_FILE"
-          echo "CHECK 4 PASSED: private-key password is correct. Signing credentials are valid."
+          echo "CHECK 4 DEFERRED: the actual Gradle release-signing task will verify the private-key password."
 
       - name: Build signed release APK
         env:
