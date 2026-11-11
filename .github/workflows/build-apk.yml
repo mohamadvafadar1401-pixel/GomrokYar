@@ -49,13 +49,13 @@ jobs:
           GOMROKYAR_KEY_PASSWORD: ${{ secrets.GOMROKYAR_KEYSTORE_PASSWORD }}
         run: |
           set -euo pipefail
-          EXPECTED_SHA256="de95ea0c7ad7ec48622ca4cc0f7ae59f011c0ccaf33148d898bae05bd91599b2"
+          EXPECTED_SHA256="40beed5b8a66cc60e01e391465c4880cdd1b6fac24ed3c3d50a3449d4f0b396a"
           ACTUAL_SHA256="$(sha256sum "$GOMROKYAR_KEYSTORE_FILE" | awk '{print $1}')"
           if [ "$ACTUAL_SHA256" != "$EXPECTED_SHA256" ]; then
-            echo "DIAGNOSIS: KEYSTORE_FILE_MISMATCH - decoded file is not the original permanent key."
+            echo "DIAGNOSIS: KEYSTORE_FILE_MISMATCH - decoded file is not the verified v3 permanent key."
             exit 21
           fi
-          echo "CHECK 1 PASSED: decoded keystore matches the original file."
+          echo "CHECK 1 PASSED: decoded keystore matches the verified v3 key."
           if ! keytool -list -keystore "$GOMROKYAR_KEYSTORE_FILE" -storepass "$GOMROKYAR_KEYSTORE_PASSWORD" >/dev/null 2>&1; then
             echo "DIAGNOSIS: KEYSTORE_PASSWORD_MISMATCH - GOMROKYAR_KEYSTORE_PASSWORD does not open this keystore."
             exit 22
@@ -75,7 +75,7 @@ jobs:
           fi
           rm -f "$PROBE_FILE"
           echo "CHECK 4 PASSED: private-key password is correct. Signing credentials are valid."
-          
+
       - name: Build signed release APK
         env:
           GOMROKYAR_KEYSTORE_FILE: ${{ github.workspace }}/GomrokYar_Android/gomrokyar-release.jks
