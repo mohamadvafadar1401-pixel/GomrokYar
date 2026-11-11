@@ -34,6 +34,8 @@ public class MainActivity extends Activity {
     private static final int REPORT_SAVE_REQUEST = 503;
     private static final int FILE_SAVE_REQUEST = 504;
     private byte[] pendingReportBytes;
+    private File pendingReportFile;
+    private java.io.FileOutputStream chunkedSaveStream;
     private String pendingReportName;
     private String pendingMimeType = "application/octet-stream";
 
@@ -139,6 +141,78 @@ public class MainActivity extends Activity {
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "آماده‌سازی فایل ناموفق بود.", Toast.LENGTH_LONG).show());
             }
         }
+
+        @JavascriptInterface public synchronized boolean beginFileSave(String fileName, String mimeType) {
+            try {
+                if (chunkedSaveStream != null) { chunkedSaveStream.close(); chunkedSaveStream = null; }
+                if (pendingReportFile != null) { pendingReportFile.delete(); pendingReportFile = null; }
+                String safeName = (fileName == null || fileName.trim().isEmpty())
+                        ? "gomrokyar-export.dat"
+                        : fileName.replaceAll("[\\\\/:*?\\\"<>|]", "_");
+                pendingReportName = safeName;
+                pendingMimeType = (mimeType == null || mimeType.trim().isEmpty())
+                        ? "application/octet-stream" : mimeType;
+                pendingReportBytes = null;
+                pendingReportFile = File.createTempFile("gomrokyar-export-", ".tmp", getCacheDir());
+                chunkedSaveStream = new java.io.FileOutputStream(pendingReportFile, false);
+                return true;
+            } catch (Exception e) {
+                if (pendingReportFile != null) pendingReportFile.delete();
+                pendingReportFile = null;
+                chunkedSaveStream = null;
+                return false;
+            }
+        }
+
+        @JavascriptInterface public synchronized boolean appendFileSaveChunk(String base64) {
+            try {
+                if (chunkedSaveStream == null || base64 == null) return false;
+                byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
+                chunkedSaveStream.write(bytes);
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        @JavascriptInterface public synchronized boolean finishFileSave() {
+            try {
+                if (chunkedSaveStream == null || pendingReportFile == null) return false;
+                chunkedSaveStream.flush();
+                chunkedSaveStream.close();
+                chunkedSaveStream = null;
+                final String saveName = pendingReportName;
+                final String saveMime = pendingMimeType;
+                runOnUiThread(() -> {
+                    Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType(saveMime);
+                    intent.putExtra(Intent.EXTRA_TITLE, saveName);
+                    try { startActivityForResult(intent, FILE_SAVE_REQUEST); }
+                    catch (Exception e) {
+                        if (pendingReportFile != null) pendingReportFile.delete();
+                        pendingReportFile = null;
+                        pendingReportName = null;
+                        pendingMimeType = "application/octet-stream";
+                        Toast.makeText(MainActivity.this, "امکان باز کردن محل ذخیره فایل وجود ندارد.", Toast.LENGTH_LONG).show();
+                    }
+                });
+                return true;
+            } catch (Exception e) {
+                cancelFileSave();
+                return false;
+            }
+        }
+
+        @JavascriptInterface public synchronized boolean cancelFileSave() {
+            try { if (chunkedSaveStream != null) chunkedSaveStream.close(); } catch (Exception ignored) { }
+            chunkedSaveStream = null;
+            if (pendingReportFile != null) pendingReportFile.delete();
+            pendingReportFile = null;
+            pendingReportName = null;
+            pendingMimeType = "application/octet-stream";
+            return true;
+        }
     }
 
     private void clearPendingCallback() {
@@ -151,16 +225,27 @@ public class MainActivity extends Activity {
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REPORT_SAVE_REQUEST || requestCode == FILE_SAVE_REQUEST) {
-            if (resultCode == Activity.RESULT_OK && data != null && data.getData() != null && pendingReportBytes != null) {
+            if (resultCode == Activity.RESULT_OK && data != null && data.getData() != null
+                    && (pendingReportBytes != null || pendingReportFile != null)) {
                 try (OutputStream out = getContentResolver().openOutputStream(data.getData())) {
                     if (out == null) throw new java.io.IOException("Cannot open destination");
-                    out.write(pendingReportBytes);
+                    if (pendingReportFile != null && pendingReportFile.exists()) {
+                        try (java.io.FileInputStream in = new java.io.FileInputStream(pendingReportFile)) {
+                            byte[] buffer = new byte[32768];
+                            int count;
+                            while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
+                        }
+                    } else if (pendingReportBytes != null) {
+                        out.write(pendingReportBytes);
+                    }
                     Toast.makeText(this, "فایل گزارش با موفقیت ذخیره شد.", Toast.LENGTH_LONG).show();
                 } catch (Exception e) {
                     Toast.makeText(this, "ذخیره فایل گزارش ناموفق بود.", Toast.LENGTH_LONG).show();
                 }
             }
             pendingReportBytes = null;
+            if (pendingReportFile != null) pendingReportFile.delete();
+            pendingReportFile = null;
             pendingReportName = null;
             pendingMimeType = "application/octet-stream";
             return;
@@ -201,6 +286,8 @@ public class MainActivity extends Activity {
     @Override protected void onDestroy() {
         clearPendingCallback();
         if (cameraOutputFile != null && cameraOutputFile.exists()) cameraOutputFile.delete();
+        if (chunkedSaveStream != null) { try { chunkedSaveStream.close(); } catch (Exception ignored) { } chunkedSaveStream = null; }
+        if (pendingReportFile != null && pendingReportFile.exists()) pendingReportFile.delete();
         if (webView != null) webView.destroy();
         super.onDestroy();
     }
