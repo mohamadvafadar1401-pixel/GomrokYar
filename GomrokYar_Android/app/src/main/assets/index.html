@@ -889,7 +889,7 @@ function downloadHistoryExcel(rows,meta){
  rowsXml.push('<row r="5" ht="8" customHeight="1"></row>');
  rowsXml.push('<row r="6" ht="30" customHeight="1">'+headers.map(v=>excelCell(v,1)).join('')+'</row>');
  rows.forEach((x,i)=>{
-  const sheetRow=i+7,crops=x.crops||{},values=[Number(x.entryNo)||Number(x.id)||i+1,typeLabel(x.eventType||'weighed'),x.manualPlate||x.plateKey||meta.plate,x.goodsText||'',x.originText||'',x.permitNo||'',x.firstWeight||'',x.secondWeight||'',x.netWeight||'',new Date(x.created).toLocaleString('fa-IR'),x.createdByName||x.createdBy||'نامشخص',x.notes||''];
+  const sheetRow=i+7,crops=x.crops||{},values=[Number(x.entryNo)||Number(x.id)||i+1,typeLabel(x.eventType||'weighed'),x.manualPlate||x.plateKey||meta.plate,x.goodsText||'',x.originText||'',x.permitNo||'',x.firstWeight||'',x.secondWeight||'',x.netWeight||'',new Date(x.created).toLocaleString('fa-IR'),x.createdByName||x.createdBy||'نامشخص',x.description||x.notes||''];
   rowsXml.push('<row r="'+sheetRow+'" ht="64" customHeight="1">'+values.map((v,j)=>excelCell(v,j>=3&&j<=8?3:0)).join('')+'</row>');
   imageFields.forEach(([key,col])=>{
    const src=crops[key];if(!src||!/^data:image\/(jpeg|jpg|png);base64,/i.test(src))return;
