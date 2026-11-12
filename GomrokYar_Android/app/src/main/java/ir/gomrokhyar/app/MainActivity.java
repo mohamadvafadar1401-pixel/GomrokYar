@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.provider.DocumentsContract;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.JavascriptInterface;
@@ -34,6 +35,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class MainActivity extends Activity {
     private WebView webView;
@@ -300,6 +303,99 @@ public class MainActivity extends Activity {
             if (files == null || files.length <= 10) return;
             Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
             for (int i = 10; i < files.length; i++) files[i].delete();
+        }
+
+        private int countBackupRecords(InputStream input) {
+            try {
+                java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+                byte[] chunk = new byte[16384];
+                int read;
+                while ((read = input.read(chunk)) != -1) buffer.write(chunk, 0, read);
+                JSONObject json = new JSONObject(buffer.toString("UTF-8"));
+                JSONArray records = json.optJSONArray("records");
+                return records == null ? 0 : records.length();
+            } catch (Exception ignored) { return 0; }
+        }
+
+        @JavascriptInterface public synchronized String getAutomaticBackups() {
+            JSONArray result = new JSONArray();
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    String relativePath = Environment.DIRECTORY_DOWNLOADS + "/GomrokYar/AutoBackups/";
+                    String[] projection = {MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME,
+                            MediaStore.MediaColumns.DATE_ADDED, MediaStore.MediaColumns.SIZE};
+                    try (Cursor cursor = getContentResolver().query(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                            projection, MediaStore.MediaColumns.RELATIVE_PATH + "=? AND "
+                                    + MediaStore.MediaColumns.DISPLAY_NAME + " LIKE ?",
+                            new String[]{relativePath, "gomrokyar-auto-%"},
+                            MediaStore.MediaColumns.DATE_ADDED + " DESC")) {
+                        if (cursor != null) {
+                            int idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID);
+                            int nameCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME);
+                            int dateCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_ADDED);
+                            int sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE);
+                            while (cursor.moveToNext()) {
+                                long id = cursor.getLong(idCol);
+                                Uri uri = ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id);
+                                int count = 0;
+                                try (InputStream in = getContentResolver().openInputStream(uri)) {
+                                    if (in != null) count = countBackupRecords(in);
+                                } catch (Exception ignored) { }
+                                JSONObject item = new JSONObject();
+                                item.put("name", cursor.getString(nameCol));
+                                item.put("modified", cursor.getLong(dateCol) * 1000L);
+                                item.put("size", cursor.getLong(sizeCol));
+                                item.put("recordCount", count);
+                                result.put(item);
+                            }
+                        }
+                    }
+                } else {
+                    File documents = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+                    File directory = documents == null ? null : new File(documents, "GomrokYar/AutoBackups");
+                    File[] files = directory == null ? null : directory.listFiles((dir, name) ->
+                            name.startsWith("gomrokyar-auto-") && name.endsWith(".json"));
+                    if (files != null) {
+                        Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
+                        for (File file : files) {
+                            int count = 0;
+                            try (InputStream in = new java.io.FileInputStream(file)) { count = countBackupRecords(in); }
+                            JSONObject item = new JSONObject();
+                            item.put("name", file.getName());
+                            item.put("modified", file.lastModified());
+                            item.put("size", file.length());
+                            item.put("recordCount", count);
+                            result.put(item);
+                        }
+                    }
+                }
+            } catch (Exception ignored) { }
+            return result.toString();
+        }
+
+        @JavascriptInterface public boolean openAutomaticBackupFolder() {
+            try {
+                runOnUiThread(() -> {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                                | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            String documentId = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                                    ? "primary:Download/GomrokYar/AutoBackups"
+                                    : "primary:Android/data/" + getPackageName() + "/files/Documents/GomrokYar/AutoBackups";
+                            Uri initial = DocumentsContract.buildTreeDocumentUri(
+                                    "com.android.externalstorage.documents", documentId);
+                            intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, initial);
+                        }
+                        startActivityForResult(intent, 505);
+                    } catch (Exception e) {
+                        Toast.makeText(MainActivity.this, "باز کردن پوشه پشتیبان‌ها ممکن نشد.", Toast.LENGTH_LONG).show();
+                    }
+                });
+                return true;
+            } catch (Exception e) { return false; }
         }
 
         @JavascriptInterface public synchronized boolean cancelFileSave() {
