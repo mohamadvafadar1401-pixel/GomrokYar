@@ -218,59 +218,82 @@ public class MainActivity extends Activity {
         }
 
 
+        private File automaticBackupDirectory() throws java.io.IOException {
+            File directory = new File(getFilesDir(), "GomrokYar/Backups/Automatic");
+            if (!directory.exists() && !directory.mkdirs()) throw new java.io.IOException("Could not create private backup directory");
+            return directory;
+        }
+
+        private void copyLegacyBackup(InputStream in, File destination) throws Exception {
+            if (destination.exists() && destination.length() > 0) return;
+            File temp = new File(destination.getParentFile(), destination.getName() + ".tmp");
+            try (OutputStream out = new FileOutputStream(temp, false)) {
+                byte[] buffer = new byte[32768]; int count;
+                while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
+                out.flush();
+            }
+            if (!temp.renameTo(destination)) {
+                try (InputStream src = new FileInputStream(temp); OutputStream out = new FileOutputStream(destination, false)) {
+                    byte[] buffer = new byte[32768]; int count;
+                    while ((count = src.read(buffer)) != -1) out.write(buffer, 0, count);
+                }
+                temp.delete();
+            }
+        }
+
+        private void migrateLegacyAutomaticBackups(File directory) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    String oldPath = Environment.DIRECTORY_DOWNLOADS + "/GomrokYar/AutoBackups";
+                    try (Cursor cursor = getContentResolver().query(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                            new String[]{MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME},
+                            MediaStore.MediaColumns.RELATIVE_PATH + "=? AND " + MediaStore.MediaColumns.DISPLAY_NAME + " LIKE ?",
+                            new String[]{oldPath, "gomrokyar-auto-%"}, MediaStore.MediaColumns.DATE_ADDED + " ASC")) {
+                        if (cursor != null) while (cursor.moveToNext()) {
+                            Uri uri = ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cursor.getLong(0));
+                            String name = cursor.getString(1);
+                            File target = new File(directory, name);
+                            try (InputStream in = getContentResolver().openInputStream(uri)) {
+                                if (in != null) copyLegacyBackup(in, target);
+                            } catch (Exception ignored) { }
+                        }
+                    }
+                } else {
+                    File docs = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+                    File oldDir = docs == null ? null : new File(docs, "GomrokYar/AutoBackups");
+                    File[] oldFiles = oldDir == null ? null : oldDir.listFiles((dir, name) -> name.startsWith("gomrokyar-auto-") && name.endsWith(".json"));
+                    if (oldFiles != null) for (File old : oldFiles) try (InputStream in = new FileInputStream(old)) {
+                        copyLegacyBackup(in, new File(directory, old.getName()));
+                    } catch (Exception ignored) { }
+                }
+            } catch (Exception ignored) { }
+        }
+
         @JavascriptInterface public synchronized boolean finishAutomaticBackup() {
-            Uri insertedUri = null;
             try {
                 if (chunkedSaveStream == null || pendingReportFile == null || !pendingReportFile.exists()) return false;
                 chunkedSaveStream.flush();
                 chunkedSaveStream.close();
                 chunkedSaveStream = null;
                 String saveName = pendingReportName == null ? "gomrokyar-auto-backup.json" : pendingReportName;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    String relativePath = Environment.DIRECTORY_DOWNLOADS + "/GomrokYar/AutoBackups";
-                    ContentValues values = new ContentValues();
-                    values.put(MediaStore.MediaColumns.DISPLAY_NAME, saveName);
-                    values.put(MediaStore.MediaColumns.MIME_TYPE, "application/json");
-                    values.put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath);
-                    values.put(MediaStore.MediaColumns.IS_PENDING, 1);
-                    insertedUri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
-                    if (insertedUri == null) throw new java.io.IOException("Could not create automatic backup in Downloads");
-                    try (InputStream in = new FileInputStream(pendingReportFile);
-                         OutputStream out = getContentResolver().openOutputStream(insertedUri, "w")) {
-                        if (out == null) throw new java.io.IOException("Could not open automatic backup destination");
-                        byte[] buffer = new byte[32768];
-                        int count;
-                        while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
-                    }
-                    ContentValues ready = new ContentValues();
-                    ready.put(MediaStore.MediaColumns.IS_PENDING, 0);
-                    if (getContentResolver().update(insertedUri, ready, null, null) <= 0) throw new java.io.IOException("Could not finalize automatic backup");
-                    pruneMediaStoreAutomaticBackups(relativePath);
-                } else {
-                    File documents = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
-                    if (documents == null) throw new java.io.IOException("App documents directory unavailable");
-                    File directory = new File(documents, "GomrokYar/AutoBackups");
-                    if (!directory.exists() && !directory.mkdirs()) throw new java.io.IOException("Could not create automatic backup directory");
-                    File destination = new File(directory, saveName);
-                    try (InputStream in = new FileInputStream(pendingReportFile);
-                         OutputStream out = new FileOutputStream(destination, false)) {
-                        byte[] buffer = new byte[32768];
-                        int count;
-                        while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
-                    }
-                    pruneAppSpecificAutomaticBackups(directory);
+                File directory = automaticBackupDirectory();
+                migrateLegacyAutomaticBackups(directory);
+                File destination = new File(directory, saveName);
+                try (InputStream in = new FileInputStream(pendingReportFile);
+                     OutputStream out = new FileOutputStream(destination, false)) {
+                    byte[] buffer = new byte[32768]; int count;
+                    while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
+                    out.flush();
                 }
+                pruneAppSpecificAutomaticBackups(directory);
                 if (pendingReportFile != null) pendingReportFile.delete();
                 pendingReportFile = null;
                 pendingReportName = null;
                 pendingMimeType = "application/octet-stream";
                 runOnUiThread(() -> Toast.makeText(MainActivity.this,
-                        "پشتیبان خودکار گمرکیار ذخیره شد.", Toast.LENGTH_LONG).show());
+                        "پشتیبان خودکار در فضای امن برنامه ذخیره شد.", Toast.LENGTH_LONG).show());
                 return true;
             } catch (Exception e) {
-                if (insertedUri != null) {
-                    try { getContentResolver().delete(insertedUri, null, null); } catch (Exception ignored) { }
-                }
                 return false;
             }
         }
@@ -278,44 +301,20 @@ public class MainActivity extends Activity {
         @JavascriptInterface public synchronized String listAutomaticBackups() {
             JSONArray result = new JSONArray();
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    String relativePath = Environment.DIRECTORY_DOWNLOADS + "/GomrokYar/AutoBackups";
-                    try (Cursor cursor = getContentResolver().query(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
-                            new String[]{MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME, MediaStore.MediaColumns.DATE_MODIFIED},
-                            MediaStore.MediaColumns.RELATIVE_PATH + "=? AND " + MediaStore.MediaColumns.DISPLAY_NAME + " LIKE ?",
-                            new String[]{relativePath, "gomrokyar-auto-%"}, MediaStore.MediaColumns.DATE_MODIFIED + " DESC")) {
-                        if (cursor != null) while (cursor.moveToNext()) {
-                            long id = cursor.getLong(0);
-                            String name = cursor.getString(1);
-                            long modified = cursor.getLong(2) * 1000L;
-                            Uri uri = ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id);
-                            try (InputStream in = getContentResolver().openInputStream(uri)) {
-                                if (in == null) continue;
-                                java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
-                                byte[] chunk = new byte[8192]; int n;
-                                while ((n = in.read(chunk)) != -1) buffer.write(chunk, 0, n);
-                                JSONObject meta = backupMetadata(new String(buffer.toByteArray(), java.nio.charset.StandardCharsets.UTF_8));
-                                meta.put("name", name); meta.put("modifiedAt", new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", java.util.Locale.US).format(new java.util.Date(modified)));
-                                result.put(meta);
-                            } catch (Exception ignored) { }
-                        }
-                    }
-                } else {
-                    File documents = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
-                    File directory = documents == null ? null : new File(documents, "GomrokYar/AutoBackups");
-                    File[] files = directory == null ? null : directory.listFiles((dir, name) -> name.startsWith("gomrokyar-auto-") && name.endsWith(".json"));
-                    if (files != null) {
-                        Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
-                        for (File file : files) try (InputStream in = new FileInputStream(file)) {
-                            java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
-                            byte[] chunk = new byte[8192]; int n;
-                            while ((n = in.read(chunk)) != -1) buffer.write(chunk, 0, n);
-                            JSONObject meta = backupMetadata(new String(buffer.toByteArray(), java.nio.charset.StandardCharsets.UTF_8));
-                            meta.put("name", file.getName());
-                            meta.put("modifiedAt", new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", java.util.Locale.US).format(new java.util.Date(file.lastModified())));
-                            result.put(meta);
-                        } catch (Exception ignored) { }
-                    }
+                File directory = automaticBackupDirectory();
+                migrateLegacyAutomaticBackups(directory);
+                File[] files = directory.listFiles((dir, name) -> name.startsWith("gomrokyar-auto-") && name.endsWith(".json"));
+                if (files != null) {
+                    Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
+                    for (File file : files) try (InputStream in = new FileInputStream(file)) {
+                        java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+                        byte[] chunk = new byte[8192]; int n;
+                        while ((n = in.read(chunk)) != -1) buffer.write(chunk, 0, n);
+                        JSONObject meta = backupMetadata(new String(buffer.toByteArray(), java.nio.charset.StandardCharsets.UTF_8));
+                        meta.put("name", file.getName());
+                        meta.put("modifiedAt", new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", java.util.Locale.US).format(new java.util.Date(file.lastModified())));
+                        result.put(meta);
+                    } catch (Exception ignored) { }
                 }
             } catch (Exception ignored) { }
             return result.toString();
