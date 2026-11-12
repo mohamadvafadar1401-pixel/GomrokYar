@@ -246,7 +246,6 @@ public class MainActivity extends Activity {
                     ContentValues ready = new ContentValues();
                     ready.put(MediaStore.MediaColumns.IS_PENDING, 0);
                     if (getContentResolver().update(insertedUri, ready, null, null) <= 0) throw new java.io.IOException("Could not finalize automatic backup");
-                    pruneMediaStoreAutomaticBackups(relativePath);
                 } else {
                     File documents = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
                     if (documents == null) throw new java.io.IOException("App documents directory unavailable");
@@ -259,7 +258,6 @@ public class MainActivity extends Activity {
                         int count;
                         while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
                     }
-                    pruneAppSpecificAutomaticBackups(directory);
                 }
                 if (pendingReportFile != null) pendingReportFile.delete();
                 pendingReportFile = null;
@@ -274,35 +272,6 @@ public class MainActivity extends Activity {
                 }
                 return false;
             }
-        }
-
-        private void pruneMediaStoreAutomaticBackups(String relativePath) {
-            Cursor cursor = null;
-            try {
-                cursor = getContentResolver().query(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
-                        new String[]{MediaStore.MediaColumns._ID},
-                        MediaStore.MediaColumns.RELATIVE_PATH + "=? AND " + MediaStore.MediaColumns.DISPLAY_NAME + " LIKE ?",
-                        new String[]{relativePath, "gomrokyar-auto-%"},
-                        MediaStore.MediaColumns.DATE_ADDED + " DESC");
-                if (cursor == null) return;
-                List<Uri> remove = new ArrayList<>();
-                int index = 0;
-                while (cursor.moveToNext()) {
-                    long id = cursor.getLong(0);
-                    if (index++ >= 10) remove.add(ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id));
-                }
-                for (Uri uri : remove) getContentResolver().delete(uri, null, null);
-            } catch (Exception ignored) {
-            } finally {
-                if (cursor != null) cursor.close();
-            }
-        }
-
-        private void pruneAppSpecificAutomaticBackups(File directory) {
-            File[] files = directory.listFiles((dir, name) -> name.startsWith("gomrokyar-auto-") && name.endsWith(".json"));
-            if (files == null || files.length <= 10) return;
-            Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
-            for (int i = 10; i < files.length; i++) files[i].delete();
         }
 
         private int countBackupRecords(InputStream input) {
