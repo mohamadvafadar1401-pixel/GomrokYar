@@ -9,6 +9,74 @@
 .panel{background:#f2f8f4;border-color:#c6d9ce;box-shadow:0 2px 9px #163b3518}.record,.crop,.report-preview,.history-record-grid>div{background:#eaf3ed;border-color:#bfd3c6}.tabbtn{background:#d5e5dc;color:#17483d}.tabbtn.active{background:#123b35;color:#fff}.report-preview th{background:#d8e8de}.date-filter{background:#e4f0e8;border-color:#bfd5c7}.app-credit .about-card{background:#f2f8f4;border-color:#c6d9ce}
 .daily-type-filter{margin:10px 0 12px;padding:10px;border:1px solid #bfd5c7;border-radius:10px;background:#e4f0e8}.daily-type-filter label{font-weight:700;color:#17483d;margin:0 0 6px}.daily-record-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.daily-record-actions button{padding:8px 12px;font-size:12px}.daily-info-modal{position:fixed;inset:0;z-index:10020;background:#0008;display:flex;align-items:center;justify-content:center;padding:14px}.daily-info-card{width:min(100%,620px);max-height:88vh;overflow:auto;background:#fff;border-radius:15px;padding:16px;box-shadow:0 12px 36px #0003}.daily-info-head{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:-16px;background:#fff;padding:4px 0 10px;border-bottom:1px solid #dce6e1}.daily-info-head h3{font-size:15px;margin:0}.daily-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-top:12px}.daily-info-grid>div{background:#edf4ef;border:1px solid #cbdcd1;border-radius:8px;padding:9px;overflow-wrap:anywhere;font-size:12px}.daily-info-grid b{display:block;font-size:10px;color:#536762;margin-bottom:4px}.daily-info-images{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:12px}.daily-info-images figure{margin:0;padding:8px;border:1px solid #dce6e1;border-radius:8px}.daily-info-images img{width:100%;max-height:180px;object-fit:contain}.daily-info-images figcaption{font-size:11px;text-align:center;margin-top:5px;color:#536762}
 button.danger{background:#a33b36!important;color:#fff!important}.daily-info-card .field{margin:10px 0}.daily-info-card .field label{margin:6px 0}.daily-info-card .field input{margin-top:3px}
+
+/* Modern GomrokYar visual refresh — presentation only; authentication styles and logic remain untouched */
+:root{color-scheme:light;--gy-bg:#f5f3ee;--gy-surface:#fffefa;--gy-ink:#273a34;--gy-muted:#7c8981;--gy-green:#245b4b;--gy-green-dark:#173f35;--gy-green-soft:#e7eee8;--gy-line:#e4e2d9;--gy-gold:#b69a70;--gy-red:#a94d46}
+body{background:var(--gy-bg);color:var(--gy-ink);font-family:Tahoma,Arial,sans-serif}
+header{background:linear-gradient(120deg,#183f36 0%,#285d4d 68%,#6f8065 150%);padding:13px 15px;box-shadow:0 5px 20px #183f3620;position:relative;z-index:5}
+.header-row{max-width:980px;min-height:38px}
+.header-titles h1{font-size:19px;letter-spacing:-.3px;font-weight:800;color:#fff}
+.menu-toggle{background:#ffffff18!important;color:#fff!important;border:1px solid #ffffff35!important;border-radius:13px!important;box-shadow:inset 0 1px #ffffff18}
+.wrap{max-width:980px;padding:16px 14px 26px}
+.tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0 17px}
+.tabbtn{min-height:54px;border:1px solid #dce4dc!important;border-radius:15px!important;background:#eeeee8!important;color:#52655b!important;font-size:12px!important;font-weight:700;padding:10px 9px!important;line-height:1.7;box-shadow:0 2px 5px #344b3b08}
+.tabbtn.active{background:linear-gradient(135deg,#245b4b,#173f35)!important;color:#fff!important;border-color:#245b4b!important;box-shadow:0 5px 13px #245b4b27}
+.panel{background:var(--gy-surface)!important;border:1px solid var(--gy-line)!important;border-radius:19px!important;padding:16px!important;margin:13px 0!important;box-shadow:0 5px 18px #453d2c0a!important}
+.panel h2{font-size:15px;font-weight:800;color:#344b40;line-height:1.8;margin-bottom:13px}
+.hint{color:#7b877f;font-size:11px;line-height:2}
+.small{color:#89948d}
+.row{gap:9px}
+.wrap .btn,.wrap button,.side-drawer .drawer-item{border-radius:12px!important;font-size:12px!important;font-weight:700;min-height:42px;padding:10px 14px!important;transition:transform .16s ease,box-shadow .16s ease,background .16s ease}
+.wrap button:not(.secondary):not(.danger):not(.tabbtn):not(.text-button),.wrap .btn:not(.secondary):not(.danger){background:linear-gradient(135deg,#286650,#194b3d);color:#fff;box-shadow:0 3px 9px #245b4b20}
+.wrap button.secondary,.wrap .btn.secondary{background:#edf0e9!important;color:#52665a!important;border:1px solid #e1e5dc!important;box-shadow:none!important}
+.wrap button.danger,.wrap .btn.danger{background:#f7e9e5!important;color:#a34d43!important;border:1px solid #efd6d0!important;box-shadow:none!important}
+.wrap button:active,.wrap .btn:active{transform:scale(.985)}
+.wrap input:not([type=file]),.wrap select,.wrap textarea{border:1px solid #d9dfd7!important;border-radius:12px!important;background:#fff!important;color:#2e4037!important;padding:12px!important;min-height:44px;box-shadow:inset 0 1px 2px #233b2d08}
+.wrap input:focus,.wrap select:focus,.wrap textarea:focus{outline:0!important;border-color:#83a994!important;box-shadow:0 0 0 3px #dcebe1!important}
+.wrap label{font-size:12px;font-weight:700;color:#52645a;margin:11px 0 6px}
+.grid{gap:12px}
+.record,.crop,.report-preview,.history-record-grid>div{border:1px solid #e2e5dc!important;border-radius:14px!important;background:#f8f8f2!important;padding:12px!important;box-shadow:0 2px 8px #354b3d08}
+.crop{padding:9px!important}
+.crop img{border-radius:9px}
+.preview{border-radius:14px!important;background:#f0f1eb!important;border:1px solid #dce2d9}
+#tableSelectCanvas,#overlay{border-radius:14px;border-color:#cbd8cd}
+.plate-preview{border-radius:12px;background:#f0f5ef;border-color:#d4e2d5;color:#315b47}
+.plate-entry span{color:#496858}
+.field-button.active{background:#245b4b!important;outline:3px solid #d9e9dc!important}
+.status{color:#2d7759;font-weight:700}
+.chart-panel,.recent-panel{background:#fffefa!important}
+.chart-head,.chart-summary,.section-heading{color:#40574a}
+.date-filter{border-radius:13px!important;background:#f0f3eb!important;border-color:#e1e6dc!important}
+.report-preview{background:#f8f8f2!important}
+.report-preview th{background:#e8eee6!important}
+.app-credit{color:#879188}
+.app-credit .about-card{border-radius:16px!important;box-shadow:0 4px 14px #354b3d0a}
+.side-drawer{background:#fbfaf6!important;border-left:1px solid #e7e4da;box-shadow:-12px 0 36px #182e2424!important;padding:19px 16px}
+.drawer-head{border-bottom:1px solid #e8e5dc!important;padding-bottom:15px}
+.drawer-head strong{font-size:14px;color:#244c3c!important}
+.drawer-user{background:#eef2e9;border:1px solid #e2e8dc;border-radius:13px;padding:11px 12px!important;margin:12px 0;color:#52675a!important}
+.side-drawer .drawer-item{background:#f0f1eb!important;border:1px solid #e8e8df!important;color:#53665a!important;margin:7px 0!important;text-align:right}
+.side-drawer .drawer-item:active{background:#e2ebe1!important}
+.side-drawer .drawer-account{border:1px solid #e5e7de;border-radius:13px;padding:7px 9px;margin:10px 0;background:#fffefa}
+.side-drawer .drawer-account .drawer-item{border:0!important;background:transparent!important}
+.side-drawer .drawer-close{background:#f0f1eb!important;border:1px solid #e5e7de!important;color:#53665a!important}
+.jalali-picker{border-radius:17px!important;border-color:#dce4da!important;background:#fffefa!important;box-shadow:0 14px 38px #1d352b30!important}
+.jp-day{border-radius:9px!important}
+.jp-day.selected{background:#245b4b!important;color:white!important}
+#holidayTab .panel,.holiday-summary,.holiday-list-item{border-radius:15px}
+@media(min-width:700px){
+ .wrap{padding:22px 22px 32px}
+ .tabs{grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+ .tabbtn{min-height:62px;font-size:13px!important}
+ .panel{padding:20px!important;margin:16px 0!important}
+ .panel h2{font-size:16px}
+}
+@media(max-width:390px){
+ .wrap{padding:12px 10px 22px}
+ .panel{padding:13px!important;border-radius:16px!important}
+ .tabbtn{font-size:11px!important;min-height:52px;padding:8px 6px!important}
+ .wrap .btn,.wrap button{font-size:11px!important;padding:9px 10px!important}
+}
 </style></head><body><div id="authGate"><div id="authCard"><div class="brand"><h2>ورود به سامانه گمرک شیخ صله</h2></div><div id="firstAdminSetup" class="hide"><p>برای راه‌اندازی، حساب مدیر اصلی را بسازید. این حساب امکان تعریف پنج کاربر دیگر را دارد.</p><label>نام کاربری مدیر</label><input id="setupUsername" autocomplete="username" maxlength="64" value="muhamadvafadar22@gmail.com"><label>نام نمایشی</label><input id="setupDisplayName" maxlength="50" placeholder="مثلاً مدیر سامانه"><label>رمز عبور (حداقل ۸ نویسه)</label><input id="setupPassword" type="password" autocomplete="new-password"><label>تکرار رمز عبور</label><input id="setupPassword2" type="password" autocomplete="new-password"><button id="createAdminBtn" class="btn" style="width:100%;margin-top:16px">ساخت حساب مدیر</button></div><div id="userLogin"><p>برای استفاده از برنامه، با حساب کاربری خود وارد شوید.</p><label>نام کاربری</label><input id="loginUsername" autocomplete="username"><label>رمز عبور</label><input id="loginPassword" type="password" autocomplete="current-password"><button id="loginBtn" class="btn" style="width:100%;margin-top:16px">ورود به برنامه</button></div><div id="authError" role="alert"></div><p class="hint" style="margin-top:14px">حساب‌ها و رمزها روی همین گوشی نگهداری می‌شوند. در صورت حذف داده‌های برنامه، اطلاعات ورود محلی نیز پاک می‌شود.</p></div></div><div id="userManager"><div class="modal"><h2>مدیریت کاربران</h2><p class="hint">یک حساب مدیر و حداکثر پنج حساب کاربری قابل تعریف است.</p><div id="userList"></div><hr><h3>تعریف کاربر جدید</h3><label>نام کاربری</label><input id="newUsername" maxlength="32"><label>نام و نام خانوادگی / عنوان</label><input id="newDisplayName" maxlength="50"><label>رمز عبور (حداقل ۸ نویسه)</label><input id="newUserPassword" type="password"><div class="auth-toolbar"><button id="addUserBtn" class="btn">افزودن کاربر</button><button id="closeUserManager" class="btn secondary">بستن</button></div><div id="userManagerError" class="hint"></div></div></div><header><div class="header-row"><button id="openDrawerBtn" class="menu-toggle" type="button" aria-label="بازکردن منو">☰</button><div class="header-titles"><h1>گمرکیار</h1></div><span style="width:44px"></span></div></header><div id="drawerBackdrop" class="drawer-backdrop"></div><aside id="appDrawer" class="side-drawer" aria-label="منوی برنامه"><div class="drawer-head"><strong>منوی گمرک شیخ صله</strong><button id="closeDrawerBtn" class="drawer-close" type="button">✕</button></div><div id="activeUserLabel" class="drawer-user">کاربر فعال</div><details class="drawer-account"><summary class="drawer-item">حساب کاربری من</summary><button id="manageUsersBtn" class="drawer-item secondary" type="button">مدیریت کاربران</button><button id="changeMyProfileBtn" class="drawer-item secondary" type="button">تغییر مشخصات</button><button id="changeMyPasswordBtn" class="drawer-item secondary" type="button">تغییر رمز عبور</button></details><button id="goSearchBtn" class="drawer-item" type="button" data-tab="searchTab">آمار روزانه</button><button class="drawer-item" type="button" data-tab="holidayTab">مدیریت تعطیلات</button><button class="drawer-item" type="button" data-tab="deletedTab">سوابق حذف</button><button class="drawer-item" type="button" data-tab="reportTab">گزارش‌گیری</button><button class="drawer-item" type="button" data-tab="backupTab">پشتیبان</button><button class="drawer-item" type="button" data-tab="historyTab">جستجوی سوابق</button><button id="lockAppBtn" class="drawer-item" type="button">قفل برنامه / خروج</button></aside><main class="wrap">
 <nav class="tabs" aria-label="بخش‌های ثبت"><button class="tabbtn active" data-tab="weighTab">ورود صادراتی با برگه باسکول</button><button class="tabbtn" data-tab="importEntryTab">ورود وارداتی با باسکول دستی</button><button class="tabbtn" data-tab="emptyTab">ورود کامیون خالی</button><button class="tabbtn" data-tab="exitTab">خروج کامیون وارداتی</button></nav>
 <div id="weighTab">
