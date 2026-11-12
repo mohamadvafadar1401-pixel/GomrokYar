@@ -348,7 +348,7 @@ function persianPlateDigits(v){return String(v).replace(/\\d/g,c=>'۰۱۲۳۴۵�
 function plateData(prefix){const suffix=onlyPlateDigits($(prefix+'Suffix').value).slice(0,2),middle=onlyPlateDigits($(prefix+'Middle').value).slice(0,3),city=onlyPlateDigits($(prefix+'City').value).slice(0,2);const complete=suffix.length===2&&middle.length===3&&city.length===2;return {key:complete?city+middle+suffix:'',display:complete?persianPlateDigits(city)+'ایران'+persianPlateDigits(middle)+'ع'+persianPlateDigits(suffix):'',complete}}
 function clearPlate(prefix){['Suffix','Middle','City'].forEach(x=>$(prefix+x).value='');updatePlatePreview(prefix)}
 function updatePlatePreview(prefix){const p=plateData(prefix);$(prefix+'Preview').textContent='پلاک: '+(p.display||'—')}
-function setupPlateInputs(prefix){const ids=['Suffix','Middle','City'];ids.forEach((part,i)=>{const el=$(prefix+part);el.addEventListener('input',()=>{el.value=onlyPlateDigits(el.value).slice(0,[2,3,2][i]);updatePlatePreview(prefix);if(el.value.length===[2,3,2][i]){if(i<2)$(prefix+ids[i+1]).focus();else if(prefix==='plateKey')$('netWeight').focus()}});el.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!el.value&&i>0)$(prefix+ids[i-1]).focus()})})}
+function setupPlateInputs(prefix){const ids=['Suffix','Middle','City'];ids.forEach((part,i)=>{const el=$(prefix+part);el.addEventListener('input',()=>{el.value=onlyPlateDigits(el.value).slice(0,[2,3,2][i]);updatePlatePreview(prefix);if(el.value.length===[2,3,2][i]){if(i<2)$(prefix+ids[i+1]).focus();else if(prefix==='plateKey')$('netWeight').focus();else if(prefix==='impInPlate')$('impInGoods').focus()}});el.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!el.value&&i>0)$(prefix+ids[i-1]).focus()})})}
 ['plateKey','impInPlate','emptyPlate','exitPlate','historyPlate','dailyPlate'].forEach(setupPlateInputs);function typeLabel(t){return ({weighed:'ورود صادراتی با برگه باسکول',import_entry_manual:'ورود وارداتی با باسکول دستی',empty_entry:'ورود کامیون خالی',import_exit:'خروج کامیون وارداتی'})[t]||'ثبت برگه باسکول'}
 function statusLabel(x){if(x.vehicleStatus==='empty')return 'خالی';if(x.vehicleStatus==='loaded_import')return 'حامل کالای وارداتی';if(x.vehicleStatus==='import_weighed')return 'وارداتی ـ باسکول دستی';return 'باسکول‌شده'}
 async function nextEntryNumber(all){let stored=Number(await setting('nextEntryNo'))||1,max=all.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);return Math.max(stored,max+1)}
@@ -373,6 +373,7 @@ $('openDrawerBtn').onclick=()=>{$('appDrawer').classList.add('open');$('drawerBa
 $('closeDrawerBtn').onclick=closeDrawer;$('drawerBackdrop').onclick=closeDrawer;
 $('appDrawer').querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',closeDrawer));
 
+$('impInNet').readOnly=true;
 function updateImportManualNet(){
  const first=normalizeDigits($('impInFirst').value).replace(/\D/g,'');
  const second=normalizeDigits($('impInSecond').value).replace(/\D/g,'');
@@ -382,7 +383,7 @@ function updateImportManualNet(){
   net.value=difference>=0?String(difference):'';
  }else net.value='';
 }
-[['impInFirst','impInSecond'],['impInSecond','impInNet']].forEach(([id,nextId])=>{
+[['impInFirst','impInSecond'],['impInSecond','impInRecordDate']].forEach(([id,nextId])=>{
  const field=$(id);
  field.addEventListener('input',()=>{
   const digits=normalizeDigits(field.value).replace(/\D/g,'').slice(0,5);
