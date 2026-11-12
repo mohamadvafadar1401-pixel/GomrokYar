@@ -34,6 +34,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import org.json.JSONObject;
+import org.json.JSONArray;
 
 public class MainActivity extends Activity {
     private WebView webView;
@@ -273,6 +275,70 @@ public class MainActivity extends Activity {
             }
         }
 
+        @JavascriptInterface public synchronized String listAutomaticBackups() {
+            JSONArray result = new JSONArray();
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    String relativePath = Environment.DIRECTORY_DOWNLOADS + "/GomrokYar/AutoBackups";
+                    try (Cursor cursor = getContentResolver().query(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                            new String[]{MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME, MediaStore.MediaColumns.DATE_MODIFIED},
+                            MediaStore.MediaColumns.RELATIVE_PATH + "=? AND " + MediaStore.MediaColumns.DISPLAY_NAME + " LIKE ?",
+                            new String[]{relativePath, "gomrokyar-auto-%"}, MediaStore.MediaColumns.DATE_MODIFIED + " DESC")) {
+                        if (cursor != null) while (cursor.moveToNext()) {
+                            long id = cursor.getLong(0);
+                            String name = cursor.getString(1);
+                            long modified = cursor.getLong(2) * 1000L;
+                            Uri uri = ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id);
+                            try (InputStream in = getContentResolver().openInputStream(uri)) {
+                                if (in == null) continue;
+                                java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+                                byte[] chunk = new byte[8192]; int n;
+                                while ((n = in.read(chunk)) != -1) buffer.write(chunk, 0, n);
+                                JSONObject meta = backupMetadata(new String(buffer.toByteArray(), java.nio.charset.StandardCharsets.UTF_8));
+                                meta.put("name", name); meta.put("modifiedAt", new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", java.util.Locale.US).format(new java.util.Date(modified)));
+                                result.put(meta);
+                            } catch (Exception ignored) { }
+                        }
+                    }
+                } else {
+                    File documents = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+                    File directory = documents == null ? null : new File(documents, "GomrokYar/AutoBackups");
+                    File[] files = directory == null ? null : directory.listFiles((dir, name) -> name.startsWith("gomrokyar-auto-") && name.endsWith(".json"));
+                    if (files != null) {
+                        Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
+                        for (File file : files) try (InputStream in = new FileInputStream(file)) {
+                            java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+                            byte[] chunk = new byte[8192]; int n;
+                            while ((n = in.read(chunk)) != -1) buffer.write(chunk, 0, n);
+                            JSONObject meta = backupMetadata(new String(buffer.toByteArray(), java.nio.charset.StandardCharsets.UTF_8));
+                            meta.put("name", file.getName());
+                            meta.put("modifiedAt", new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", java.util.Locale.US).format(new java.util.Date(file.lastModified())));
+                            result.put(meta);
+                        } catch (Exception ignored) { }
+                    }
+                }
+            } catch (Exception ignored) { }
+            return result.toString();
+        }
+
+        private JSONObject backupMetadata(String json) throws Exception {
+            JSONObject source = new JSONObject(json), meta = new JSONObject();
+            JSONArray records = source.optJSONArray("records");
+            int count = records == null ? 0 : records.length();
+            String min = null, max = null;
+            for (int i = 0; i < count; i++) {
+                JSONObject record = records.optJSONObject(i);
+                if (record == null) continue;
+                String date = record.optString("created", "");
+                if (!date.isEmpty()) { if (min == null || date.compareTo(min) < 0) min = date; if (max == null || date.compareTo(max) > 0) max = date; }
+            }
+            meta.put("exportedAt", source.optString("exportedAt", ""));
+            meta.put("recordCount", count);
+            meta.put("minDate", min == null ? "" : min);
+            meta.put("maxDate", max == null ? "" : max);
+            return meta;
+        }
+
         private void pruneMediaStoreAutomaticBackups(String relativePath) {
             Cursor cursor = null;
             try {
@@ -286,7 +352,7 @@ public class MainActivity extends Activity {
                 int index = 0;
                 while (cursor.moveToNext()) {
                     long id = cursor.getLong(0);
-                    if (index++ >= 10) remove.add(ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id));
+                    if (index++ >= 1) remove.add(ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id));
                 }
                 for (Uri uri : remove) getContentResolver().delete(uri, null, null);
             } catch (Exception ignored) {
@@ -297,9 +363,9 @@ public class MainActivity extends Activity {
 
         private void pruneAppSpecificAutomaticBackups(File directory) {
             File[] files = directory.listFiles((dir, name) -> name.startsWith("gomrokyar-auto-") && name.endsWith(".json"));
-            if (files == null || files.length <= 10) return;
+            if (files == null || files.length <= 1) return;
             Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
-            for (int i = 10; i < files.length; i++) files[i].delete();
+            for (int i = 1; i < files.length; i++) files[i].delete();
         }
 
         @JavascriptInterface public synchronized boolean cancelFileSave() {
