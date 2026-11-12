@@ -826,7 +826,7 @@ async function renderAutomaticBackupList(){
  try{
   const raw=bridge.listAutomaticBackups(),items=JSON.parse(raw||'[]');
   items.sort((a,b)=>String(b.exportedAt||b.modifiedAt||'').localeCompare(String(a.exportedAt||a.modifiedAt||'')));
-  listBox.innerHTML=items.length?items.map((x,i)=>'<div class="holiday-list-item" style="align-items:flex-start;flex-direction:column"><strong>پشتیبان '+(i+1).toLocaleString('fa-IR')+' · '+(x.exportedAt?new Date(x.exportedAt).toLocaleString('fa-IR'):(x.modifiedAt||'زمان نامشخص'))+'</strong><span>'+Number(x.recordCount||0).toLocaleString('fa-IR')+' سابقه · '+(x.minDate||'—')+' تا '+(x.maxDate||'—')+'</span><span class="small">'+String(x.name||'')+'</span></div>').join(''):'<div class="hint">هنوز پشتیبان خودکار ثبت نشده است.</div>';
+  listBox.innerHTML=items.length?items.map((x,i)=>'<div class="holiday-list-item" style="align-items:flex-start;flex-direction:column"><strong>پشتیبان '+(i+1).toLocaleString('fa-IR')+' · '+(x.exportedAt?new Date(x.exportedAt).toLocaleString('fa-IR'):(x.modifiedAt||'زمان نامشخص'))+'</strong><span>'+Number(x.recordCount||0).toLocaleString('fa-IR')+' سابقه · '+(x.minDate?new Date(x.minDate).toLocaleDateString('fa-IR'):'—')+' تا '+(x.maxDate?new Date(x.maxDate).toLocaleDateString('fa-IR'):'—')+'</span><span class="small">'+String(x.name||'')+'</span></div>').join(''):'<div class="hint">هنوز پشتیبان خودکار ثبت نشده است.</div>';
   const latest=items[0],records=await allRecords(true);
   if(!latest){alertBox.innerHTML='⚠️ هنوز هیچ پشتیبان خودکاری ثبت نشده است.';return;}
   const cutoff=Date.parse(latest.exportedAt||'');
