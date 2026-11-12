@@ -366,7 +366,7 @@ async function saveSimpleRecord(kind,plate,goods='',dateInputId){
   await new Promise((r,j)=>{let q=tx('records','readwrite').add(item);q.onsuccess=r;q.onerror=()=>j(q.error)});
   await setting('nextEntryNo',no+1);await afterSuccessfulRecordSave();await renderRecords();return no;
 }
-function switchTab(id){['weighTab','importEntryTab','emptyTab','exitTab','searchTab','holidayTab','deletedTab','historyTab','reportTab','backupTab'].forEach(x=>$(x).classList.toggle('hide',x!==id));document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id==='searchTab')renderDailyRecords();if(id==='holidayTab')renderHolidayManager();if(id==='deletedTab')renderDeletedRecords();if(id==='reportTab')refreshReportPreview()}
+function switchTab(id){['weighTab','importEntryTab','emptyTab','exitTab','searchTab','holidayTab','deletedTab','historyTab','reportTab','backupTab'].forEach(x=>$(x).classList.toggle('hide',x!==id));document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id==='searchTab')renderDailyRecords();if(id==='holidayTab')renderHolidayManager();if(id==='deletedTab')renderDeletedRecords();if(id==='reportTab')refreshReportPreview();if(id==='backupTab')renderAutomaticBackupList()}
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 function closeDrawer(){ $('appDrawer').classList.remove('open');$('drawerBackdrop').classList.remove('open');}
 $('openDrawerBtn').onclick=()=>{$('appDrawer').classList.add('open');$('drawerBackdrop').classList.add('open')};
