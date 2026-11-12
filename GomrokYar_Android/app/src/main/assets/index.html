@@ -77,6 +77,149 @@ header{background:linear-gradient(120deg,#183f36 0%,#285d4d 68%,#6f8065 150%);pa
  .tabbtn{font-size:11px!important;min-height:52px;padding:8px 6px!important}
  .wrap .btn,.wrap button{font-size:11px!important;padding:9px 10px!important}
 }
+
+/* GOMROKYAR MODERN VISUAL LAYER v2 — presentation only */
+:root{
+ --gy2-ink:#172b29;--gy2-muted:#71817c;--gy2-green:#087b62;--gy2-deep:#103d37;
+ --gy2-mint:#dff4eb;--gy2-gold:#d5a653;--gy2-paper:#f2f5f2;--gy2-card:#ffffff;
+ --gy2-border:#e1e9e4;--gy2-shadow:0 12px 32px rgba(19,55,45,.09);
+}
+html{background:var(--gy2-paper)}
+body{background:
+ radial-gradient(ellipse at 8% 0%,rgba(28,137,104,.09),transparent 34%),
+ radial-gradient(ellipse at 95% 18%,rgba(218,171,91,.10),transparent 28%),
+ linear-gradient(180deg,#f7faf7 0%,#eff3f0 100%);color:var(--gy2-ink)}
+header{
+ position:relative;isolation:isolate;overflow:hidden;min-height:76px;
+ background:linear-gradient(112deg,#0c3934 0%,#14594b 58%,#087b62 100%)!important;
+ border:0!important;box-shadow:0 8px 26px rgba(9,48,40,.19);
+ padding:0 17px!important
+}
+header:before{content:"";position:absolute;z-index:-1;width:230px;height:230px;left:-65px;top:-145px;border:1px solid #ffffff20;border-radius:50%;box-shadow:0 0 0 24px #ffffff08,0 0 0 50px #ffffff06}
+header:after{content:"";position:absolute;z-index:-1;width:110px;height:110px;right:24%;bottom:-82px;border-radius:50%;background:#d7b36c20;filter:blur(2px)}
+.header-row{min-height:76px!important;max-width:1100px!important}
+.header-titles{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.header-titles h1{font-size:21px!important;font-weight:900!important;letter-spacing:.1px!important;color:#fff!important;text-shadow:0 2px 12px #062c2780}
+.header-titles:after{content:"سامانه هوشمند مدیریت عملیات گمرکی";font-size:9px;letter-spacing:.15px;color:#c7e7dc;font-weight:500}
+.menu-toggle{width:43px;height:43px;display:grid;place-items:center;border-radius:14px!important;background:linear-gradient(145deg,#ffffff25,#ffffff0b)!important;border:1px solid #ffffff35!important;color:#fff!important;box-shadow:inset 0 1px #ffffff30,0 5px 15px #062c2730;font-size:21px}
+main.wrap{max-width:1080px!important;padding:17px 13px 36px!important;position:relative}
+main.wrap:before{
+ content:"مرکز عملیات گمرکیار\A ثبت، پایش و مدیریت هوشمند تردد کامیون‌ها";
+ display:block;white-space:pre-line;position:relative;overflow:hidden;
+ margin:1px 0 16px;padding:22px 20px 20px;min-height:112px;
+ border-radius:23px;color:#fff;
+ background:
+ radial-gradient(circle at 86% 15%,#ffffff20 0 2px,transparent 3px),
+ radial-gradient(circle at 92% 30%,#ffffff18 0 34px,transparent 35px),
+ radial-gradient(ellipse at 4% 115%,#d5a65355,transparent 43%),
+ linear-gradient(120deg,#102f31 0%,#14594d 58%,#087b62 100%);
+ box-shadow:0 13px 28px #0c47351f,inset 0 1px #ffffff20;
+ font-size:20px;font-weight:900;line-height:1.9;letter-spacing:-.3px
+}
+main.wrap:after{content:"✦";position:absolute;top:27px;left:30px;color:#e3bd74;font-size:35px;opacity:.8;pointer-events:none}
+.tabs{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;margin:0 0 17px!important}
+.tabbtn{
+ position:relative;display:flex;align-items:center;justify-content:flex-start;gap:9px;
+ min-height:72px!important;padding:11px 12px!important;border-radius:17px!important;
+ border:1px solid #e0e9e3!important;background:linear-gradient(145deg,#fff,#f5f8f5)!important;
+ color:#52665f!important;font-size:11px!important;font-weight:800!important;line-height:1.8!important;
+ box-shadow:0 5px 15px #173c2c0b!important;text-align:right!important;overflow:hidden
+}
+.tabbtn:before{content:"";flex:0 0 34px;width:34px;height:34px;border-radius:12px;display:grid;place-items:center;background:#e7f3ed;color:#16745d;font-size:16px}
+.tabbtn:nth-child(1):before{content:"▤"}
+.tabbtn:nth-child(2):before{content:"⇩"}
+.tabbtn:nth-child(3):before{content:"＋"}
+.tabbtn:nth-child(4):before{content:"⇧"}
+.tabbtn:after{content:"";position:absolute;inset:auto 0 0;height:3px;background:linear-gradient(90deg,#d7ae63,#1b9270);opacity:0;transition:opacity .2s}
+.tabbtn.active{
+ background:linear-gradient(135deg,#0f5145,#087b62)!important;color:#fff!important;
+ border-color:#0d6955!important;box-shadow:0 9px 21px #0b614a35,inset 0 1px #ffffff20!important;
+ transform:translateY(-2px)
+}
+.tabbtn.active:before{background:#ffffff20;color:#fff}
+.tabbtn.active:after{opacity:1}
+.panel{
+ position:relative;overflow:hidden;background:linear-gradient(145deg,#fff 0%,#fbfdfb 100%)!important;
+ border:1px solid #e2ebe5!important;border-radius:21px!important;
+ padding:17px!important;margin:14px 0!important;
+ box-shadow:0 8px 24px rgba(22,58,43,.065),inset 0 1px #fff!important
+}
+.panel:before{content:"";position:absolute;top:0;right:18px;left:18px;height:3px;border-radius:0 0 5px 5px;background:linear-gradient(90deg,#d9b36e,#16876a 58%,#9ed8c0)}
+.panel h2{display:flex;align-items:center;gap:9px;color:#173f37!important;font-size:15px!important;font-weight:900!important;line-height:1.9!important;margin:0 0 14px!important}
+.panel h2:before{content:"";width:8px;height:22px;border-radius:8px;background:linear-gradient(180deg,#d9b36e,#0c8a68);box-shadow:0 2px 6px #0b765326;flex:0 0 8px}
+.hint{color:#7b8b84!important;line-height:2!important}
+.row{gap:9px!important}
+.wrap .btn,.wrap button,.side-drawer .drawer-item{
+ border-radius:13px!important;font-size:12px!important;font-weight:800!important;
+ min-height:44px;padding:10px 14px!important;transition:transform .18s ease,box-shadow .18s ease,filter .18s ease
+}
+.wrap button:not(.secondary):not(.danger):not(.tabbtn):not(.text-button),.wrap .btn:not(.secondary):not(.danger){
+ background:linear-gradient(135deg,#12866a,#075b4a)!important;color:#fff!important;
+ border:1px solid #0a755c!important;box-shadow:0 5px 13px #0c765329,inset 0 1px #ffffff20!important
+}
+.wrap button.secondary,.wrap .btn.secondary{
+ background:linear-gradient(145deg,#f3f8f4,#e8f1eb)!important;color:#23604e!important;
+ border:1px solid #d9e7dd!important;box-shadow:0 3px 9px #284b3510!important
+}
+.wrap button.danger,.wrap .btn.danger{
+ background:linear-gradient(145deg,#fff4f0,#f9e8e3)!important;color:#a3483e!important;
+ border:1px solid #f0d6ce!important;box-shadow:none!important
+}
+.wrap button:active,.wrap .btn:active,.tabbtn:active{transform:scale(.975)}
+.wrap input:not([type=file]),.wrap select,.wrap textarea{
+ border:1px solid #dce7df!important;border-radius:13px!important;
+ background:linear-gradient(180deg,#fff,#fbfdfb)!important;color:#263e35!important;
+ padding:12px!important;min-height:46px;box-shadow:inset 0 2px 4px #183d2a08!important
+}
+.wrap input:focus,.wrap select:focus,.wrap textarea:focus{outline:0!important;border-color:#53a98a!important;box-shadow:0 0 0 4px #d9f0e5!important}
+.wrap label{font-size:12px!important;font-weight:800!important;color:#526c60!important;margin:11px 0 6px}
+.record,.crop,.report-preview,.history-record-grid>div{
+ border:1px solid #e1ebe4!important;border-radius:16px!important;
+ background:linear-gradient(145deg,#fff,#f5f9f6)!important;padding:13px!important;
+ box-shadow:0 5px 14px #234b350b!important
+}
+.crop img,.preview{border-radius:15px!important;box-shadow:0 5px 16px #183c2a12}
+.chart-panel,.recent-panel{background:linear-gradient(145deg,#fff,#f7faf7)!important}
+.chart-head,.chart-summary,.section-heading{color:#214d40!important}
+.date-filter{border-radius:14px!important;background:#edf5ef!important;border-color:#dce9df!important}
+.report-preview th{background:#dcece1!important;color:#214d40!important}
+.side-drawer{
+ background:linear-gradient(165deg,#0d3934 0%,#124d40 55%,#0c302d 100%)!important;
+ color:#eff8f2!important;border:0!important;box-shadow:-15px 0 42px #092b2560!important;padding:20px 16px!important
+}
+.drawer-head{border-bottom:1px solid #ffffff20!important;padding-bottom:17px!important}
+.drawer-head strong{font-size:15px!important;color:#fff!important}
+.drawer-close{background:#ffffff16!important;border:1px solid #ffffff25!important;color:#fff!important;border-radius:12px!important}
+.drawer-user{background:#ffffff12!important;border:1px solid #ffffff20!important;border-radius:15px!important;padding:13px!important;margin:14px 0!important;color:#e2f1e9!important}
+.side-drawer .drawer-item{background:#ffffff0e!important;border:1px solid #ffffff16!important;color:#d8e9e1!important;margin:7px 0!important;text-align:right;box-shadow:none!important}
+.side-drawer .drawer-item:active,.side-drawer .drawer-item:hover{background:#ffffff20!important;color:#fff!important}
+.side-drawer .drawer-account{border:1px solid #ffffff1e!important;border-radius:15px!important;padding:7px 9px!important;margin:12px 0!important;background:#ffffff0a!important}
+.side-drawer .drawer-account .drawer-item{border:0!important;background:transparent!important}
+.jalali-picker{border-radius:19px!important;border:1px solid #dce9df!important;background:#fff!important;box-shadow:0 18px 45px #0c302d35!important}
+.jp-day{border-radius:10px!important}
+.jp-day.selected{background:linear-gradient(135deg,#12866a,#075b4a)!important;color:#fff!important}
+#holidayTab .panel,.holiday-summary,.holiday-list-item{border-radius:17px}
+.app-credit .about-card{border-radius:18px!important;box-shadow:var(--gy2-shadow)!important}
+@media(min-width:700px){
+ main.wrap{padding:24px 26px 42px!important}
+ main.wrap:before{min-height:145px;padding:29px 31px;font-size:25px;margin-bottom:20px}
+ .tabs{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important}
+ .tabbtn{min-height:86px!important;font-size:12px!important;padding:14px!important}
+ .panel{padding:22px!important;margin:17px 0!important;border-radius:23px!important}
+ .panel h2{font-size:16px!important}
+}
+@media(max-width:390px){
+ main.wrap{padding:13px 10px 28px!important}
+ main.wrap:before{min-height:103px;padding:17px 15px;font-size:17px;border-radius:19px}
+ .tabbtn{min-height:68px!important;font-size:10px!important;padding:8px!important;gap:7px}
+ .tabbtn:before{width:29px;height:29px;flex-basis:29px}
+ .panel{padding:14px!important;border-radius:18px!important}
+}
+@media(prefers-reduced-motion:no-preference){
+ .panel,.tabbtn,.wrap .btn,.wrap button{transition:transform .2s ease,box-shadow .2s ease,background .2s ease}
+ .panel:hover{box-shadow:0 13px 30px rgba(22,58,43,.09),inset 0 1px #fff!important}
+}
+
 </style></head><body><div id="authGate"><div id="authCard"><div class="brand"><h2>ورود به سامانه گمرک شیخ صله</h2></div><div id="firstAdminSetup" class="hide"><p>برای راه‌اندازی، حساب مدیر اصلی را بسازید. این حساب امکان تعریف پنج کاربر دیگر را دارد.</p><label>نام کاربری مدیر</label><input id="setupUsername" autocomplete="username" maxlength="64" value="muhamadvafadar22@gmail.com"><label>نام نمایشی</label><input id="setupDisplayName" maxlength="50" placeholder="مثلاً مدیر سامانه"><label>رمز عبور (حداقل ۸ نویسه)</label><input id="setupPassword" type="password" autocomplete="new-password"><label>تکرار رمز عبور</label><input id="setupPassword2" type="password" autocomplete="new-password"><button id="createAdminBtn" class="btn" style="width:100%;margin-top:16px">ساخت حساب مدیر</button></div><div id="userLogin"><p>برای استفاده از برنامه، با حساب کاربری خود وارد شوید.</p><label>نام کاربری</label><input id="loginUsername" autocomplete="username"><label>رمز عبور</label><input id="loginPassword" type="password" autocomplete="current-password"><button id="loginBtn" class="btn" style="width:100%;margin-top:16px">ورود به برنامه</button></div><div id="authError" role="alert"></div><p class="hint" style="margin-top:14px">حساب‌ها و رمزها روی همین گوشی نگهداری می‌شوند. در صورت حذف داده‌های برنامه، اطلاعات ورود محلی نیز پاک می‌شود.</p></div></div><div id="userManager"><div class="modal"><h2>مدیریت کاربران</h2><p class="hint">یک حساب مدیر و حداکثر پنج حساب کاربری قابل تعریف است.</p><div id="userList"></div><hr><h3>تعریف کاربر جدید</h3><label>نام کاربری</label><input id="newUsername" maxlength="32"><label>نام و نام خانوادگی / عنوان</label><input id="newDisplayName" maxlength="50"><label>رمز عبور (حداقل ۸ نویسه)</label><input id="newUserPassword" type="password"><div class="auth-toolbar"><button id="addUserBtn" class="btn">افزودن کاربر</button><button id="closeUserManager" class="btn secondary">بستن</button></div><div id="userManagerError" class="hint"></div></div></div><header><div class="header-row"><button id="openDrawerBtn" class="menu-toggle" type="button" aria-label="بازکردن منو">☰</button><div class="header-titles"><h1>گمرکیار</h1></div><span style="width:44px"></span></div></header><div id="drawerBackdrop" class="drawer-backdrop"></div><aside id="appDrawer" class="side-drawer" aria-label="منوی برنامه"><div class="drawer-head"><strong>منوی گمرک شیخ صله</strong><button id="closeDrawerBtn" class="drawer-close" type="button">✕</button></div><div id="activeUserLabel" class="drawer-user">کاربر فعال</div><details class="drawer-account"><summary class="drawer-item">حساب کاربری من</summary><button id="manageUsersBtn" class="drawer-item secondary" type="button">مدیریت کاربران</button><button id="changeMyProfileBtn" class="drawer-item secondary" type="button">تغییر مشخصات</button><button id="changeMyPasswordBtn" class="drawer-item secondary" type="button">تغییر رمز عبور</button></details><button id="goSearchBtn" class="drawer-item" type="button" data-tab="searchTab">آمار روزانه</button><button class="drawer-item" type="button" data-tab="holidayTab">مدیریت تعطیلات</button><button class="drawer-item" type="button" data-tab="deletedTab">سوابق حذف</button><button class="drawer-item" type="button" data-tab="reportTab">گزارش‌گیری</button><button class="drawer-item" type="button" data-tab="backupTab">پشتیبان</button><button class="drawer-item" type="button" data-tab="historyTab">جستجوی سوابق</button><button id="lockAppBtn" class="drawer-item" type="button">قفل برنامه / خروج</button></aside><main class="wrap">
 <nav class="tabs" aria-label="بخش‌های ثبت"><button class="tabbtn active" data-tab="weighTab">ورود صادراتی با برگه باسکول</button><button class="tabbtn" data-tab="importEntryTab">ورود وارداتی با باسکول دستی</button><button class="tabbtn" data-tab="emptyTab">ورود کامیون خالی</button><button class="tabbtn" data-tab="exitTab">خروج کامیون وارداتی</button></nav>
 <div id="weighTab">
