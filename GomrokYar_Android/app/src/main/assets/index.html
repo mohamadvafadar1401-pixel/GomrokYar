@@ -856,7 +856,7 @@ $('importFile').onchange=async e=>{
     if(!d||!Array.isArray(d.records)||!(Number(d.version)>=1)||!['gomrokyar-transfer',undefined].includes(d.format))throw new Error('invalid_format');
     const incoming=d.records.filter(validBackupRecord);
     if(incoming.length!==d.records.length)throw new Error('invalid_records');
-    if(!incoming.length){alert('این فایل هیچ سابقه معتبری ندارد.');return}
+    if(!incoming.length&&!Array.isArray(d.holidays)){alert('این فایل هیچ سابقه یا اطلاعات تعطیلی معتبری ندارد.');return}
     const existing=await allRecords(true),known=new Set(existing.map(x=>x._syncKey||transferKey(x)));
     const fresh=[];
     for(const raw of incoming){
@@ -868,7 +868,7 @@ $('importFile').onchange=async e=>{
       x._syncKey=key;
       fresh.push(x);
     }
-    if(!fresh.length){alert('همه '+incoming.length.toLocaleString('fa-IR')+' سابقه این فایل قبلاً در برنامه وجود دارند؛ اطلاعاتی اضافه نشد.');return}
+    const existingHolidays=await setting('customHolidayDates')||[],incomingHolidays=Array.isArray(d.holidays)?d.holidays.filter(x=>typeof x==='string'):[],mergedHolidays=[...new Set([...existingHolidays,...incomingHolidays])];if(!fresh.length&&mergedHolidays.length===existingHolidays.length){alert('همه سوابق و تعطیلی‌های این فایل قبلاً در برنامه وجود دارند؛ اطلاعاتی اضافه نشد.');return}
     const nextStart=existing.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0)+1;
     fresh.forEach((x,i)=>{x.entryNo=nextStart+i});
     await new Promise((resolve,reject)=>{
@@ -879,8 +879,8 @@ $('importFile').onchange=async e=>{
       if(d.exportType==='full_backup'){
         if(Object.prototype.hasOwnProperty.call(d,'regions'))settings.put(d.regions,'regions');
         if(typeof d.templateMode==='boolean')settings.put(d.templateMode,'templateMode');
-        if(Array.isArray(d.holidays))settings.put([...new Set(d.holidays.filter(x=>typeof x==='string'))],'customHolidayDates');
       }
+      if(Array.isArray(d.holidays))settings.put(mergedHolidays,'customHolidayDates');
       transaction.oncomplete=resolve;
       transaction.onerror=()=>reject(transaction.error||new Error('Import transaction failed'));
       transaction.onabort=()=>reject(transaction.error||new Error('Import transaction aborted'));
