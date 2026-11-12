@@ -374,8 +374,8 @@ $('closeDrawerBtn').onclick=closeDrawer;$('drawerBackdrop').onclick=closeDrawer;
 $('appDrawer').querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',closeDrawer));
 
 function updateImportManualNet(){
- const first=normalizeDigits($('impInFirst').value).replace(/\\D/g,'');
- const second=normalizeDigits($('impInSecond').value).replace(/\\D/g,'');
+ const first=normalizeDigits($('impInFirst').value).replace(/\D/g,'');
+ const second=normalizeDigits($('impInSecond').value).replace(/\D/g,'');
  const net=$('impInNet');
  if(first.length===5&&second.length===5){
   const difference=Number(second)-Number(first);
@@ -385,14 +385,14 @@ function updateImportManualNet(){
 [['impInFirst','impInSecond'],['impInSecond','impInNet']].forEach(([id,nextId])=>{
  const field=$(id);
  field.addEventListener('input',()=>{
-  const digits=normalizeDigits(field.value).replace(/\\D/g,'').slice(0,5);
+  const digits=normalizeDigits(field.value).replace(/\D/g,'').slice(0,5);
   field.value=digits;
   updateImportManualNet();
   if(digits.length===5)$(nextId).focus();
  });
  field.addEventListener('paste',e=>{
   e.preventDefault();
-  const pasted=normalizeDigits(e.clipboardData?.getData('text')||'').replace(/\\D/g,'').slice(0,5);
+  const pasted=normalizeDigits(e.clipboardData?.getData('text')||'').replace(/\D/g,'').slice(0,5);
   field.value=pasted;
   updateImportManualNet();
   if(pasted.length===5)$(nextId).focus();
