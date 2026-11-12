@@ -242,7 +242,7 @@ public class MainActivity extends Activity {
                     }
                     ContentValues ready = new ContentValues();
                     ready.put(MediaStore.MediaColumns.IS_PENDING, 0);
-                    getContentResolver().update(insertedUri, ready, null, null);
+                    if (getContentResolver().update(insertedUri, ready, null, null) <= 0) throw new java.io.IOException("Could not finalize automatic backup");
                     pruneMediaStoreAutomaticBackups(relativePath);
                 } else {
                     File documents = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
