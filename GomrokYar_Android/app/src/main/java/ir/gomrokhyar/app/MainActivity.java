@@ -2,11 +2,16 @@ package ir.gomrokhyar.app;
 
 import android.app.Activity;
 import android.content.ClipData;
+import android.content.ContentValues;
+import android.content.ContentUris;
+import android.database.Cursor;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -18,11 +23,17 @@ import android.widget.Toast;
 
 import android.util.Base64;
 import java.io.OutputStream;
+import java.io.InputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 
 import androidx.core.content.FileProvider;
 
 import java.io.File;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 
 public class MainActivity extends Activity {
     private WebView webView;
@@ -202,6 +213,93 @@ public class MainActivity extends Activity {
                 cancelFileSave();
                 return false;
             }
+        }
+
+
+        @JavascriptInterface public synchronized boolean finishAutomaticBackup() {
+            Uri insertedUri = null;
+            try {
+                if (chunkedSaveStream == null || pendingReportFile == null || !pendingReportFile.exists()) return false;
+                chunkedSaveStream.flush();
+                chunkedSaveStream.close();
+                chunkedSaveStream = null;
+                String saveName = pendingReportName == null ? "gomrokyar-auto-backup.json" : pendingReportName;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    String relativePath = Environment.DIRECTORY_DOWNLOADS + "/GomrokYar/AutoBackups";
+                    ContentValues values = new ContentValues();
+                    values.put(MediaStore.MediaColumns.DISPLAY_NAME, saveName);
+                    values.put(MediaStore.MediaColumns.MIME_TYPE, "application/json");
+                    values.put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath);
+                    values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+                    insertedUri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                    if (insertedUri == null) throw new java.io.IOException("Could not create automatic backup in Downloads");
+                    try (InputStream in = new FileInputStream(pendingReportFile);
+                         OutputStream out = getContentResolver().openOutputStream(insertedUri, "w")) {
+                        if (out == null) throw new java.io.IOException("Could not open automatic backup destination");
+                        byte[] buffer = new byte[32768];
+                        int count;
+                        while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
+                    }
+                    ContentValues ready = new ContentValues();
+                    ready.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                    getContentResolver().update(insertedUri, ready, null, null);
+                    pruneMediaStoreAutomaticBackups(relativePath);
+                } else {
+                    File documents = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+                    if (documents == null) throw new java.io.IOException("App documents directory unavailable");
+                    File directory = new File(documents, "GomrokYar/AutoBackups");
+                    if (!directory.exists() && !directory.mkdirs()) throw new java.io.IOException("Could not create automatic backup directory");
+                    File destination = new File(directory, saveName);
+                    try (InputStream in = new FileInputStream(pendingReportFile);
+                         OutputStream out = new FileOutputStream(destination, false)) {
+                        byte[] buffer = new byte[32768];
+                        int count;
+                        while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
+                    }
+                    pruneAppSpecificAutomaticBackups(directory);
+                }
+                if (pendingReportFile != null) pendingReportFile.delete();
+                pendingReportFile = null;
+                pendingReportName = null;
+                pendingMimeType = "application/octet-stream";
+                runOnUiThread(() -> Toast.makeText(MainActivity.this,
+                        "پشتیبان خودکار گمرکیار ذخیره شد.", Toast.LENGTH_LONG).show());
+                return true;
+            } catch (Exception e) {
+                if (insertedUri != null) {
+                    try { getContentResolver().delete(insertedUri, null, null); } catch (Exception ignored) { }
+                }
+                return false;
+            }
+        }
+
+        private void pruneMediaStoreAutomaticBackups(String relativePath) {
+            Cursor cursor = null;
+            try {
+                cursor = getContentResolver().query(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                        new String[]{MediaStore.MediaColumns._ID},
+                        MediaStore.MediaColumns.RELATIVE_PATH + "=? AND " + MediaStore.MediaColumns.DISPLAY_NAME + " LIKE ?",
+                        new String[]{relativePath, "gomrokyar-auto-%"},
+                        MediaStore.MediaColumns.DATE_ADDED + " DESC");
+                if (cursor == null) return;
+                List<Uri> remove = new ArrayList<>();
+                int index = 0;
+                while (cursor.moveToNext()) {
+                    long id = cursor.getLong(0);
+                    if (index++ >= 10) remove.add(ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id));
+                }
+                for (Uri uri : remove) getContentResolver().delete(uri, null, null);
+            } catch (Exception ignored) {
+            } finally {
+                if (cursor != null) cursor.close();
+            }
+        }
+
+        private void pruneAppSpecificAutomaticBackups(File directory) {
+            File[] files = directory.listFiles((dir, name) -> name.startsWith("gomrokyar-auto-") && name.endsWith(".json"));
+            if (files == null || files.length <= 10) return;
+            Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
+            for (int i = 10; i < files.length; i++) files[i].delete();
         }
 
         @JavascriptInterface public synchronized boolean cancelFileSave() {
