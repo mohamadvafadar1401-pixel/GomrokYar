@@ -387,7 +387,7 @@ function updateImportManualNet(){
  const second=normalizeDigits($('impInSecond').value).replace(/\D/g,'');
  const net=$('impInNet');
  if(first.length>=4&&second.length>=4){
-  const difference=Number(first)-Number(second);
+  const difference=Number(second)-Number(first);
   net.value=difference>=0?String(difference):'';
  }else net.value='';
 }
@@ -412,7 +412,7 @@ function updateImportManualNet(){
   const digits=normalizeDigits(field.value).replace(/\D/g,'');
   if(digits.length<4){alert('حداقل چهار رقم وزن را وارد کن.');field.focus();return}
   updateImportManualNet();
-  if(id==='impInSecond'&&!$('impInNet').value){alert('توزین اول باید از توزین دوم بیشتر یا مساوی باشد.');field.focus();return}
+  if(id==='impInSecond'&&!$('impInNet').value){alert('توزین دوم باید از توزین اول بیشتر یا مساوی باشد.');field.focus();return}
   $(nextId).focus();
  });
 });
