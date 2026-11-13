@@ -1237,16 +1237,38 @@ $('exportRange').onclick=async()=>{
   $('backupStatus').textContent='خروجی بازه '+start+' تا '+end+' شامل '+records.length.toLocaleString('fa-IR')+' سابقه آماده ارسال شد.';
 };
 async function readBackupFile(file){
+  const MAX_DECOMPRESSED_BYTES=512*1024*1024;
   const bytes=new Uint8Array(await file.arrayBuffer());
   if(bytes.length>=2&&bytes[0]===0x1f&&bytes[1]===0x8b){
     if(typeof DecompressionStream!=='undefined'){
       const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-      return await new Response(stream).text();
+      const reader=stream.getReader(),decoder=new TextDecoder('utf-8');
+      let text='',totalBytes=0;
+      try{
+        while(true){
+          const part=await reader.read();
+          if(part.done)break;
+          totalBytes+=part.value.byteLength;
+          if(totalBytes>MAX_DECOMPRESSED_BYTES){
+            await reader.cancel();
+            throw new Error('decompressed_too_large');
+          }
+          text+=decoder.decode(part.value,{stream:true});
+        }
+        return text+decoder.decode();
+      }catch(error){
+        try{await reader.cancel()}catch(ignore){}
+        throw error;
+      }
     }
     if(window.AndroidBridge&&typeof AndroidBridge.decompressGzip==='function'){
       let binary='';
       for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
-      return AndroidBridge.decompressGzip(btoa(binary));
+      try{return AndroidBridge.decompressGzip(btoa(binary))}
+      catch(error){
+        if(String(error&&error.message||error).includes('backup_decompressed_too_large'))throw new Error('decompressed_too_large');
+        throw error;
+      }
     }
     throw new Error('gzip_unsupported');
   }
@@ -1297,7 +1319,7 @@ $('importFile').onchange=async e=>{
     alert('ورود اطلاعات با موفقیت انجام شد.\nسوابق بررسی‌شده: '+incoming.length.toLocaleString('fa-IR')+'\nسوابق جدید اضافه‌شده: '+fresh.length.toLocaleString('fa-IR')+'\nسوابق تکراری: '+(incoming.length-fresh.length).toLocaleString('fa-IR')+'\nموارد تکراری موجود نیز به‌صورت خودکار بررسی و حذف شدند ('+removedAfterImport.toLocaleString('fa-IR')+' مورد).');
   }catch(err){
     console.error('GomrokYar import error',err);
-    const message=err&&err.message==='too_large'?'حجم فایل پشتیبان بیشتر از سقف مجاز ۲۵۰ مگابایت است.':err&&err.message==='gzip_unsupported'?'امکان باز کردن فایل فشرده در این نسخه وجود ندارد؛ برنامه را به‌روزرسانی کن.':err&&err.message==='invalid_records'?'ساختار بعضی سوابق فایل معتبر نیست؛ هیچ تغییری اعمال نشد.':'فایل پشتیبان معتبر نیست یا خواندن آن انجام نشد؛ هیچ سابقه‌ای از برنامه حذف نشد.';
+    const message=err&&err.message==='too_large'?'حجم فایل پشتیبان بیشتر از سقف مجاز ۲۵۰ مگابایت است.':err&&err.message==='decompressed_too_large'?'حجم اطلاعات پس از باز کردن فایل فشرده بیشتر از سقف مجاز ۵۱۲ مگابایت است؛ هیچ سابقه‌ای تغییر نکرد.':err&&err.message==='gzip_unsupported'?'امکان باز کردن فایل فشرده در این نسخه وجود ندارد؛ برنامه را به‌روزرسانی کن.':err&&err.message==='invalid_records'?'ساختار بعضی سوابق فایل معتبر نیست؛ هیچ تغییری اعمال نشد.':'فایل پشتیبان معتبر نیست یا خواندن آن انجام نشد؛ هیچ سابقه‌ای از برنامه حذف نشد.';
     alert(message);
   }finally{e.target.value=''}
 };
