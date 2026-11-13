@@ -784,7 +784,7 @@ $('report').onclick=async()=>{const r=await buildReport();if(!r)return;try{if(wi
 $('reportMode').addEventListener('change',refreshReportPreview);['reportFrom','reportTo'].forEach(id=>$(id).addEventListener('change',refreshReportPreview));
 function transferKey(x){
   const date=new Date(x.created),day=Number.isFinite(date.getTime())?localISODate(date):'';
-  const clean=v=>normalizeDigits(String(v??'')).replace(/[\\u200e\\u200f\\u061c\\u202a-\\u202e\\u2066-\\u2069\\ufeff]/g,'').trim().replace(/\\s+/g,' ').toLocaleLowerCase('fa');
+  const clean=v=>normalizeDigits(String(v??'')).replace(/[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069\ufeff]/g,'').trim().replace(/\s+/g,' ').toLocaleLowerCase('fa');
   const plate=normalizePlate(x.plateKey||x.manualPlate)||clean(x.manualPlate||x.plateKey);
   return JSON.stringify([day,String(x.eventType||'weighed').trim(),plate,clean(x.permitNo),clean(x.firstWeight),clean(x.secondWeight),clean(x.netWeight),clean(x.goodsText||x.description),clean(x.originText),clean(x.vehicleStatus),clean(x.notes)]);
 }
