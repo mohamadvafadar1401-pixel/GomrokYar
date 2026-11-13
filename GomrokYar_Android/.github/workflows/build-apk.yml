@@ -3,7 +3,7 @@ name: Build GomrokYar APK
 on:
   workflow_dispatch:
   push:
-    branches: [ main, master, feature/original-v6-export-description-search ]
+    branches: [ main, master, feature/original-v6-export-description-search, fix/original-v6-output-compression ]
 
 jobs:
   build:
