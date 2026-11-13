@@ -783,7 +783,10 @@ async function refreshReportPreview(){const r=await buildReport();const box=$('r
 $('report').onclick=async()=>{const r=await buildReport();if(!r)return;try{if(window.AndroidBridge&&typeof AndroidBridge.saveReport==='function'){AndroidBridge.saveReport(r.filename,btoa(unescape(encodeURIComponent(r.html))));$('recordCount').textContent='درخواست ذخیره گزارش '+r.count.toLocaleString('fa-IR')+' رکوردی ارسال شد.'}else{let blob=new Blob([r.html],{type:'text/html;charset=utf-8'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=r.filename;a.style.display='none';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(u);a.remove()},60000);$('recordCount').textContent='فایل گزارش '+r.count.toLocaleString('fa-IR')+' رکوردی آماده دریافت است.'}}catch(err){let w=window.open('','_blank');if(w){w.document.open();w.document.write(r.html);w.document.close();alert('گزارش باز شد؛ از منوی مرورگر گزینه ذخیره یا چاپ را انتخاب کن.')}else alert('ذخیره گزارش ناموفق بود. دوباره تلاش کن.')}};
 $('reportMode').addEventListener('change',refreshReportPreview);['reportFrom','reportTo'].forEach(id=>$(id).addEventListener('change',refreshReportPreview));
 function transferKey(x){
-  return JSON.stringify([String(x.created||''),String(x.eventType||'weighed'),normalizePlate(x.plateKey||x.manualPlate),String(x.permitNo||''),String(x.firstWeight||''),String(x.secondWeight||''),String(x.netWeight||''),String(x.goodsText||''),String(x.originText||''),String(x.vehicleStatus||'')]);
+  const date=new Date(x.created),day=Number.isFinite(date.getTime())?localISODate(date):'';
+  const clean=v=>normalizeDigits(String(v??'')).replace(/[\\u200e\\u200f\\u061c\\u202a-\\u202e\\u2066-\\u2069\\ufeff]/g,'').trim().replace(/\\s+/g,' ').toLocaleLowerCase('fa');
+  const plate=normalizePlate(x.plateKey||x.manualPlate)||clean(x.manualPlate||x.plateKey);
+  return JSON.stringify([day,String(x.eventType||'weighed').trim(),plate,clean(x.permitNo),clean(x.firstWeight),clean(x.secondWeight),clean(x.netWeight),clean(x.goodsText||x.description),clean(x.originText),clean(x.vehicleStatus),clean(x.notes)]);
 }
 async function downloadJson(data,name){
   const bridge=window.AndroidBridge,mime='application/gzip',gzipName=name.replace(/\.json$/i,'.json.gz');
@@ -1211,10 +1214,10 @@ $('importFile').onchange=async e=>{
     const incoming=d.records.filter(validBackupRecord);
     if(incoming.length!==d.records.length)throw new Error('invalid_records');
     if(!incoming.length&&!Array.isArray(d.holidays)){alert('این فایل هیچ سابقه یا اطلاعات تعطیلی معتبری ندارد.');return}
-    const existing=await allRecords(true),known=new Set(existing.map(x=>x._syncKey||transferKey(x)));
+    const existing=await allRecords(true),known=new Set(existing.map(x=>transferKey(x)));
     const fresh=[];
     for(const raw of incoming){
-      const x={...raw},key=x._syncKey||transferKey(x);
+      const x={...raw},key=transferKey(x);
       if(known.has(key))continue;
       known.add(key);
       x.sourceEntryNo=x.sourceEntryNo??x.entryNo??null;
