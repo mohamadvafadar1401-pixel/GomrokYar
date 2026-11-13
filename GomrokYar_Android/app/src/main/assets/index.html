@@ -438,7 +438,7 @@ async function downloadJson(data,name){
   const content=JSON.stringify(data);
   try{
     if(window.AndroidBridge&&typeof AndroidBridge.saveGzipFile==='function'){
-      AndroidBridge.saveGzipFile(name.replace(/\\.json$/i,'.json.gz'),'application/gzip',content);
+      AndroidBridge.saveGzipFile(name.replace(/\.json$/i,'.json.gz'),'application/gzip',content);
       return true;
     }
   }catch(err){console.error('Android GZIP backup failed',err)}
@@ -447,7 +447,7 @@ async function downloadJson(data,name){
     try{
       const stream=new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
       bytes=new Uint8Array(await new Response(stream).arrayBuffer());
-      fileName=name.replace(/\\.json$/i,'.json.gz');
+      fileName=name.replace(/\.json$/i,'.json.gz');
       mime='application/gzip';
     }catch(err){console.warn('GZIP compression unavailable; saving compact JSON',err)}
   }
