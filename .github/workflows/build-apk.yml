@@ -37,7 +37,7 @@ jobs:
           mkdir -p GomrokYar_Android/app/src/main/res/drawable-nodpi
           cp GomrokYar_Android/app/src/main/res/mipmap-nodpi/ic_launcher.jpg GomrokYar_Android/app/src/main/res/drawable-nodpi/ic_launcher_logo.jpg
 
-      - name: Build APK
+      - name: Download offline Persian OCR model\n        run: |\n          mkdir -p GomrokYar_Android/app/src/main/assets/tessdata\n          curl -L --fail --retry 3 https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/fas.traineddata -o GomrokYar_Android/app/src/main/assets/tessdata/fas.traineddata\n\n      - name: Build APK
         run: |
           gradle --no-daemon -p GomrokYar_Android assembleDebug
 
