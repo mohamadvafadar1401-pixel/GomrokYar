@@ -32,6 +32,12 @@ jobs:
           yes | sdkmanager --licenses || true
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
+      - name: Package offline Persian OCR model
+        run: |
+          mkdir -p GomrokYar_Android/app/src/main/assets/tessdata
+          curl -fL --retry 3 https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/fas.traineddata -o GomrokYar_Android/app/src/main/assets/tessdata/fas.traineddata
+          test -s GomrokYar_Android/app/src/main/assets/tessdata/fas.traineddata
+
       - name: Prepare permanent release signing key
         env:
           GOMROKYAR_KEYSTORE_BASE64: ${{ secrets.GOMROKYAR_KEYSTORE_BASE64 }}
