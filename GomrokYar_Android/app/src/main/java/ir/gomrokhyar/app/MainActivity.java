@@ -27,6 +27,10 @@ import java.io.OutputStream;
 import java.io.InputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.PushbackInputStream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import androidx.core.content.FileProvider;
 
@@ -49,7 +53,7 @@ public class MainActivity extends Activity {
     private static final int FILE_SAVE_REQUEST = 504;
     private byte[] pendingReportBytes;
     private File pendingReportFile;
-    private java.io.FileOutputStream chunkedSaveStream;
+    private OutputStream chunkedSaveStream;
     private String pendingReportName;
     private String pendingMimeType = "application/octet-stream";
 
@@ -178,6 +182,47 @@ public class MainActivity extends Activity {
             }
         }
 
+        @JavascriptInterface public synchronized boolean beginGzipFileSave(String fileName, String mimeType) {
+            try {
+                if (chunkedSaveStream != null) { chunkedSaveStream.close(); chunkedSaveStream = null; }
+                if (pendingReportFile != null) { pendingReportFile.delete(); pendingReportFile = null; }
+                String safeName = (fileName == null || fileName.trim().isEmpty())
+                        ? "gomrokyar-export.json.gz"
+                        : fileName.replaceAll("[\\\\/:*?\\\"<>|]", "_");
+                pendingReportName = safeName;
+                pendingMimeType = (mimeType == null || mimeType.trim().isEmpty())
+                        ? "application/gzip" : mimeType;
+                pendingReportBytes = null;
+                pendingReportFile = File.createTempFile("gomrokyar-export-", ".tmp", getCacheDir());
+                chunkedSaveStream = new GZIPOutputStream(new FileOutputStream(pendingReportFile, false), 32768);
+                return true;
+            } catch (Exception e) {
+                try { if (chunkedSaveStream != null) chunkedSaveStream.close(); } catch (Exception ignored) { }
+                if (pendingReportFile != null) pendingReportFile.delete();
+                pendingReportFile = null;
+                chunkedSaveStream = null;
+                return false;
+            }
+        }
+
+        @JavascriptInterface public String decompressGzip(String base64) {
+            try {
+                byte[] compressed = Base64.decode(base64, Base64.DEFAULT);
+                try (GZIPInputStream gzip = new GZIPInputStream(new java.io.ByteArrayInputStream(compressed));
+                     ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+                    byte[] chunk = new byte[16384];
+                    int count;
+                    while ((count = gzip.read(chunk)) != -1) {
+                        if (output.size() + count > 150 * 1024 * 1024) throw new java.io.IOException("Backup exceeds restore limit");
+                        output.write(chunk, 0, count);
+                    }
+                    return output.toString("UTF-8");
+                }
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Invalid GZIP backup", e);
+            }
+        }
+
         @JavascriptInterface public synchronized boolean appendFileSaveChunk(String base64) {
             try {
                 if (chunkedSaveStream == null || base64 == null) return false;
@@ -231,7 +276,7 @@ public class MainActivity extends Activity {
                     String relativePath = Environment.DIRECTORY_DOWNLOADS + "/GomrokYar/AutoBackups";
                     ContentValues values = new ContentValues();
                     values.put(MediaStore.MediaColumns.DISPLAY_NAME, saveName);
-                    values.put(MediaStore.MediaColumns.MIME_TYPE, "application/json");
+                    values.put(MediaStore.MediaColumns.MIME_TYPE, pendingMimeType == null ? "application/json" : pendingMimeType);
                     values.put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath);
                     values.put(MediaStore.MediaColumns.IS_PENDING, 1);
                     insertedUri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
@@ -276,10 +321,18 @@ public class MainActivity extends Activity {
 
         private int countBackupRecords(InputStream input) {
             try {
-                java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+                PushbackInputStream probe = new PushbackInputStream(input, 2);
+                int first = probe.read(), second = probe.read();
+                if (second >= 0) probe.unread(second);
+                if (first >= 0) probe.unread(first);
+                InputStream decoded = first == 0x1f && second == 0x8b ? new GZIPInputStream(probe) : probe;
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
                 byte[] chunk = new byte[16384];
                 int read;
-                while ((read = input.read(chunk)) != -1) buffer.write(chunk, 0, read);
+                while ((read = decoded.read(chunk)) != -1) {
+                    if (buffer.size() + read > 150 * 1024 * 1024) return 0;
+                    buffer.write(chunk, 0, read);
+                }
                 JSONObject json = new JSONObject(buffer.toString("UTF-8"));
                 JSONArray records = json.optJSONArray("records");
                 return records == null ? 0 : records.length();
@@ -323,7 +376,7 @@ public class MainActivity extends Activity {
                     File documents = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
                     File directory = documents == null ? null : new File(documents, "GomrokYar/AutoBackups");
                     File[] files = directory == null ? null : directory.listFiles((dir, name) ->
-                            name.startsWith("gomrokyar-auto-") && name.endsWith(".json"));
+                            name.startsWith("gomrokyar-auto-") && (name.endsWith(".json") || name.endsWith(".json.gz")));
                     if (files != null) {
                         Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
                         for (File file : files) {
