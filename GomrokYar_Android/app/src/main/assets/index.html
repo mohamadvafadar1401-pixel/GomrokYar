@@ -220,7 +220,85 @@ main.wrap:after{content:"✦";position:absolute;top:27px;left:30px;color:#e3bd74
  .panel:hover{box-shadow:0 13px 30px rgba(22,58,43,.09),inset 0 1px #fff!important}
 }
 
-</style></head><body><div id="authGate"><div id="authCard"><div class="brand"><h2>ورود به سامانه گمرک شیخ صله</h2></div><div id="firstAdminSetup" class="hide"><p>برای راه‌اندازی، حساب مدیر اصلی را بسازید. این حساب امکان تعریف پنج کاربر دیگر را دارد.</p><label>نام کاربری مدیر</label><input id="setupUsername" autocomplete="username" maxlength="64" value="muhamadvafadar22@gmail.com"><label>نام نمایشی</label><input id="setupDisplayName" maxlength="50" placeholder="مثلاً مدیر سامانه"><label>رمز عبور (حداقل ۸ نویسه)</label><input id="setupPassword" type="password" autocomplete="new-password"><label>تکرار رمز عبور</label><input id="setupPassword2" type="password" autocomplete="new-password"><button id="createAdminBtn" class="btn" style="width:100%;margin-top:16px">ساخت حساب مدیر</button></div><div id="userLogin"><p>برای استفاده از برنامه، با حساب کاربری خود وارد شوید.</p><label>نام کاربری</label><input id="loginUsername" autocomplete="username"><label>رمز عبور</label><input id="loginPassword" type="password" autocomplete="current-password"><button id="loginBtn" class="btn" style="width:100%;margin-top:16px">ورود به برنامه</button></div><div id="authError" role="alert"></div><p class="hint" style="margin-top:14px">حساب‌ها و رمزها روی همین گوشی نگهداری می‌شوند. در صورت حذف داده‌های برنامه، اطلاعات ورود محلی نیز پاک می‌شود.</p></div></div><div id="userManager"><div class="modal"><h2>مدیریت کاربران</h2><p class="hint">یک حساب مدیر و حداکثر پنج حساب کاربری قابل تعریف است.</p><div id="userList"></div><hr><h3>تعریف کاربر جدید</h3><label>نام کاربری</label><input id="newUsername" maxlength="32"><label>نام و نام خانوادگی / عنوان</label><input id="newDisplayName" maxlength="50"><label>رمز عبور (حداقل ۸ نویسه)</label><input id="newUserPassword" type="password"><div class="auth-toolbar"><button id="addUserBtn" class="btn">افزودن کاربر</button><button id="closeUserManager" class="btn secondary">بستن</button></div><div id="userManagerError" class="hint"></div></div></div><header><div class="header-row"><button id="openDrawerBtn" class="menu-toggle" type="button" aria-label="بازکردن منو">☰</button><div class="header-titles"><h1>گمرکیار</h1></div><span style="width:44px"></span></div></header><div id="drawerBackdrop" class="drawer-backdrop"></div><aside id="appDrawer" class="side-drawer" aria-label="منوی برنامه"><div class="drawer-head"><strong>منوی گمرک شیخ صله</strong><button id="closeDrawerBtn" class="drawer-close" type="button">✕</button></div><div id="activeUserLabel" class="drawer-user">کاربر فعال</div><details class="drawer-account"><summary class="drawer-item">حساب کاربری من</summary><button id="manageUsersBtn" class="drawer-item secondary" type="button">مدیریت کاربران</button><button id="changeMyProfileBtn" class="drawer-item secondary" type="button">تغییر مشخصات</button><button id="changeMyPasswordBtn" class="drawer-item secondary" type="button">تغییر رمز عبور</button></details><button id="goSearchBtn" class="drawer-item" type="button" data-tab="searchTab">آمار روزانه</button><button class="drawer-item" type="button" data-tab="holidayTab">مدیریت تعطیلات</button><button class="drawer-item" type="button" data-tab="deletedTab">سوابق حذف</button><button class="drawer-item" type="button" data-tab="reportTab">گزارش‌گیری</button><button class="drawer-item" type="button" data-tab="backupTab">پشتیبان</button><button class="drawer-item" type="button" data-tab="historyTab">جستجوی سوابق</button><button class="drawer-item" type="button" data-tab="topTrucksTab">پرترددترین کامیون‌ها</button><button id="lockAppBtn" class="drawer-item" type="button">قفل برنامه / خروج</button></aside><main class="wrap">
+ 
+/* HOME DASHBOARD — new first screen */
+.home-dashboard{display:block;margin:0 0 16px;animation:homeEnter .35s ease both}
+.home-welcome{position:relative;overflow:hidden;padding:23px 21px 18px;border-radius:23px;color:#fff;background:radial-gradient(circle at 90% 15%,#ffffff1b 0 2px,transparent 3px),radial-gradient(circle at 94% 18%,#ffffff12 0 54px,transparent 55px),linear-gradient(125deg,#102f31 0%,#14594d 58%,#087b62 100%);box-shadow:0 14px 30px #0c473526}
+.home-welcome:after{content:"";position:absolute;width:150px;height:150px;left:-58px;bottom:-100px;border:1px solid #ffffff25;border-radius:50%;box-shadow:0 0 0 18px #ffffff08,0 0 0 38px #ffffff06}
+.home-kicker{font-size:10px;font-weight:800;color:#d9c18f;letter-spacing:.5px}
+.home-welcome h2{font-size:21px;margin:9px 0 5px;color:#fff;font-weight:900}
+.home-welcome p{font-size:11px;color:#d5e9e1;margin:0;line-height:2}
+.home-date{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:15px;padding-top:12px;border-top:1px solid #ffffff22;color:#e1f0e9;font-size:10px}
+.home-live-dot{width:7px;height:7px;border-radius:50%;background:#79dfae;box-shadow:0 0 0 4px #79dfae25}
+.home-section-title{display:flex;align-items:center;justify-content:space-between;margin:19px 3px 10px}
+.home-section-title>div>span,.home-card-head>div>span{font-size:9px;color:#8a9a91;font-weight:800}
+.home-section-title h3,.home-card-head h3{font-size:14px;color:#193f36;margin:3px 0 0;font-weight:900}
+.home-section-mark{font-size:9px;font-weight:900;letter-spacing:1.4px;color:#a78b52;background:#f5efe2;border:1px solid #eee3ca;padding:6px 9px;border-radius:8px}
+.home-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.home-stat{position:relative;overflow:hidden;min-width:0;padding:13px;border:1px solid #e1ebe4;border-radius:17px;background:linear-gradient(145deg,#fff,#f7faf7);box-shadow:0 5px 15px #173c2c09}
+.home-stat:after{content:"";position:absolute;width:70px;height:70px;left:-33px;bottom:-43px;border-radius:50%;background:#e7f3eb}
+.home-stat-total{background:linear-gradient(135deg,#eaf6ef,#fff);border-color:#cfe4d7}
+.home-stat-icon{display:grid;place-items:center;width:27px;height:27px;border-radius:9px;background:#e7f2eb;color:#14745a;font-size:16px;margin-bottom:9px}
+.home-stat-label{display:block;font-size:10px;color:#71827a;font-weight:700}
+.home-stat strong{display:block;margin:4px 0;font-size:25px;line-height:1.35;color:#174d3f;font-weight:900;font-variant-numeric:tabular-nums}
+.home-stat small{font-size:9px;color:#95a29b}
+.home-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.home-shortcut{display:flex;align-items:center;gap:9px;min-width:0;text-align:right;border:1px solid #e0e9e3!important;border-radius:16px!important;background:linear-gradient(145deg,#fff,#f6faf7)!important;color:#214c3f!important;padding:12px 10px!important;min-height:70px!important;box-shadow:0 5px 14px #173c2c0a!important}
+.home-shortcut-primary{background:linear-gradient(135deg,#125b4b,#087b62)!important;color:#fff!important;border-color:#0c6d56!important}
+.home-shortcut-icon{display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border-radius:11px;background:#e6f2ea;color:#16745b;font-size:17px}
+.home-shortcut-primary .home-shortcut-icon{background:#ffffff20;color:#fff}
+.home-shortcut>span:nth-child(2){display:flex;flex-direction:column;gap:4px;min-width:0}
+.home-shortcut b{font-size:11px;font-weight:900;white-space:nowrap}
+.home-shortcut small{font-size:9px;line-height:1.5;color:#8a9a91;font-weight:500}
+.home-shortcut-primary small{color:#d2e9df}
+.home-arrow{margin-right:auto;color:#83a99a;font-size:16px}
+.home-shortcut-primary .home-arrow{color:#fff}
+.home-lower-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:11px}
+.home-recent-card,.home-tools-card{min-width:0;padding:15px;border:1px solid #e1ebe4;border-radius:18px;background:linear-gradient(145deg,#fff,#f8fbf8);box-shadow:0 6px 18px #173c2c09}
+.home-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.home-text-action{min-height:32px!important;padding:6px 9px!important;background:#edf5ef!important;color:#287157!important;border:1px solid #dcebe0!important;border-radius:9px!important;font-size:9px!important}
+.home-recent-list{display:flex;flex-direction:column;gap:7px}
+.home-recent-item{display:flex;align-items:center;gap:9px;padding:9px;border-radius:12px;background:#f5f9f6;border:1px solid #e8efe9;min-width:0}
+.home-recent-bullet{display:grid;place-items:center;width:28px;height:28px;flex:0 0 28px;border-radius:9px;background:#e3f1e8;color:#14775d;font-weight:900}
+.home-recent-copy{min-width:0;flex:1}
+.home-recent-copy b{display:block;font-size:10px;color:#294c40;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-recent-copy small{display:block;font-size:9px;color:#8a9a91;margin-top:3px}
+.home-empty{font-size:10px;color:#8b9a92;text-align:center;padding:18px 5px}
+.home-tool-link{width:100%;display:flex;align-items:center;gap:9px;text-align:right;min-height:39px!important;padding:7px 9px!important;margin:5px 0!important;background:#f5f9f6!important;color:#315a49!important;border:1px solid #e6eee8!important;border-radius:11px!important;font-size:10px!important}
+.home-tool-link>span{color:#188366;font-size:15px}
+.home-tool-link b{margin-right:auto;color:#92a89b}
+.home-note{margin-top:12px;padding:9px;border-radius:11px;background:#f7f3e9;color:#8b7955;font-size:9px;line-height:1.8}
+.home-note span{color:#b79a5b;margin-left:4px}
+@keyframes homeEnter{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@media(min-width:700px){.home-welcome{padding:29px 30px 21px}.home-welcome h2{font-size:25px}.home-stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.home-stat{padding:16px}.home-stat strong{font-size:29px}.home-shortcuts{grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}.home-shortcut{min-height:83px!important;padding:14px!important}.home-lower-grid{grid-template-columns:1.2fr .8fr;gap:12px}.home-section-title{margin-top:23px}}
+@media(max-width:360px){.home-welcome{padding:19px 15px}.home-welcome h2{font-size:18px}.home-shortcut{gap:6px;padding:9px 7px!important}.home-shortcut b{font-size:10px}.home-shortcut small{font-size:8px}.home-stat{padding:10px}.home-stat strong{font-size:22px}}
+</style></head><body><div id="authGate"><div id="authCard"><div class="brand"><h2>ورود به سامانه گمرک شیخ صله</h2></div><div id="firstAdminSetup" class="hide"><p>برای راه‌اندازی، حساب مدیر اصلی را بسازید. این حساب امکان تعریف پنج کاربر دیگر را دارد.</p><label>نام کاربری مدیر</label><input id="setupUsername" autocomplete="username" maxlength="64" value="muhamadvafadar22@gmail.com"><label>نام نمایشی</label><input id="setupDisplayName" maxlength="50" placeholder="مثلاً مدیر سامانه"><label>رمز عبور (حداقل ۸ نویسه)</label><input id="setupPassword" type="password" autocomplete="new-password"><label>تکرار رمز عبور</label><input id="setupPassword2" type="password" autocomplete="new-password"><button id="createAdminBtn" class="btn" style="width:100%;margin-top:16px">ساخت حساب مدیر</button></div><div id="userLogin"><p>برای استفاده از برنامه، با حساب کاربری خود وارد شوید.</p><label>نام کاربری</label><input id="loginUsername" autocomplete="username"><label>رمز عبور</label><input id="loginPassword" type="password" autocomplete="current-password"><button id="loginBtn" class="btn" style="width:100%;margin-top:16px">ورود به برنامه</button></div><div id="authError" role="alert"></div><p class="hint" style="margin-top:14px">حساب‌ها و رمزها روی همین گوشی نگهداری می‌شوند. در صورت حذف داده‌های برنامه، اطلاعات ورود محلی نیز پاک می‌شود.</p></div></div><div id="userManager"><div class="modal"><h2>مدیریت کاربران</h2><p class="hint">یک حساب مدیر و حداکثر پنج حساب کاربری قابل تعریف است.</p><div id="userList"></div><hr><h3>تعریف کاربر جدید</h3><label>نام کاربری</label><input id="newUsername" maxlength="32"><label>نام و نام خانوادگی / عنوان</label><input id="newDisplayName" maxlength="50"><label>رمز عبور (حداقل ۸ نویسه)</label><input id="newUserPassword" type="password"><div class="auth-toolbar"><button id="addUserBtn" class="btn">افزودن کاربر</button><button id="closeUserManager" class="btn secondary">بستن</button></div><div id="userManagerError" class="hint"></div></div></div><header><div class="header-row"><button id="openDrawerBtn" class="menu-toggle" type="button" aria-label="بازکردن منو">☰</button><div class="header-titles"><h1>گمرکیار</h1></div><span style="width:44px"></span></div></header><div id="drawerBackdrop" class="drawer-backdrop"></div><aside id="appDrawer" class="side-drawer" aria-label="منوی برنامه"><div class="drawer-head"><strong>منوی گمرک شیخ صله</strong><button id="closeDrawerBtn" class="drawer-close" type="button">✕</button></div><div id="activeUserLabel" class="drawer-user">کاربر فعال</div><details class="drawer-account"><summary class="drawer-item">حساب کاربری من</summary><button id="manageUsersBtn" class="drawer-item secondary" type="button">مدیریت کاربران</button><button id="changeMyProfileBtn" class="drawer-item secondary" type="button">تغییر مشخصات</button><button id="changeMyPasswordBtn" class="drawer-item secondary" type="button">تغییر رمز عبور</button></details><button class="drawer-item" type="button" data-tab="homeTab">⌂ صفحه خانه</button><button id="goSearchBtn" class="drawer-item" type="button" data-tab="searchTab">آمار روزانه</button><button class="drawer-item" type="button" data-tab="holidayTab">مدیریت تعطیلات</button><button class="drawer-item" type="button" data-tab="deletedTab">سوابق حذف</button><button class="drawer-item" type="button" data-tab="reportTab">گزارش‌گیری</button><button class="drawer-item" type="button" data-tab="backupTab">پشتیبان</button><button class="drawer-item" type="button" data-tab="historyTab">جستجوی سوابق</button><button class="drawer-item" type="button" data-tab="topTrucksTab">پرترددترین کامیون‌ها</button><button id="lockAppBtn" class="drawer-item" type="button">قفل برنامه / خروج</button></aside><main class="wrap">
+<section id="homeTab" class="home-dashboard">
+ <div class="home-welcome">
+  <div class="home-kicker">مرکز فرماندهی عملیات</div>
+  <h2>خوش اومدی به گمرکیار</h2>
+  <p>همه‌چیز برای شروع یک روز منظم در گمرک شیخ صله آماده است.</p>
+  <div class="home-date"><span id="homeTodayDate">—</span><span class="home-live-dot"></span><span>سامانه آماده ثبت اطلاعات</span></div>
+ </div>
+ <div class="home-section-title"><div><span>نمای کلی</span><h3>خلاصه عملکرد امروز</h3></div><span class="home-section-mark">TODAY</span></div>
+ <div class="home-stats">
+  <div class="home-stat home-stat-total"><span class="home-stat-icon">↗</span><span class="home-stat-label">کل ترددهای امروز</span><strong id="homeTotal">۰</strong><small>تمام انواع ثبت</small></div>
+  <div class="home-stat"><span class="home-stat-icon">⇧</span><span class="home-stat-label">ورود صادراتی</span><strong id="homeExports">۰</strong><small>ثبت با برگه باسکول</small></div>
+  <div class="home-stat"><span class="home-stat-icon">⇩</span><span class="home-stat-label">ورود وارداتی</span><strong id="homeImports">۰</strong><small>ثبت با باسکول دستی</small></div>
+  <div class="home-stat"><span class="home-stat-icon">⚖</span><span class="home-stat-label">وزن خالص امروز</span><strong id="homeNetWeight">۰</strong><small>کیلوگرم</small></div>
+ </div>
+ <div class="home-section-title"><div><span>دسترسی سریع</span><h3>از کجا شروع کنیم؟</h3></div></div>
+ <div class="home-shortcuts">
+  <button class="home-shortcut home-shortcut-primary" type="button" data-tab="weighTab"><span class="home-shortcut-icon">▤</span><span><b>ثبت صادراتی</b><small>با عکس برگه باسکول</small></span><span class="home-arrow">←</span></button>
+  <button class="home-shortcut" type="button" data-tab="importEntryTab"><span class="home-shortcut-icon">⇩</span><span><b>ثبت وارداتی</b><small>توزین دستی و مشخصات بار</small></span><span class="home-arrow">←</span></button>
+  <button class="home-shortcut" type="button" data-tab="emptyTab"><span class="home-shortcut-icon">＋</span><span><b>ثبت کامیون خالی</b><small>ثبت ورود بدون بار</small></span><span class="home-arrow">←</span></button>
+  <button class="home-shortcut" type="button" data-tab="exitTab"><span class="home-shortcut-icon">↗</span><span><b>خروج وارداتی</b><small>ثبت خروج کامیون وارداتی</small></span><span class="home-arrow">←</span></button>
+ </div>
+ <div class="home-lower-grid">
+  <section class="home-recent-card"><div class="home-card-head"><div><span>آخرین فعالیت‌ها</span><h3>تازه‌ترین ثبت‌ها</h3></div><button type="button" class="home-text-action" data-tab="searchTab">مشاهده همه ←</button></div><div id="homeRecentList" class="home-recent-list"><div class="home-empty">در حال دریافت سوابق...</div></div></section>
+  <section class="home-tools-card"><div class="home-card-head"><div><span>ابزارهای مدیریتی</span><h3>کنترل و نگهداری اطلاعات</h3></div><span class="home-tools-icon">✦</span></div><button type="button" class="home-tool-link" data-tab="reportTab"><span>▥</span> گزارش‌گیری <b>←</b></button><button type="button" class="home-tool-link" data-tab="backupTab"><span>◈</span> مدیریت پشتیبان <b>←</b></button><button type="button" class="home-tool-link" data-tab="topTrucksTab"><span>♧</span> پرترددترین کامیون‌ها <b>←</b></button><div class="home-note"><span>●</span><span id="homeToolsStatus">اطلاعات این صفحه مستقیماً از سوابق ذخیره‌شده برنامه خوانده می‌شود.</span></div></section>
+ </div>
+</section>
 <nav class="tabs" aria-label="بخش‌های ثبت"><button class="tabbtn active" data-tab="weighTab">ورود صادراتی با برگه باسکول</button><button class="tabbtn" data-tab="importEntryTab">ورود وارداتی با باسکول دستی</button><button class="tabbtn" data-tab="emptyTab">ورود کامیون خالی</button><button class="tabbtn" data-tab="exitTab">خروج کامیون وارداتی</button></nav>
 <div id="weighTab">
 <section class="panel"><h2>۱) انتخاب یا گرفتن عکس برگه</h2><div class="row"><label class="btn" for="photo">🖼️ انتخاب عکس از گالری</label><input id="photo" type="file" accept="image/*" class="hide"><label class="btn secondary" for="cameraPhoto">📷 گرفتن عکس با دوربین</label><input id="cameraPhoto" type="file" accept="image/*" capture="environment" class="hide"><button id="calibrate" class="secondary hide" disabled>تنظیم محل برش‌ها</button></div><p class="hint">پس از گرفتن عکس، محدوده جدول را با انگشت مشخص کن. برنامه فقط همان قسمت را برش می‌دهد، شبکه ۱۰×۳ را پیدا می‌کند و خانه‌های موردنیاز را جدا می‌سازد؛ متن داخل خانه‌ها به‌صورت OCR خوانده نمی‌شود.</p><img id="preview" class="preview hide" alt="پیش‌نمایش برگه"><canvas id="tableSelectCanvas" class="preview hide"></canvas><div id="tableSelectActionRow" class="row" style="margin-top:8px"><button id="selectTableBtn" class="hide" type="button">محدوده بررسی اطلاعات عکس</button><button id="perspectiveBtn" class="hide" type="button">اصلاح پرسپکتیو</button></div><div id="tableSelectControls" class="hide"><div class="row" style="margin-top:10px"><button id="confirmTableRegion">تأیید محدوده و تشخیص اطلاعات</button></div><div id="tableSelectStatus" class="status"></div></div><div id="calStatus" class="status"></div></section>
@@ -338,6 +416,33 @@ function openDB(){return new Promise((res,rej)=>{let q=indexedDB.open(DB,1);q.on
 function tx(store,mode='readonly'){return db.transaction(store,mode).objectStore(store)}
 async function setting(k,v){if(arguments.length>1)return new Promise((r,j)=>{let q=tx('settings','readwrite').put(v,k);q.onsuccess=()=>r();q.onerror=()=>j(q.error)});return new Promise((r,j)=>{let q=tx('settings').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}
 async function allRecords(includeDeleted=false){return new Promise((r,j)=>{let q=tx('records').getAll();q.onsuccess=()=>r(includeDeleted?q.result:q.result.filter(x=>!x.isDeleted));q.onerror=()=>j(q.error)})}
+async function renderHome(){
+ const all=await allRecords(),today=localISODate(new Date()),day=all.filter(x=>x.created&&localISODate(new Date(x.created))===today);
+ const exports=day.filter(x=>(x.eventType||'weighed')==='weighed').length;
+ const imports=day.filter(x=>x.eventType==='import_entry_manual').length;
+ const exits=day.filter(x=>x.eventType==='import_exit').length;
+ const empties=day.filter(x=>x.eventType==='empty_entry').length;
+ const weight=day.reduce((sum,x)=>sum+chartKg(x.netWeight),0);
+ const fa=n=>Number(n||0).toLocaleString('fa-IR');
+ $('homeTodayDate').textContent=jalaliDisplay(new Date())+' · '+new Intl.DateTimeFormat('fa-IR',{weekday:'long'}).format(new Date());
+ $('homeTotal').textContent=fa(day.length);
+ $('homeExports').textContent=fa(exports);
+ $('homeImports').textContent=fa(imports);
+ $('homeNetWeight').textContent=fa(weight);
+ const list=$('homeRecentList');list.replaceChildren();
+ const recent=[...all].sort((a,b)=>(Date.parse(b.enteredAt||b.created)||0)-(Date.parse(a.enteredAt||a.created)||0)).slice(0,5);
+ if(!recent.length){const empty=document.createElement('div');empty.className='home-empty';empty.textContent='هنوز سابقه‌ای ثبت نشده است. اولین تردد را از میانبرهای بالا ثبت کن.';list.appendChild(empty)}
+ recent.forEach(record=>{
+  const item=document.createElement('div');item.className='home-recent-item';
+  const bullet=document.createElement('span');bullet.className='home-recent-bullet';bullet.textContent=record.eventType==='weighed'?'⇧':record.eventType==='import_entry_manual'?'⇩':record.eventType==='empty_entry'?'＋':'↗';
+  const copy=document.createElement('div');copy.className='home-recent-copy';
+  const plate=document.createElement('b');plate.textContent=record.manualPlate||record.plateKey||'پلاک ثبت نشده';
+  const meta=document.createElement('small');meta.textContent=typeLabel(record.eventType||'weighed')+' · '+(record.created?jalaliDisplay(new Date(record.created)):'بدون تاریخ')+(record.netWeight?' · '+fa(chartKg(record.netWeight))+' کیلوگرم':'');
+  copy.append(plate,meta);item.append(bullet,copy);list.appendChild(item);
+ });
+ const tools=$('homeToolsStatus');if(tools)tools.textContent='ثبت‌های امروز: '+fa(day.length)+' · خروج وارداتی: '+fa(exits)+' · کامیون خالی: '+fa(empties);
+}
+
 let holidayDatesCache=[];
 function holidayInfo(date){const key=jalaliDisplay(date);return date.getDay()===5?{holiday:true,reason:'جمعه هفتگی'}:holidayDatesCache.includes(key)?{holiday:true,reason:'تعطیلی ثبت‌شده'}:{holiday:false,reason:''}}
 function collectHolidayDays(fromMs,toMs){const out=[];if(!Number.isFinite(fromMs)||!Number.isFinite(toMs)||toMs<fromMs)return out;let d=new Date(fromMs);d=new Date(d.getFullYear(),d.getMonth(),d.getDate());const end=new Date(toMs);end.setHours(0,0,0,0);for(;d<=end;d.setDate(d.getDate()+1)){const info=holidayInfo(d);if(info.holiday)out.push({date:localISODate(d),jalali:jalaliDisplay(d),reason:info.reason})}return out}
@@ -431,7 +536,7 @@ async function renderTopTrucks(){
 $('topTrucksSearch').addEventListener('input',renderTopTrucks);
 $('topTrucksMinVisits').addEventListener('input',renderTopTrucks);
 
-function switchTab(id){['weighTab','importEntryTab','emptyTab','exitTab','searchTab','holidayTab','deletedTab','historyTab','topTrucksTab','reportTab','backupTab'].forEach(x=>$(x).classList.toggle('hide',x!==id));document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id==='searchTab')renderDailyRecords();if(id==='holidayTab')renderHolidayManager();if(id==='deletedTab')renderDeletedRecords();if(id==='topTrucksTab')renderTopTrucks();if(id==='reportTab'){refreshReportPreview();refreshReportBackupCounter()}}
+function switchTab(id){['homeTab','weighTab','importEntryTab','emptyTab','exitTab','searchTab','holidayTab','deletedTab','historyTab','topTrucksTab','reportTab','backupTab'].forEach(x=>$(x).classList.toggle('hide',x!==id));document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id==='homeTab')renderHome();if(id==='searchTab')renderDailyRecords();if(id==='holidayTab')renderHolidayManager();if(id==='deletedTab')renderDeletedRecords();if(id==='topTrucksTab')renderTopTrucks();if(id==='reportTab'){refreshReportPreview();refreshReportBackupCounter()}}
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 function closeDrawer(){ $('appDrawer').classList.remove('open');$('drawerBackdrop').classList.remove('open');}
 $('openDrawerBtn').onclick=()=>{$('appDrawer').classList.add('open');$('drawerBackdrop').classList.add('open')};
@@ -1299,7 +1404,7 @@ async function initAuth(){
   showAuth(false);$('loginUsername').focus();
  }
 }
-async function unlockAs(user){currentUser=user;$('activeUserLabel').textContent='کاربر فعال: '+user.displayName+' ('+user.username+')';$('manageUsersBtn').style.display=user.role==='admin'?'block':'none';$('authGate').style.display='none';}
+async function unlockAs(user){currentUser=user;$('activeUserLabel').textContent='کاربر فعال: '+user.displayName+' ('+user.username+')';$('manageUsersBtn').style.display=user.role==='admin'?'block':'none';$('authGate').style.display='none';switchTab('homeTab');}
 $('createAdminBtn').onclick=async()=>{
  const username=authNormalize($('setupUsername').value),displayName=$('setupDisplayName').value.trim()||'مدیر سامانه',p=$('setupPassword').value,p2=$('setupPassword2').value;
  if(!/^[a-z0-9_.@-]{3,64}$/.test(username)){$('authError').textContent='نام کاربری باید حداقل ۳ نویسه و شامل حروف انگلیسی، عدد یا @، . _ - باشد.';return}
