@@ -18,6 +18,10 @@ import android.widget.Toast;
 
 import android.util.Base64;
 import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import androidx.core.content.FileProvider;
 
@@ -108,6 +112,36 @@ public class MainActivity extends Activity {
     }
 
     private class ReportBridge {
+        @JavascriptInterface public void saveGzipFile(String fileName, String mimeType, String content) {
+            try {
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                try (GZIPOutputStream gzip = new GZIPOutputStream(buffer)) {
+                    gzip.write((content == null ? "" : content).getBytes(StandardCharsets.UTF_8));
+                }
+                saveFile(fileName, mimeType, Base64.encodeToString(buffer.toByteArray(), Base64.NO_WRAP));
+            } catch (Exception e) {
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "فشرده‌سازی فایل پشتیبان ناموفق بود.", Toast.LENGTH_LONG).show());
+            }
+        }
+
+        @JavascriptInterface public String decompressGzip(String base64) {
+            try {
+                byte[] compressed = Base64.decode(base64, Base64.DEFAULT);
+                try (GZIPInputStream gzip = new GZIPInputStream(new java.io.ByteArrayInputStream(compressed));
+                     ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+                    byte[] chunk = new byte[8192];
+                    int count;
+                    while ((count = gzip.read(chunk)) != -1) {
+                        if (output.size() + count > 150 * 1024 * 1024) throw new java.io.IOException("Backup too large");
+                        output.write(chunk, 0, count);
+                    }
+                    return output.toString("UTF-8");
+                }
+            } catch (Exception e) {
+                throw new IllegalArgumentException("GZIP backup could not be decompressed", e);
+            }
+        }
+
         @JavascriptInterface public void saveReport(String fileName, String base64) {
             saveFile(fileName, "text/html", base64);
         }
