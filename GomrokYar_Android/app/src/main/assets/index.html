@@ -383,7 +383,7 @@ async function renderTopTrucks(){
  const query=String($('topTrucksSearch').value||'').trim().toLocaleLowerCase('fa');
  const minVisits=Math.max(1,Math.floor(Number($('topTrucksMinVisits')?.value)||3));
  const records=await allRecords();
- const normalizeTruckKey=value=>String(value||'').replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c))).replace(/[٠-٩]/g,c=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))).replace(/[\\s\\-–_]/g,'').toUpperCase();
+ const normalizeTruckKey=value=>String(value||'').replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c))).replace(/[٠-٩]/g,c=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))).replace(/[\s\\-–_]/g,'').toUpperCase();
  const groups=new Map();
  records.forEach(record=>{
   const rawKey=record.plateKey||record.manualPlate||'';
@@ -420,7 +420,7 @@ $('topTrucksMinVisits').addEventListener('input',renderTopTrucks);
 function duplicateCleanupGroups(records){
  const groups=new Map();
  const cleanWeight=value=>normalizeDigits(String(value??'')).replace(/[^0-9]/g,'');
- const cleanText=value=>normalizeDigits(String(value??'')).replace(/[\\u200e\\u200f\\u061c\\u202a-\\u202e\\u2066-\\u2069\\ufeff]/g,'').trim().replace(/\\s+/g,'').toLocaleLowerCase('fa');
+ const cleanText=value=>normalizeDigits(String(value??'')).replace(/[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069\ufeff]/g,'').trim().replace(/\s+/g,'').toLocaleLowerCase('fa');
  records.forEach(record=>{
   const plate=normalizePlate(record.plateKey||record.manualPlate);
   const weight=cleanWeight(record.netWeight);
