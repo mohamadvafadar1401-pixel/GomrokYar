@@ -1166,7 +1166,7 @@ function validBackupRecord(x){
 $('importFile').onchange=async e=>{
   const file=e.target.files&&e.target.files[0];if(!file)return;
   try{
-    if(file.size>50*1024*1024)throw new Error('too_large');
+    if(file.size>250*1024*1024)throw new Error('too_large');
     const rawText=await readBackupFile(file),d=JSON.parse(rawText);
     if(!d||!Array.isArray(d.records)||!(Number(d.version)>=1)||!['gomrokyar-transfer',undefined].includes(d.format))throw new Error('invalid_format');
     const incoming=d.records.filter(validBackupRecord);
@@ -1204,7 +1204,7 @@ $('importFile').onchange=async e=>{
     alert('ورود اطلاعات با موفقیت انجام شد.\nسوابق بررسی‌شده: '+incoming.length.toLocaleString('fa-IR')+'\nسوابق جدید اضافه‌شده: '+fresh.length.toLocaleString('fa-IR')+'\nسوابق تکراری: '+(incoming.length-fresh.length).toLocaleString('fa-IR')+'\nاطلاعات قبلی برنامه حذف نشد.');
   }catch(err){
     console.error('GomrokYar import error',err);
-    const message=err&&err.message==='too_large'?'حجم فایل بیشتر از ۵۰ مگابایت است.':err&&err.message==='gzip_unsupported'?'امکان باز کردن فایل فشرده در این نسخه وجود ندارد؛ برنامه را به‌روزرسانی کن.':err&&err.message==='invalid_records'?'ساختار بعضی سوابق فایل معتبر نیست؛ هیچ تغییری اعمال نشد.':'فایل پشتیبان معتبر نیست یا خواندن آن انجام نشد؛ هیچ سابقه‌ای از برنامه حذف نشد.';
+    const message=err&&err.message==='too_large'?'حجم فایل پشتیبان بیشتر از سقف مجاز ۲۵۰ مگابایت است.':err&&err.message==='gzip_unsupported'?'امکان باز کردن فایل فشرده در این نسخه وجود ندارد؛ برنامه را به‌روزرسانی کن.':err&&err.message==='invalid_records'?'ساختار بعضی سوابق فایل معتبر نیست؛ هیچ تغییری اعمال نشد.':'فایل پشتیبان معتبر نیست یا خواندن آن انجام نشد؛ هیچ سابقه‌ای از برنامه حذف نشد.';
     alert(message);
   }finally{e.target.value=''}
 };
