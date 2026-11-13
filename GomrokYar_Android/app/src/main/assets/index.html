@@ -229,6 +229,7 @@ main.wrap:after{content:"✦";position:absolute;top:27px;left:30px;color:#e3bd74
 <section class="panel recent-panel"><div class="chart-head"><h2 style="margin:0">آخرین خودروهای ثبت‌شده امروز</h2><span id="recentVehiclesCount" class="small">۰ خودرو</span></div><p class="hint" style="margin:0 0 8px">پنج خودروی آخر در ابتدا نمایش داده می‌شود؛ برای دیدن خودروهای قدیمی‌تر، داخل فهرست به پایین اسکرول کن.</p><div id="recentVehiclesList" class="daily-vehicle-scroll"><div class="hint">در حال دریافت سوابق امروز...</div></div></section>
 <section class="panel chart-panel" id="statsChartPanel">
 <div class="chart-head"><h2 style="margin:0">۵) نمودار آمار تردد و تناژ</h2><span class="small">بر اساس سوابق ثبت‌شده</span></div>
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0"><label for="chartDirectionFilter" style="margin:0;font-weight:700">نوع تردد</label><select id="chartDirectionFilter" style="min-width:150px;max-width:220px"><option value="all">همه</option><option value="export">صادرات</option><option value="import">واردات</option></select></div>
 <div class="chart-controls" id="chartMetricTabs" role="group" aria-label="شاخص نمودار"><button type="button" data-metric="vehicles" class="active">تعداد کامیون‌ها</button><button type="button" data-metric="tonnage">مجموع تناژ</button></div>
 <div class="chart-controls" id="chartPeriodTabs" role="group" aria-label="بازه نمودار"><button type="button" data-period="week" class="active">هفتگی</button><button type="button" data-period="month">ماهانه</button><button type="button" data-period="quarter">سه‌ماهه</button><button type="button" data-period="halfyear">شش‌ماهه</button></div>
 <div class="chart-summary"><strong id="chartTotal">۰</strong><span id="chartSummaryLabel">مجموع کامیون‌های ورودی در ۷ روز اخیر</span></div>
@@ -711,13 +712,16 @@ function chartBuckets(now){
  }
  return out;
 }
+let chartDirection='all';
 function renderChart(records=[]){
  const panel=$('statsChartPanel');if(!panel)return;
- const now=new Date(),buckets=chartBuckets(now),metric=chartMetric;
+ const now=new Date(),buckets=chartBuckets(now),metric=chartMetric,direction=chartDirection;
  const entryTypes=new Set(['weighed','import_entry_manual']);
  const values=buckets.map(b=>({ ...b,value:0,holiday:(b.end-b.start)<=86400000?holidayInfo(b.start):{holiday:false,reason:''} }));
  for(const x of records){
   const t=Date.parse(x.created);if(!Number.isFinite(t))continue;const d=new Date(t),kind=x.eventType||'weighed';
+  if(direction==='export'&&kind!=='weighed')continue;
+  if(direction==='import'&&kind!=='import_entry_manual')continue;
   if(metric==='vehicles'){
    if(!entryTypes.has(kind))continue;
    const b=values.find(v=>d>=v.start&&d<v.end);if(b)b.value++;
@@ -729,7 +733,7 @@ function renderChart(records=[]){
  const total=values.reduce((s,v)=>s+v.value,0),max=Math.max(0,...values.map(v=>v.value));
  $('chartTotal').textContent=metric==='vehicles'?total.toLocaleString('fa-IR'):total.toLocaleString('fa-IR',{maximumFractionDigits:2})+' تن';
  const periodName={week:'۷ روز اخیر',month:'ماه جاری',quarter:'۳ ماه اخیر',halfyear:'۶ ماه اخیر'}[chartPeriod];
- $('chartSummaryLabel').textContent=(metric==='vehicles'?'مجموع کامیون‌های ورودی در ':'مجموع تناژ ثبت‌شده در ')+periodName;
+ $('chartSummaryLabel').textContent=(direction==='export'?'صادرات ـ ':direction==='import'?'واردات ـ ':'همه ترددها ـ ')+(metric==='vehicles'?'تعداد کامیون‌ها در ':'مجموع تناژ در ')+periodName;
  $('chartFoot').textContent=chartPeriod==='week'?'هر ستون نمایانگر یک روز از هفته است. خروج کامیون وارداتی در شمارش ورودی‌ها محاسبه نمی‌شود.':chartPeriod==='month'?'نمودار روزانه ماه شمسی جاری است؛ برای مشاهده همه روزها می‌توانی نمودار را افقی جابه‌جا کنی.':'در این بازه هر ستون نمایانگر یک ماه شمسی است. تناژ از وزن خالص دستی ورودهای صادراتی و وارداتی محاسبه می‌شود.';
  $('chartBars').innerHTML=values.map(v=>{
   const h=max>0?Math.max(v.value>0?3:0,v.value/max*100):0;
@@ -740,6 +744,7 @@ function renderChart(records=[]){
  $('chartBars').querySelectorAll('[data-chart-index]').forEach(col=>{const select=()=>{const v=values[Number(col.dataset.chartIndex)];if(!v)return;const shown=metric==='vehicles'?v.value.toLocaleString('fa-IR'):v.value.toLocaleString('fa-IR',{maximumFractionDigits:2})+' تن';$('chartTotal').textContent=shown;$('chartSummaryLabel').textContent=(v.label+(v.sub?' '+v.sub:''))+' ـ '+(metric==='vehicles'?'تعداد کامیون‌ها':'مجموع تناژ');$('chartFoot').textContent=v.holiday.holiday?'این روز تعطیل است: '+v.holiday.reason+'؛ مقدار ثبت‌شده در صورت وجود نمایش داده شده است.':'آمار ستون انتخاب‌شده نمایش داده می‌شود. برای بازگشت به مجموع بازه، شاخص یا بازه نمودار را دوباره انتخاب کن.'};col.addEventListener('click',select);col.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select()}})});
  const barBox=$('chartBars');barBox.style.minWidth=(chartPeriod==='week'?'100%':chartPeriod==='month'?Math.max(100,values.length*45)+'px':Math.max(100,values.length*68)+'px');
 }
+$('chartDirectionFilter').onchange=e=>{chartDirection=e.target.value;renderChart(lastChartRecords)};
 $('chartMetricTabs').querySelectorAll('[data-metric]').forEach(b=>b.onclick=()=>{chartMetric=b.dataset.metric;$('chartMetricTabs').querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));renderChart(lastChartRecords)});
 $('chartPeriodTabs').querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{chartPeriod=b.dataset.period;$('chartPeriodTabs').querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));renderChart(lastChartRecords)});
 function renderRecentVehicles(records){
