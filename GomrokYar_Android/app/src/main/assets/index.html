@@ -365,17 +365,40 @@ function statusLabel(x){if(x.vehicleStatus==='empty')return 'خالی';if(x.vehi
 async function nextEntryNumber(all){let stored=Number(await setting('nextEntryNo'))||1,max=all.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);return Math.max(stored,max+1)}
 function duplicateRecordKey(record){
  const date=new Date(record?.created),day=Number.isFinite(date.getTime())?localISODate(date):'';
- const plate=normalizePlate(record?.plateKey||record?.manualPlate);
+ const rawPlate=String(record?.plateKey||record?.manualPlate||'');
+ const plate=normalizeDigits(rawPlate).replace(/[^0-9A-Za-z\u0600-\u06FF]/g,'').toLocaleUpperCase('fa');
  if(!plate||!day)return '';
- const clean=value=>normalizeDigits(String(value??'')).replace(/[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069\ufeff]/g,'').trim().replace(/\s+/g,'').toLocaleLowerCase('fa');
- const weight=normalizeDigits(String(record?.netWeight??'')).replace(/[^0-9]/g,'');
- const eventType=String(record?.eventType||'weighed').trim().toLocaleLowerCase('fa');
- const permit=clean(record?.permitNo);
- return JSON.stringify([plate,weight,day,eventType,permit]);
+ return JSON.stringify([plate,day]);
 }
 function isDuplicateRecord(candidate,records){
  const key=duplicateRecordKey(candidate);
- return !!key&&(records||[]).some(record=>duplicateRecordKey(record)===key);
+ return !!key&&(records||[]).some(record=>!record.isDeleted&&duplicateRecordKey(record)===key);
+}
+async function cleanupDuplicateRecords(){
+ const records=await allRecords(false),groups=new Map();
+ for(const record of records){
+  const key=duplicateRecordKey(record);if(!key)continue;
+  if(!groups.has(key))groups.set(key,[]);
+  groups.get(key).push(record);
+ }
+ const remove=[];
+ for(const group of groups.values()){
+  if(group.length<2)continue;
+  group.sort((a,b)=>{
+   const ta=Date.parse(a.created)||0,tb=Date.parse(b.created)||0;
+   return ta-tb||(Number(a.entryNo)||Number(a.id)||0)-(Number(b.entryNo)||Number(b.id)||0)||Number(a.id)-Number(b.id);
+  });
+  remove.push(...group.slice(1).map(x=>x.id));
+ }
+ if(!remove.length)return 0;
+ await new Promise((resolve,reject)=>{
+  const transaction=db.transaction('records','readwrite'),store=transaction.objectStore('records');
+  remove.forEach(id=>store.delete(id));
+  transaction.oncomplete=resolve;
+  transaction.onerror=()=>reject(transaction.error||new Error('Duplicate cleanup failed'));
+  transaction.onabort=()=>reject(transaction.error||new Error('Duplicate cleanup aborted'));
+ });
+ return remove.length;
 }
 async function saveSimpleRecord(kind,plate,goods='',dateInputId){
   goods=String(goods||'').trim();
@@ -804,8 +827,8 @@ function transferKey(x){
   const key=duplicateRecordKey(x);
   if(key)return key;
   const date=new Date(x?.created),day=Number.isFinite(date.getTime())?localISODate(date):'';
-  const clean=v=>normalizeDigits(String(v??'')).replace(/[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069\ufeff]/g,'').trim().replace(/\s+/g,' ').toLocaleLowerCase('fa');
-  return JSON.stringify([day,String(x?.eventType||'weighed').trim(),normalizePlate(x?.plateKey||x?.manualPlate),clean(x?.permitNo),clean(x?.firstWeight),clean(x?.secondWeight),clean(x?.netWeight),clean(x?.goodsText||x?.description),clean(x?.originText),clean(x?.vehicleStatus),clean(x?.notes)]);
+  const plate=normalizeDigits(String(x?.plateKey||x?.manualPlate||'')).replace(/[^0-9A-Za-z\u0600-\u06FF]/g,'').toLocaleUpperCase('fa');
+  return JSON.stringify([plate,day]);
 }
 async function downloadJson(data,name){
   const bridge=window.AndroidBridge,mime='application/gzip',gzipName=name.replace(/\.json$/i,'.json.gz');
@@ -1233,7 +1256,7 @@ $('importFile').onchange=async e=>{
     const incoming=d.records.filter(validBackupRecord);
     if(incoming.length!==d.records.length)throw new Error('invalid_records');
     if(!incoming.length&&!Array.isArray(d.holidays)){alert('این فایل هیچ سابقه یا اطلاعات تعطیلی معتبری ندارد.');return}
-    const existing=await allRecords(true),known=new Set(existing.map(x=>transferKey(x)));
+    const existing=await allRecords(false),known=new Set(existing.map(x=>transferKey(x)));
     const fresh=[];
     for(const raw of incoming){
       const x={...raw},key=transferKey(x);
@@ -1261,8 +1284,8 @@ $('importFile').onchange=async e=>{
       transaction.onerror=()=>reject(transaction.error||new Error('Import transaction failed'));
       transaction.onabort=()=>reject(transaction.error||new Error('Import transaction aborted'));
     });
-    await renderRecords();await refreshReportPreview();
-    alert('ورود اطلاعات با موفقیت انجام شد.\nسوابق بررسی‌شده: '+incoming.length.toLocaleString('fa-IR')+'\nسوابق جدید اضافه‌شده: '+fresh.length.toLocaleString('fa-IR')+'\nسوابق تکراری: '+(incoming.length-fresh.length).toLocaleString('fa-IR')+'\nاطلاعات قبلی برنامه حذف نشد.');
+    const removedAfterImport=await cleanupDuplicateRecords();await renderRecords();await refreshReportPreview();
+    alert('ورود اطلاعات با موفقیت انجام شد.\nسوابق بررسی‌شده: '+incoming.length.toLocaleString('fa-IR')+'\nسوابق جدید اضافه‌شده: '+fresh.length.toLocaleString('fa-IR')+'\nسوابق تکراری: '+(incoming.length-fresh.length).toLocaleString('fa-IR')+'\nموارد تکراری موجود نیز به‌صورت خودکار بررسی و حذف شدند ('+removedAfterImport.toLocaleString('fa-IR')+' مورد).');
   }catch(err){
     console.error('GomrokYar import error',err);
     const message=err&&err.message==='too_large'?'حجم فایل پشتیبان بیشتر از سقف مجاز ۲۵۰ مگابایت است.':err&&err.message==='gzip_unsupported'?'امکان باز کردن فایل فشرده در این نسخه وجود ندارد؛ برنامه را به‌روزرسانی کن.':err&&err.message==='invalid_records'?'ساختار بعضی سوابق فایل معتبر نیست؛ هیچ تغییری اعمال نشد.':'فایل پشتیبان معتبر نیست یا خواندن آن انجام نشد؛ هیچ سابقه‌ای از برنامه حذف نشد.';
@@ -1336,5 +1359,5 @@ $('addUserBtn').onclick=async()=>{
 $('changeMyPasswordBtn').onclick=async()=>{closeDrawer();if(!currentUser)return;const old=prompt('رمز فعلی را وارد کن:');if(old===null)return;const users=await authRead()||[],target=users.find(x=>x.username===currentUser.username);if(!target)return;const oldHash=await hashPassword(old,target.salt);if(oldHash!==target.passwordHash){alert('رمز فعلی صحیح نیست.');return}const next=prompt('رمز جدید (حداقل ۸ نویسه):');if(next===null)return;if(next.length<8){alert('رمز جدید باید حداقل ۸ نویسه باشد.');return}const confirmNext=prompt('رمز جدید را دوباره وارد کن:');if(confirmNext!==next){alert('تکرار رمز با رمز جدید یکسان نیست.');return}target.salt=randomSalt();target.passwordHash=await hashPassword(next,target.salt);await authWrite(users);currentUser=target;alert('رمز عبور با موفقیت تغییر کرد.');};
 $('lockAppBtn').onclick=()=>{closeDrawer();currentUser=null;$('loginUsername').value='';$('loginPassword').value='';showAuth(false)};
 
-(async()=>{db=await openDB();await initAuth();regions=await setting('regions')||{};templateMode=(await setting('templateMode'))===true;await renderRecords();await refreshReportPreview();renderDailyRecords();await renderDeletedRecords()})();
+(async()=>{db=await openDB();await initAuth();regions=await setting('regions')||{};templateMode=(await setting('templateMode'))===true;const removedDuplicates=await cleanupDuplicateRecords();if(removedDuplicates){const status=$('backupStatus');if(status)status.textContent='بررسی خودکار سوابق انجام شد؛ '+removedDuplicates.toLocaleString('fa-IR')+' ثبت تکراری حذف شد.';}await renderRecords();await refreshReportPreview();renderDailyRecords();await renderDeletedRecords()})();
 </script></body></html>
