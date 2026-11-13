@@ -213,7 +213,7 @@ public class MainActivity extends Activity {
                     byte[] chunk = new byte[16384];
                     int count;
                     while ((count = gzip.read(chunk)) != -1) {
-                        if (output.size() + count > 150 * 1024 * 1024) throw new java.io.IOException("Backup exceeds restore limit");
+                        if (output.size() + count > 512 * 1024 * 1024) throw new java.io.IOException("Backup exceeds 512 MB restore limit");
                         output.write(chunk, 0, count);
                     }
                     return output.toString("UTF-8");
