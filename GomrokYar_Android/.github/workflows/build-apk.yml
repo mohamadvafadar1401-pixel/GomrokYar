@@ -3,7 +3,7 @@ name: Build GomrokYar APK
 on:
   workflow_dispatch:
   push:
-    branches: [ main, master, feature/original-v6-export-description-search, fix/original-v6-output-compression ]
+    branches: [ main, master, feature/original-v6-export-description-search, fix/original-v6-output-compression, test/offline-ocr-latest-original-v6 ]
 
 jobs:
   build:
@@ -28,6 +28,11 @@ jobs:
 
       - name: Install Android SDK components
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Download offline Persian OCR model
+        run: |
+          mkdir -p GomrokYar_Android/app/src/main/assets/tessdata
+          curl -L --fail --retry 3 https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/main/fas.traineddata -o GomrokYar_Android/app/src/main/assets/tessdata/fas.traineddata
 
       - name: Build debug APK
         working-directory: GomrokYar_Android
