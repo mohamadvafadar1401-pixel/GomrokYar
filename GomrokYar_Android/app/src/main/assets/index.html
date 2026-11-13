@@ -433,18 +433,26 @@ $('reportMode').addEventListener('change',refreshReportPreview);['reportFrom','r
 function transferKey(x){
   return JSON.stringify([String(x.created||''),String(x.eventType||'weighed'),normalizePlate(x.plateKey||x.manualPlate),String(x.permitNo||''),String(x.firstWeight||''),String(x.secondWeight||''),String(x.netWeight||''),String(x.goodsText||''),String(x.vehicleStatus||'')]);
 }
-function downloadJson(data,name){
-  const content=JSON.stringify(data,null,2),mime='application/json;charset=utf-8';
+async function downloadJson(data,name){
+  // Compact JSON: no pretty-print whitespace and no derived _syncKey field.
+  const content=JSON.stringify(data);
   try{
-    if(window.AndroidBridge&&typeof AndroidBridge.saveFile==='function'){
-      const bytes=new TextEncoder().encode(content);let binary='';
-      for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
-      AndroidBridge.saveFile(name,mime,btoa(binary));
+    if(window.AndroidBridge&&typeof AndroidBridge.saveGzipFile==='function'){
+      AndroidBridge.saveGzipFile(name.replace(/\\.json$/i,'.json.gz'),'application/gzip',content);
       return true;
     }
-  }catch(err){console.error('Android backup save failed',err)}
-  const blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+  }catch(err){console.error('Android GZIP backup failed',err)}
+  let bytes=new TextEncoder().encode(content),fileName=name,mime='application/json;charset=utf-8';
+  if(typeof CompressionStream!=='undefined'){
+    try{
+      const stream=new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
+      bytes=new Uint8Array(await new Response(stream).arrayBuffer());
+      fileName=name.replace(/\\.json$/i,'.json.gz');
+      mime='application/gzip';
+    }catch(err){console.warn('GZIP compression unavailable; saving compact JSON',err)}
+  }
+  const blob=new Blob([bytes],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=fileName;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
   return true;
 }
 function localISODate(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+day}
@@ -476,25 +484,33 @@ document.querySelectorAll('[data-daily-view]').forEach(b=>b.addEventListener('cl
 
 $('export').onclick=async()=>{
   const records=await allRecords(),maxNo=records.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);
-  const data={format:'gomrokyar-transfer',version:4,exportType:'full_backup',exportedAt:new Date().toISOString(),records:records.map(x=>({...x,_syncKey:transferKey(x)})),regions:await setting('regions'),templateMode:await setting('templateMode'),nextEntryNo:Math.max(Number(await setting('nextEntryNo'))||1,maxNo+1)};
-  downloadJson(data,'gomrokyar-full-backup-'+localISODate()+'.json');
+  const data={format:'gomrokyar-transfer',version:4,exportType:'full_backup',exportedAt:new Date().toISOString(),records:records.map(x=>{const r={...x};delete r._syncKey;return r}),regions:await setting('regions'),templateMode:await setting('templateMode'),nextEntryNo:Math.max(Number(await setting('nextEntryNo'))||1,maxNo+1)};
+  await downloadJson(data,'gomrokyar-full-backup-'+localISODate()+'.json');
 };
 $('exportDay').onclick=async()=>{
   const day=$('transferDate').value;if(!day){alert('تاریخ خروجی را انتخاب کن.');return}
   const all=await allRecords(),records=all.filter(x=>localISODate(new Date(x.created))===day);
   if(!records.length){alert('برای این تاریخ سابقه‌ای ثبت نشده است.');return}
-  const data={format:'gomrokyar-transfer',version:4,exportType:'daily',date:day,exportedAt:new Date().toISOString(),records:records.map(x=>({...x,_syncKey:transferKey(x)}))};
-  downloadJson(data,'gomrokyar-daily-'+day+'.json');
+  const data={format:'gomrokyar-transfer',version:4,exportType:'daily',date:day,exportedAt:new Date().toISOString(),records:records.map(x=>{const r={...x};delete r._syncKey;return r})};
+  await downloadJson(data,'gomrokyar-daily-'+day+'.json');
   $('recordCount').textContent='خروجی روز '+day+' شامل '+records.length.toLocaleString('fa-IR')+' سابقه آماده ارسال شد.';
 };
-function readBackupFile(file){
-  return new Promise((resolve,reject)=>{
-    if(typeof FileReader==='undefined'){reject(new Error('FileReader unavailable'));return}
-    const reader=new FileReader();
-    reader.onload=()=>resolve(String(reader.result||''));
-    reader.onerror=()=>reject(reader.error||new Error('File read failed'));
-    reader.readAsText(file,'UTF-8');
-  });
+async function readBackupFile(file){
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  // Detect GZIP by its magic bytes; ordinary legacy JSON backups remain supported.
+  if(bytes.length>=2&&bytes[0]===0x1f&&bytes[1]===0x8b){
+    if(typeof DecompressionStream!=='undefined'){
+      const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+      return await new Response(stream).text();
+    }
+    if(window.AndroidBridge&&typeof AndroidBridge.decompressGzip==='function'){
+      let binary='';
+      for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+      return AndroidBridge.decompressGzip(btoa(binary));
+    }
+    throw new Error('gzip_unsupported');
+  }
+  return new TextDecoder('utf-8').decode(bytes);
 }
 function validBackupRecord(x){
   return !!x&&typeof x==='object'&&!Array.isArray(x)&&typeof x.created==='string'&&Number.isFinite(new Date(x.created).getTime())&&
@@ -540,7 +556,7 @@ $('importFile').onchange=async e=>{
     alert('ورود اطلاعات با موفقیت انجام شد.\nسوابق بررسی‌شده: '+incoming.length.toLocaleString('fa-IR')+'\nسوابق جدید اضافه‌شده: '+fresh.length.toLocaleString('fa-IR')+'\nسوابق تکراری: '+(incoming.length-fresh.length).toLocaleString('fa-IR')+'\nاطلاعات قبلی برنامه حذف نشد.');
   }catch(err){
     console.error('GomrokYar import error',err);
-    const message=err&&err.message==='too_large'?'حجم فایل بیشتر از ۵۰ مگابایت است.':err&&err.message==='invalid_records'?'ساختار بعضی سوابق فایل معتبر نیست؛ هیچ تغییری اعمال نشد.':'فایل پشتیبان معتبر نیست یا خواندن آن انجام نشد؛ هیچ سابقه‌ای از برنامه حذف نشد.';
+    const message=err&&err.message==='too_large'?'حجم فایل بیشتر از ۵۰ مگابایت است.':err&&err.message==='gzip_unsupported'?'این گوشی امکان باز کردن فایل GZIP را ندارد؛ از نسخه جدید برنامه استفاده کن.':err&&err.message==='invalid_records'?'ساختار بعضی سوابق فایل معتبر نیست؛ هیچ تغییری اعمال نشد.':'فایل پشتیبان معتبر نیست یا خواندن آن انجام نشد؛ هیچ سابقه‌ای از برنامه حذف نشد.';
     alert(message);
   }finally{e.target.value=''}
 };
