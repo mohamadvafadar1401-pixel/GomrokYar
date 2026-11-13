@@ -213,12 +213,16 @@ public class MainActivity extends Activity {
                     byte[] chunk = new byte[16384];
                     int count;
                     while ((count = gzip.read(chunk)) != -1) {
-                        if (output.size() + count > 512 * 1024 * 1024) throw new java.io.IOException("Backup exceeds 512 MB restore limit");
+                        if (output.size() + count > 512 * 1024 * 1024) throw new java.io.IOException("backup_decompressed_too_large");
                         output.write(chunk, 0, count);
                     }
                     return output.toString("UTF-8");
                 }
             } catch (Exception e) {
+                if ("backup_decompressed_too_large".equals(e.getMessage()) ||
+                        (e.getCause() != null && "backup_decompressed_too_large".equals(e.getCause().getMessage()))) {
+                    throw new IllegalArgumentException("backup_decompressed_too_large", e);
+                }
                 throw new IllegalArgumentException("Invalid GZIP backup", e);
             }
         }
