@@ -356,8 +356,17 @@ setupImportManualPlate();
 $('impInGoods').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('impInOrigin').focus()}});
 $('impInOrigin').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('impInPermit').focus()}});
 $('impInPermit').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('impInFirst').focus()}});
+function focusNetWeightKeepImageVisible(){
+ const field=$('netWeight');
+ try{field.focus({preventScroll:true})}catch(_){field.focus()}
+ requestAnimationFrame(()=>{
+  const rect=field.getBoundingClientRect(),viewHeight=window.visualViewport?.height||window.innerHeight;
+  const targetTop=viewHeight*.68,delta=rect.top-targetTop;
+  if(Math.abs(delta)>8)window.scrollBy({top:delta,behavior:'smooth'});
+ });
+}
 function updatePlatePreview(prefix){const p=plateData(prefix);$(prefix+'Preview').textContent='پلاک: '+(p.display||'—')}
-function setupPlateInputs(prefix){const ids=['Suffix','Middle','City'];ids.forEach((part,i)=>{const el=$(prefix+part);el.addEventListener('input',()=>{el.value=onlyPlateDigits(el.value).slice(0,[2,3,2][i]);updatePlatePreview(prefix);if(el.value.length===[2,3,2][i]){if(i<2)$(prefix+ids[i+1]).focus();else if(prefix==='plateKey')$('netWeight').focus();else if(prefix==='impInPlate')$('impInGoods').focus()}});el.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!el.value&&i>0)$(prefix+ids[i-1]).focus()})})}
+function setupPlateInputs(prefix){const ids=['Suffix','Middle','City'];ids.forEach((part,i)=>{const el=$(prefix+part);el.addEventListener('input',()=>{el.value=onlyPlateDigits(el.value).slice(0,[2,3,2][i]);updatePlatePreview(prefix);if(el.value.length===[2,3,2][i]){if(i<2)$(prefix+ids[i+1]).focus();else if(prefix==='plateKey')focusNetWeightKeepImageVisible();else if(prefix==='impInPlate')$('impInGoods').focus()}});el.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!el.value&&i>0)$(prefix+ids[i-1]).focus()})})}
 ['plateKey','emptyPlate','exitPlate','historyPlate','dailyPlate'].forEach(setupPlateInputs);
 $('netWeight').addEventListener('input',()=>{const el=$('netWeight'),digits=normalizeDigits(el.value).replace(/\\D/g,'').slice(0,5);el.value=digits;if(digits.length===5)$('recordDate').focus()});
 $('netWeight').addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();const digits=normalizeDigits($('netWeight').value).replace(/\\D/g,'');if(digits.length===4||digits.length===5)$('recordDate').focus();else alert('وزن خالص باید چهار یا پنج رقم باشد.')});function typeLabel(t){return ({weighed:'ورود صادراتی با برگه باسکول',import_entry_manual:'ورود وارداتی با باسکول دستی',empty_entry:'ورود کامیون خالی',import_exit:'خروج کامیون وارداتی'})[t]||'ثبت برگه باسکول'}
