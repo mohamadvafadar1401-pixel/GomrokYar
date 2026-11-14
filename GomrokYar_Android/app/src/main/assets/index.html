@@ -369,58 +369,7 @@ function updatePlatePreview(prefix){const p=plateData(prefix);$(prefix+'Preview'
 function setupPlateInputs(prefix){const ids=['Suffix','Middle','City'];ids.forEach((part,i)=>{const el=$(prefix+part);el.addEventListener('input',()=>{el.value=onlyPlateDigits(el.value).slice(0,[2,3,2][i]);updatePlatePreview(prefix);if(el.value.length===[2,3,2][i]){if(i<2)$(prefix+ids[i+1]).focus();else if(prefix==='plateKey')focusNetWeightKeepImageVisible();else if(prefix==='impInPlate')$('impInGoods').focus()}});el.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!el.value&&i>0)$(prefix+ids[i-1]).focus()})})}
 ['plateKey','emptyPlate','exitPlate','historyPlate','dailyPlate'].forEach(setupPlateInputs);
 $('firstWeight').addEventListener('input',()=>{const el=$('firstWeight');el.value=normalizeDigits(el.value).replace(/\\D/g,'').slice(0,5);if(el.value.length===5)$('plateKeySuffix').focus()});$('firstWeight').addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();const digits=normalizeDigits($('firstWeight').value).replace(/\\D/g,'');if(digits.length===5)$('plateKeySuffix').focus();else alert('توزین اول باید دقیقاً پنج رقم باشد.')});$('netWeight').addEventListener('input',()=>{const el=$('netWeight'),digits=normalizeDigits(el.value).replace(/\\D/g,'').slice(0,5);el.value=digits;if(digits.length===5)$('recordDate').focus()});
-$('netWeight').addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();const digits=normalizeDigits($('netWeight').value).replace(/\\D/g,'');if(digits.length===4||digits.length===5)$('recordDate').focus();else alert('وزن خالص باید چهار یا پنج رقم باشد.')});
-let lastHistoricalReviewPlateKey='',lastWeightComparisonSignature='';
-async function reviewPreviousFirstWeights(plateKey){
- const records=(await allRecords()).filter(x=>(x.eventType||'weighed')==='weighed'&&normalizePlate(x.plateKey||x.manualPlate)===plateKey)
-  .sort((a,b)=>Date.parse(b.created||0)-Date.parse(a.created||0));
- const missing=records.filter(x=>normalizeDigits(x.firstWeight||'').replace(/\D/g,'').length!==5);
- let updatedCount=0;
- for(const record of missing){
-  const date=record.created?new Date(record.created).toLocaleString('fa-IR'):'تاریخ نامشخص';
-  const row=Number(record.entryNo)||Number(record.id)||'—';
-  let answer=null,digits='';
-  while(true){
-   answer=prompt('سابقه ورود قبلی این کامیون پیدا شد.\nپلاک: '+(record.manualPlate||record.plateKey)+'\nردیف ثبت: '+row+'\nتاریخ ورود: '+date+'\nوزن خالص ثبت‌شده: '+(record.netWeight||'ثبت نشده')+'\n\nتوزین اول سفر قبلی را از روی تصویر بررسی و وارد کن (۵ رقم):');
-   if(answer===null)break;
-   digits=normalizeDigits(answer).replace(/\D/g,'');
-   if(digits.length===5)break;
-   alert('توزین اول باید دقیقاً پنج رقم باشد. اگر فعلاً نمی‌خواهی اصلاح کنی، لغو را بزن.');
-  }
-  if(answer===null)break;
-  const updated={...record,firstWeight:digits};
-  await new Promise((resolve,reject)=>{const req=tx('records','readwrite').put(updated);req.onsuccess=resolve;req.onerror=()=>reject(req.error)});
-  updatedCount++;
- }
- if(updatedCount){
-  await renderRecords();await refreshReportPreview();
-  alert('توزین اول '+updatedCount.toLocaleString('fa-IR')+' سابقه قبلی این کامیون تکمیل شد.');
- }
-}
-async function compareCurrentFirstWeight(){
- const plate=plateData('plateKey'),current=normalizeDigits($('firstWeight').value).replace(/\D/g,'');
- if(!plate.complete||current.length!==5)return;
- const signature=plate.key+':'+current;if(signature===lastWeightComparisonSignature)return;
- const records=(await allRecords()).filter(x=>(x.eventType||'weighed')==='weighed'&&normalizePlate(x.plateKey||x.manualPlate)===plate.key)
-  .filter(x=>normalizeDigits(x.firstWeight||'').replace(/\D/g,'').length===5)
-  .sort((a,b)=>Date.parse(b.created||0)-Date.parse(a.created||0));
- const previous=records[0];if(!previous)return;
- lastWeightComparisonSignature=signature;
- const oldWeight=Number(normalizeDigits(previous.firstWeight).replace(/\D/g,'')),newWeight=Number(current),difference=newWeight-oldWeight;
- if(!Number.isFinite(oldWeight)||oldWeight===newWeight)return;
- const date=previous.created?new Date(previous.created).toLocaleString('fa-IR'):'تاریخ نامشخص';
- const direction=difference>0?'افزایش':'کاهش';
- alert('هشدار تغییر توزین اول کامیون '+(plate.display||plate.key)+'\n\nتوزین اول سفر قبلی ('+date+'): '+oldWeight.toLocaleString('fa-IR')+' کیلوگرم\nتوزین اول ورود فعلی: '+newWeight.toLocaleString('fa-IR')+' کیلوگرم\n\n'+direction+' وزن به میزان '+Math.abs(difference).toLocaleString('fa-IR')+' کیلوگرم نسبت به ورود قبلی.');
-}
-$('plateKeyCity').addEventListener('input',()=>{
- const plate=plateData('plateKey');
- if(!plate.complete){lastHistoricalReviewPlateKey='';lastWeightComparisonSignature='';return}
- if(plate.key===lastHistoricalReviewPlateKey)return;
- lastHistoricalReviewPlateKey=plate.key;lastWeightComparisonSignature='';
- reviewPreviousFirstWeights(plate.key).catch(err=>{console.error(err);alert('بررسی سوابق قبلی این کامیون انجام نشد.')});
-});
-$('firstWeight').addEventListener('input',()=>{compareCurrentFirstWeight().catch(err=>console.error('Weight comparison failed',err))});
-function typeLabel(t){return ({weighed:'ورود صادراتی با برگه باسکول',import_entry_manual:'ورود وارداتی با باسکول دستی',empty_entry:'ورود کامیون خالی',import_exit:'خروج کامیون وارداتی'})[t]||'ثبت برگه باسکول'}
+$('netWeight').addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();const digits=normalizeDigits($('netWeight').value).replace(/\\D/g,'');if(digits.length===4||digits.length===5)$('recordDate').focus();else alert('وزن خالص باید چهار یا پنج رقم باشد.')});function typeLabel(t){return ({weighed:'ورود صادراتی با برگه باسکول',import_entry_manual:'ورود وارداتی با باسکول دستی',empty_entry:'ورود کامیون خالی',import_exit:'خروج کامیون وارداتی'})[t]||'ثبت برگه باسکول'}
 function statusLabel(x){if(x.vehicleStatus==='empty')return 'خالی';if(x.vehicleStatus==='loaded_import')return 'حامل کالای وارداتی';if(x.vehicleStatus==='import_weighed')return 'وارداتی ـ باسکول دستی';return 'باسکول‌شده'}
 async function nextEntryNumber(all){let stored=Number(await setting('nextEntryNo'))||1,max=all.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);return Math.max(stored,max+1)}
 function duplicateRecordKey(record){
