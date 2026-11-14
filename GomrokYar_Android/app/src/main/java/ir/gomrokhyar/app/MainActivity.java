@@ -119,7 +119,7 @@ public class MainActivity extends Activity {
         webView.loadUrl("file:///android_asset/index.html");
     }
 
-    private boolean isBackupFileRequest(FileChooserParams params) {
+    private boolean isBackupFileRequest(WebChromeClient.FileChooserParams params) {
         if (params == null || params.getAcceptTypes() == null) return false;
         for (String type : params.getAcceptTypes()) {
             String value = type == null ? "" : type.toLowerCase(java.util.Locale.ROOT);
@@ -130,7 +130,7 @@ public class MainActivity extends Activity {
         return false;
     }
 
-    private boolean isImageFileRequest(FileChooserParams params) {
+    private boolean isImageFileRequest(WebChromeClient.FileChooserParams params) {
         if (params == null || params.getAcceptTypes() == null) return false;
         for (String type : params.getAcceptTypes()) {
             String value = type == null ? "" : type.toLowerCase(java.util.Locale.ROOT);
