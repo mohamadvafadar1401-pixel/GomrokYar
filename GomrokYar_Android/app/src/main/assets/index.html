@@ -507,7 +507,7 @@ async function renderTopTrucks(){
  list.querySelectorAll('[data-top-truck]').forEach(button=>button?.addEventListener('click',()=>{const truck=groups.get(button.dataset.topTruck);if(truck)renderTopTruckReport(truck)}));
 }
 $('topTrucksSearch')?.addEventListener('input',renderTopTrucks);
-$('toggleTopTruckPlateSearch')?.addEventListener('click',()=>{const box=$('topTruckPlateSearchBox'),button=$('toggleTopTruckPlateSearch'),opening=box.classList.contains('hide');box.classList.toggle('hide',!opening);button.setAttribute('aria-expanded',String(opening));button.textContent=opening?'− بستن جستجوی شماره کامیون':'＋ جستجوی شماره کامیون';if(opening)setTimeout(()=>focusAndScroll('topTruckPlateSuffix',.35),80)});
+$('toggleTopTruckPlateSearch')?.addEventListener('click',()=>{const box=$('topTruckPlateSearchBox'),button=$('toggleTopTruckPlateSearch'),opening=box.classList.contains('hide');box.classList.toggle('hide',!opening);button.setAttribute('aria-expanded',String(opening));button.textContent=opening?'− بستن جستجوی شماره کامیون':'＋ جستجوی شماره کامیون';if(opening)setTimeout(()=>{const field=$('topTruckPlateSuffix');if(field){field.focus();const rect=field.getBoundingClientRect(),vh=window.visualViewport?.height||window.innerHeight;window.scrollBy({top:rect.top-vh*.35,behavior:'smooth'})}},80)});
 $('topTruckPlateCity')?.addEventListener('input',()=>{const plate=plateData('topTruckPlate');if(plate.complete){$('topTrucksSearch').value=normalizeTopTruckKey(plate.key);renderTopTrucks()}});
 $('clearTopTruckPlateSearch')?.addEventListener('click',()=>{clearPlate('topTruckPlate');$('topTrucksSearch').value='';renderTopTrucks();$('topTruckPlateSuffix')?.focus()});
 $('topTrucksMinVisits')?.addEventListener('input',renderTopTrucks);
