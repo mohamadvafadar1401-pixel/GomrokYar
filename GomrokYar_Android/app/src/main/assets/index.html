@@ -1370,3 +1370,4 @@ $('lockAppBtn').onclick=()=>{closeDrawer();currentUser=null;$('loginUsername').v
 
 (async()=>{db=await openDB();await initAuth();regions=await setting('regions')||{};templateMode=(await setting('templateMode'))===true;const removedDuplicates=await cleanupDuplicateRecords();if(removedDuplicates){const status=$('backupStatus');if(status)status.textContent='بررسی خودکار سوابق انجام شد؛ '+removedDuplicates.toLocaleString('fa-IR')+' ثبت تکراری حذف شد.';}await renderRecords();await refreshReportPreview();renderDailyRecords();await renderDeletedRecords()})();
 </script></body></html>
+<!-- Rebuild restored known-good app logic; authentication implementation unchanged. -->
