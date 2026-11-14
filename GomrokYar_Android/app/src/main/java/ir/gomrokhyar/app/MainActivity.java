@@ -23,9 +23,6 @@ import android.webkit.WebViewClient;
 import android.widget.Toast;
 
 import android.util.Base64;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import com.googlecode.tesseract.android.TessBaseAPI;
 import java.io.OutputStream;
 import java.io.InputStream;
 import java.io.FileInputStream;
@@ -73,7 +70,6 @@ public class MainActivity extends Activity {
         settings.setAllowContentAccess(true);
         webView.setWebViewClient(new WebViewClient());
         webView.addJavascriptInterface(new ReportBridge(), "AndroidBridge");
-        webView.addJavascriptInterface(new OcrBridge(), "AndroidOcr");
         webView.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 clearPendingCallback();
@@ -128,42 +124,6 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             clearPendingCallback();
             Toast.makeText(this, "باز کردن دوربین ناموفق بود؛ دوباره تلاش کن.", Toast.LENGTH_LONG).show();
-        }
-    }
-
-    private class OcrBridge {
-        @JavascriptInterface public String recognizeFirstWeight(String base64) {
-            TessBaseAPI api = null;
-            Bitmap bitmap = null;
-            try {
-                byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
-                bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                if (bitmap == null) return "";
-                File root = new File(getFilesDir(), "tesseract");
-                File data = new File(root, "tessdata");
-                if (!data.exists() && !data.mkdirs()) return "";
-                File trained = new File(data, "fas.traineddata");
-                if (!trained.exists() || trained.length() < 100000) {
-                    try (InputStream in = getAssets().open("tessdata/fas.traineddata");
-                         FileOutputStream out = new FileOutputStream(trained)) {
-                        byte[] buffer = new byte[8192];
-                        int count;
-                        while ((count = in.read(buffer)) > 0) out.write(buffer, 0, count);
-                    }
-                }
-                api = new TessBaseAPI();
-                if (!api.init(root.getAbsolutePath(), "fas")) return "";
-                api.setPageSegMode(TessBaseAPI.PageSegMode.PSM_SINGLE_LINE);
-                api.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "0123456789۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩٬,.");
-                api.setImage(bitmap);
-                String result = api.getUTF8Text();
-                return result == null ? "" : result;
-            } catch (Exception e) {
-                return "";
-            } finally {
-                if (bitmap != null) bitmap.recycle();
-                if (api != null) { api.clear(); api.end(); }
-            }
         }
     }
 
