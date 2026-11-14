@@ -78,25 +78,65 @@ public class MainActivity extends Activity {
                     launchRearCamera();
                     return true;
                 }
+                boolean backupRequest = isBackupFileRequest(params);
                 Intent intent;
-                try {
-                    intent = params.createIntent();
-                } catch (Exception ignored) {
+                if (backupRequest) {
+                    // Older Samsung file pickers may hide JSON files when filtered by MIME type.
+                    // Show all openable files and validate the selected file in the app.
                     intent = new Intent(Intent.ACTION_GET_CONTENT);
                     intent.addCategory(Intent.CATEGORY_OPENABLE);
-                    intent.setType("image/*");
+                    intent.setType("*/*");
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                } else {
+                    try {
+                        intent = params.createIntent();
+                    } catch (Exception ignored) {
+                        intent = new Intent(Intent.ACTION_GET_CONTENT);
+                        intent.addCategory(Intent.CATEGORY_OPENABLE);
+                        intent.setType(isImageFileRequest(params) ? "image/*" : "*/*");
+                    }
                 }
                 try {
                     startActivityForResult(intent, FILE_CHOOSER_REQUEST);
                 } catch (Exception e) {
+                    if (backupRequest) {
+                        try {
+                            Intent fallback = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                            fallback.addCategory(Intent.CATEGORY_OPENABLE);
+                            fallback.setType("*/*");
+                            fallback.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            startActivityForResult(fallback, FILE_CHOOSER_REQUEST);
+                            return true;
+                        } catch (Exception ignored) { }
+                    }
                     clearPendingCallback();
-                    Toast.makeText(MainActivity.this, "امکان باز کردن گالری وجود ندارد.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "امکان باز کردن فایل وجود ندارد.", Toast.LENGTH_LONG).show();
                     return false;
                 }
                 return true;
             }
         });
         webView.loadUrl("file:///android_asset/index.html");
+    }
+
+    private boolean isBackupFileRequest(FileChooserParams params) {
+        if (params == null || params.getAcceptTypes() == null) return false;
+        for (String type : params.getAcceptTypes()) {
+            String value = type == null ? "" : type.toLowerCase(java.util.Locale.ROOT);
+            if (value.contains("json") || value.contains("gzip") || value.contains(".gz") || value.contains(".json")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isImageFileRequest(FileChooserParams params) {
+        if (params == null || params.getAcceptTypes() == null) return false;
+        for (String type : params.getAcceptTypes()) {
+            String value = type == null ? "" : type.toLowerCase(java.util.Locale.ROOT);
+            if (value.startsWith("image/") || value.contains("image/*")) return true;
+        }
+        return false;
     }
 
     private void launchRearCamera() {

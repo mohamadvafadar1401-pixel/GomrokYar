@@ -1263,8 +1263,28 @@ $('exportRange').onclick=async()=>{
   await downloadJson(data,'gomrokyar-'+(start===end?'daily-':'range-')+start+'-'+end+'.json');
   $('backupStatus').textContent='خروجی بازه '+start+' تا '+end+' شامل '+records.length.toLocaleString('fa-IR')+' سابقه آماده ارسال شد.';
 };
+function readBackupBytes(file){
+  return new Promise((resolve,reject)=>{
+    if(file&&typeof file.arrayBuffer==='function'){
+      file.arrayBuffer().then(resolve,reject);
+      return;
+    }
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=()=>reject(reader.error||new Error('file_read_failed'));
+    reader.onabort=()=>reject(new Error('file_read_aborted'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+function decodeBackupUtf8(bytes){
+  if(typeof TextDecoder!=='undefined')return new TextDecoder('utf-8').decode(bytes);
+  let binary='';
+  for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
+  try{return decodeURIComponent(escape(binary));}catch(e){return binary;}
+}
 async function readBackupFile(file){
-  const bytes=new Uint8Array(await file.arrayBuffer());
+  const buffer=await readBackupBytes(file);
+  const bytes=new Uint8Array(buffer);
   if(bytes.length>=2&&bytes[0]===0x1f&&bytes[1]===0x8b){
     if(typeof DecompressionStream!=='undefined'){
       const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
@@ -1277,7 +1297,7 @@ async function readBackupFile(file){
     }
     throw new Error('gzip_unsupported');
   }
-  return new TextDecoder('utf-8').decode(bytes);
+  return decodeBackupUtf8(bytes);
 }
 function validBackupRecord(x){
   return !!x&&typeof x==='object'&&!Array.isArray(x)&&typeof x.created==='string'&&Number.isFinite(new Date(x.created).getTime())&&
