@@ -663,7 +663,7 @@ $('preview')?.addEventListener('click',async ev=>{
 async function cropToPaper(im,rect){const w=im.naturalWidth||im.width,h=im.naturalHeight||im.height;let x=Math.max(0,Math.floor(rect.x*w)),y=Math.max(0,Math.floor(rect.y*h)),r=Math.min(w,Math.ceil((rect.x+rect.w)*w)),b=Math.min(h,Math.ceil((rect.y+rect.h)*h));if(r-x<100||b-y<100)throw new Error('کادر برگه خیلی کوچک است');const c=document.createElement('canvas');c.width=r-x;c.height=b-y;c.getContext('2d').drawImage(im,x,y,c.width,c.height,0,0,c.width,c.height);return loadImageData(c.toDataURL('image/jpeg',.96))}
 function toImageRect(r){return{x:frameRect.x+r.x*frameRect.w,y:frameRect.y+r.y*frameRect.h,w:r.w*frameRect.w,h:r.h*frameRect.h}}
 function toFrameRect(r){return{x:clamp((r.x-frameRect.x)/frameRect.w),y:clamp((r.y-frameRect.y)/frameRect.h),w:clamp(r.w/frameRect.w,0,1),h:clamp(r.h/frameRect.h,0,1)}}
-let tableSelection=null,tableDragStart=null,tableDragCurrent=null;
+let tableSelection=null,tableDragStart=null,tableDragCurrent=null,tableEditStart=null;
 function tableCanvasPoint(ev){
   const c=$('tableSelectCanvas'),r=c.getBoundingClientRect();
   const x=clamp((ev.clientX-r.left-c.clientLeft)/Math.max(1,c.clientWidth))*c.width;const y=clamp((ev.clientY-r.top-c.clientTop)/Math.max(1,c.clientHeight))*c.height;return {x,y};
@@ -679,8 +679,39 @@ function drawTableSelection(){
     ctx.save();ctx.fillStyle='rgba(10,20,18,.38)';ctx.fillRect(0,0,c.width,c.height);
     ctx.clearRect(r.x,r.y,r.w,r.h);ctx.drawImage(image,r.x,r.y,r.w,r.h,r.x,r.y,r.w,r.h);
     ctx.strokeStyle='#ffb000';ctx.lineWidth=Math.max(5,c.width/250);ctx.setLineDash([]);
-    ctx.strokeRect(r.x,r.y,r.w,r.h);ctx.restore();
+    ctx.strokeRect(r.x,r.y,r.w,r.h);
+    if(tableSelection&&!tableDragStart){
+      const rr=Math.max(18,Math.min(c.width,c.height)*.009),pts=tableHandlePoints(r);
+      pts.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,rr,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.lineWidth=Math.max(4,rr*.22);ctx.strokeStyle='#d98b00';ctx.stroke()});
+    }
+    ctx.restore();
   }
+}
+function tableHandlePoints(r){const mx=r.x+r.w/2,my=r.y+r.h/2;return [{id:'nw',x:r.x,y:r.y},{id:'n',x:mx,y:r.y},{id:'ne',x:r.x+r.w,y:r.y},{id:'e',x:r.x+r.w,y:my},{id:'se',x:r.x+r.w,y:r.y+r.h},{id:'s',x:mx,y:r.y+r.h},{id:'sw',x:r.x,y:r.y+r.h},{id:'w',x:r.x,y:my}]}
+function tableHitMode(p){
+  if(!tableSelection)return 'draw';
+  const r=tableSelection,tol=Math.max(30,Math.min($('tableSelectCanvas').width,$('tableSelectCanvas').height)*.014);
+  for(const h of tableHandlePoints(r))if(Math.hypot(p.x-h.x,p.y-h.y)<=tol)return h.id;
+  if(p.x>=r.x&&p.x<=r.x+r.w&&p.y>=r.y&&p.y<=r.y+r.h)return 'move';
+  return 'draw';
+}
+function updateTableSelection(p){
+  const st=tableEditStart;if(!st)return;
+  if(st.mode==='draw'){
+    const a=st.point,x=Math.min(a.x,p.x),y=Math.min(a.y,p.y);
+    tableSelection={x,y,w:Math.abs(p.x-a.x),h:Math.abs(p.y-a.y)};return;
+  }
+  const r=st.rect,dx=p.x-st.point.x,dy=p.y-st.point.y;
+  if(st.mode==='move'){
+    const x=clamp(r.x+dx,0,image.naturalWidth-r.w),y=clamp(r.y+dy,0,image.naturalHeight-r.h);
+    tableSelection={x,y,w:r.w,h:r.h};return;
+  }
+  let l=r.x,t=r.y,right=r.x+r.w,bottom=r.y+r.h;
+  if(st.mode.includes('w'))l=clamp(r.x+dx,0,right- image.naturalWidth*.08);
+  if(st.mode.includes('e'))right=clamp(r.x+r.w+dx,l+image.naturalWidth*.08,image.naturalWidth);
+  if(st.mode.includes('n'))t=clamp(r.y+dy,0,bottom-image.naturalHeight*.08);
+  if(st.mode.includes('s'))bottom=clamp(r.y+r.h+dy,t+image.naturalHeight*.08,image.naturalHeight);
+  tableSelection={x:l,y:t,w:right-l,h:bottom-t};
 }
 async function handleSelectedPhoto(e){
   const f=e.target.files[0];if(!f)return;
@@ -701,23 +732,30 @@ $('selectTableBtn').onclick=()=>{
   tableSelection=null;
   const c=$('tableSelectCanvas');c.width=image.naturalWidth;c.height=image.naturalHeight;
   $('tableSelectActionRow').classList.add('hide');$('preview').classList.add('hide');$('tableSelectCanvas').classList.remove('hide');$('tableSelectControls').classList.remove('hide');$('cropPanel').classList.add('hide');$('dataPanel').classList.add('hide');
-  $('tableSelectStatus').textContent='مستطیل را دور جدول بکش.';
+  $('tableSelectStatus').textContent='مستطیل را دور جدول بکش؛ بعد از رسم، با دستگیره‌های سفید اندازه‌اش را تغییر بده یا داخل کادر را جابه‌جا کن.';
   drawTableSelection();requestAnimationFrame(()=>$('tableSelectCanvas').scrollIntoView({behavior:'smooth',block:'center'}));
 };
 $('tableSelectCanvas')?.addEventListener('pointerdown',ev=>{
-  if(!image)return;ev.preventDefault();tableDragStart=tableCanvasPoint(ev);tableDragCurrent=tableDragStart;
-  tableSelection=null;drawTableSelection();if($('tableSelectCanvas').setPointerCapture)$('tableSelectCanvas').setPointerCapture(ev.pointerId);
+  if(!image)return;ev.preventDefault();const p=tableCanvasPoint(ev),mode=tableHitMode(p);
+  tableEditStart={mode,point:p,rect:tableSelection?{...tableSelection}:null};
+  tableDragStart=mode==='draw'?p:null;tableDragCurrent=mode==='draw'?p:null;
+  if($('tableSelectCanvas').setPointerCapture)$('tableSelectCanvas').setPointerCapture(ev.pointerId);
 });
-$('tableSelectCanvas')?.addEventListener('pointermove',ev=>{if(!tableDragStart)return;ev.preventDefault();tableDragCurrent=tableCanvasPoint(ev);drawTableSelection();});
+$('tableSelectCanvas')?.addEventListener('pointermove',ev=>{
+  if(!tableEditStart)return;ev.preventDefault();const p=tableCanvasPoint(ev);
+  if(tableEditStart.mode==='draw'){tableDragCurrent=p;}else updateTableSelection(p);
+  drawTableSelection();
+});
 $('tableSelectCanvas')?.addEventListener('pointerup',ev=>{
-  if(!tableDragStart)return;ev.preventDefault();const p=tableCanvasPoint(ev),a=tableDragStart;tableDragCurrent=p;
-  const x=Math.min(a.x,p.x),y=Math.min(a.y,p.y),w=Math.abs(p.x-a.x),h=Math.abs(p.y-a.y);
-  tableDragStart=null;tableDragCurrent=null;
-  if(w<image.naturalWidth*.08||h<image.naturalHeight*.08){$('tableSelectStatus').textContent='محدوده خیلی کوچک است؛ دوباره دور کل جدول را انتخاب کن.';return;}
-  tableSelection={x,y,w,h};drawTableSelection();
-  $('tableSelectStatus').textContent='کادر دور جدول مشخص شد. اگر کل جدول داخل کادر است، تأیید را بزن.';
+  if(!tableEditStart)return;ev.preventDefault();const p=tableCanvasPoint(ev);
+  if(tableEditStart.mode==='draw'){tableDragCurrent=p;updateTableSelection(p);}
+  else updateTableSelection(p);
+  tableEditStart=null;tableDragStart=null;tableDragCurrent=null;drawTableSelection();
+  const r=tableSelection;
+  if(!r||r.w<image.naturalWidth*.08||r.h<image.naturalHeight*.08){tableSelection=null;drawTableSelection();$('tableSelectStatus').textContent='محدوده خیلی کوچک است؛ دوباره دور کل جدول را انتخاب کن.';return;}
+  $('tableSelectStatus').textContent='محدوده مشخص است؛ با کشیدن دستگیره‌های سفیدِ گوشه‌ها و وسط لبه‌ها اندازه را اصلاح کن، یا داخل کادر را جابه‌جا کن. سپس تأیید را بزن.';
 });
-$('tableSelectCanvas')?.addEventListener('pointercancel',()=>{tableDragStart=null;tableDragCurrent=null;drawTableSelection()});
+$('tableSelectCanvas')?.addEventListener('pointercancel',()=>{tableEditStart=null;tableDragStart=null;tableDragCurrent=null;drawTableSelection()});
 $('confirmTableRegion').onclick=async()=>{
   if(!image||!tableSelection){alert('ابتدا محدوده جدول را روی عکس مشخص کن.');return;}
   try{
