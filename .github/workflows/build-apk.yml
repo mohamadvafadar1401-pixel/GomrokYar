@@ -86,3 +86,5 @@ jobs:
           path: GomrokYar_Android/app/build/outputs/apk/release/app-release.apk
 
 # All future updates must use this same permanent signing key and keep applicationId unchanged.
+
+# Rebuild after completing the full weighbridge-record editor in Original 7.
