@@ -88,3 +88,5 @@ jobs:
 # All future updates must use this same permanent signing key and keep applicationId unchanged.
 
 # Rebuild after completing the full weighbridge-record editor in Original 7.
+
+# Rebuild after narrowing the weighbridge edit form to the two requested crops and fields.
