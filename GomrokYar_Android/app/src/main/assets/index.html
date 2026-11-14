@@ -1186,24 +1186,34 @@ function openDailyDelete(record){
  $('dailyDeleteModal').classList.remove('hide');$('dailyDeleteReason').focus();
 }
 function openDailyEdit(record){
- pendingDailyEditId=Number(record.id);const kind=record.eventType||'weighed',digits=onlyPlateDigits(record.plateKey||record.manualPlate);
+ pendingDailyEditId=Number(record.id);const kind=record.eventType||'weighed',isWeighed=kind==='weighed',digits=onlyPlateDigits(record.plateKey||record.manualPlate);
  $('editPlateCity').value=digits.length>=7?digits.slice(0,2):'';$('editPlateMiddle').value=digits.length>=7?digits.slice(2,5):'';$('editPlateSuffix').value=digits.length>=7?digits.slice(5,7):'';
  updatePlatePreview('editPlate');
  const show=(id,yes)=>$(id).classList.toggle('hide',!yes);
- show('editGoodsField',kind==='import_entry_manual'||kind==='import_exit'||kind==='weighed');show('editOriginField',kind==='weighed'||kind==='import_entry_manual');show('editCategoryField',kind==='weighed');
- show('editPermitField',kind==='import_entry_manual'||kind==='weighed');show('editFirstField',kind==='import_entry_manual'||kind==='weighed');show('editSecondField',kind==='import_entry_manual'||kind==='weighed');
- show('editNetField',kind==='weighed'||kind==='import_entry_manual');
+ show('editPlateFields',!isWeighed);show('editGoodsField',!isWeighed&&(kind==='import_entry_manual'||kind==='import_exit'));show('editOriginField',!isWeighed&&kind==='import_entry_manual');show('editCategoryField',isWeighed);
+ show('editPermitField',!isWeighed&&kind==='import_entry_manual');show('editFirstField',isWeighed||kind==='import_entry_manual');show('editSecondField',!isWeighed&&kind==='import_entry_manual');
+ show('editNetField',!isWeighed&&kind==='import_entry_manual');
  $('editGoods').value=record.goodsText||'';$('editOrigin').value=record.originText||'';$('editCategory').value=record.category||'';$('editPermit').value=record.permitNo||'';$('editFirst').value=record.firstWeight||'';$('editSecond').value=record.secondWeight||'';$('editNet').value=record.netWeight||'';$('editRecordDate').value=record.created?jalaliDisplay(new Date(record.created)):jalaliDisplay(new Date());$('editRecordDescription').value=record.description||record.notes||'';
- const slip=$('editSlipPreview');if(slip){const images=[];if(record.original&&String(record.original).startsWith('data:image'))images.push('<figure><img src="'+record.original+'" alt="تصویر اصلی برگه باسکول"><figcaption>تصویر اصلی برگه باسکول</figcaption></figure>');if(Array.isArray(record.crops))record.crops.forEach((crop,index)=>{const src=typeof crop==='string'?crop:crop?.dataUrl||crop?.src||crop?.image;if(src&&String(src).startsWith('data:image'))images.push('<figure><img src="'+src+'" alt="بخش برش‌خورده '+(index+1)+'"><figcaption>بخش '+(index+1)+' برگه</figcaption></figure>')});slip.innerHTML=images.length?'<div class="daily-info-images">'+images.join('')+'</div>':'<p class="small">تصویر برگه باسکول برای این سابقه ذخیره نشده است.</p>';slip.classList.toggle('hide',kind!=='weighed');}
- $('dailyEditTitle').textContent='ویرایش '+typeLabel(kind)+' ـ ردیف '+(Number(record.entryNo)||record.id);
+ show('editRecordDate',!isWeighed);show('editRecordDescription',!isWeighed);
+ const slip=$('editSlipPreview');if(slip){const images=[];const crops=record.crops||{};for(const [key,label] of [['goods','برش نوع کالا'],['first','برش توزین اول']]){const crop=crops[key],src=typeof crop==='string'?crop:crop?.dataUrl||crop?.src||crop?.image;if(src&&String(src).startsWith('data:image'))images.push('<figure><img src="'+src+'" alt="'+label+'"><figcaption>'+label+'</figcaption></figure>');else images.push('<figure><div class="hint">تصویر برش ذخیره نشده است</div><figcaption>'+label+'</figcaption></figure>')}slip.innerHTML='<div class="daily-info-images">'+images.join('')+'</div>';slip.classList.toggle('hide',!isWeighed);}
+ $('dailyEditTitle').textContent='تکمیل اطلاعات باسکول ـ ردیف '+(Number(record.entryNo)||record.id);
  $('dailyEditStatus').textContent='';$('dailyEditModal').classList.remove('hide');
 }
 async function saveDailyEdit(){
  const id=pendingDailyEditId;if(!id)return;
  const all=await allRecords(),record=all.find(x=>Number(x.id)===id);if(!record)return;
+ const kind=record.eventType||'weighed';
+ if(kind==='weighed'){
+  const category=$('editCategory').value.trim(),first=$('editFirst').value.trim();
+  if(!category){$('dailyEditStatus').textContent='دسته کالا را انتخاب کن.';return}
+  if(!first){$('dailyEditStatus').textContent='وزن توزین اول را از روی برش وارد کن.';return}
+  const updated={...record,category,firstWeight:first};
+  try{await new Promise((resolve,reject)=>{const req=tx('records','readwrite').put(updated);req.onsuccess=resolve;req.onerror=()=>reject(req.error)});$('dailyEditModal').classList.add('hide');pendingDailyEditId=null;await renderRecords();await refreshReportPreview();renderDailyRecords();if($('topTrucksTab')&&!$('topTrucksTab').classList.contains('hide')){await renderTopTrucks();await renderTopTruckDetailsByKey(record.plateKey||record.manualPlate)}}catch(e){$('dailyEditStatus').textContent='ذخیره ویرایش انجام نشد؛ دوباره تلاش کن.'}
+  return;
+ }
  const plate=plateData('editPlate');if(!plate.complete){$('dailyEditStatus').textContent='شماره پلاک را کامل وارد کن.';return}
- const kind=record.eventType||'weighed',dateText=$('editRecordDate').value.trim(),parsedDate=parseJalaliDate(dateText);if(!parsedDate){$('dailyEditStatus').textContent='تاریخ ثبت معتبر نیست؛ از تقویم یا قالب سال/ماه/روز استفاده کن.';return}const oldDate=new Date(record.created),newDate=new Date(parsedDate.getFullYear(),parsedDate.getMonth(),parsedDate.getDate(),oldDate.getHours(),oldDate.getMinutes(),oldDate.getSeconds(),oldDate.getMilliseconds());const updated={...record,manualPlate:plate.display,plateKey:plate.key,created:newDate.toISOString(),description:$('editRecordDescription').value.trim()};
- if(kind==='weighed'){const fields=[['goodsText','editGoods','نوع کالا'],['originText','editOrigin','مبدأ'],['permitNo','editPermit','شماره مجوز بارگیری'],['firstWeight','editFirst','توزین اول'],['secondWeight','editSecond','توزین دوم'],['netWeight','editNet','وزن خالص'],['category','editCategory','دسته کالا']];for(const [key,field,label] of fields){const value=$(field).value.trim();if(!value){$('dailyEditStatus').textContent='فیلد «'+label+'» را تکمیل کن.';return}updated[key]=value}}
+ const dateText=$('editRecordDate').value.trim(),parsedDate=parseJalaliDate(dateText);if(!parsedDate){$('dailyEditStatus').textContent='تاریخ ثبت معتبر نیست؛ از تقویم یا قالب سال/ماه/روز استفاده کن.';return}const oldDate=new Date(record.created),newDate=new Date(parsedDate.getFullYear(),parsedDate.getMonth(),parsedDate.getDate(),oldDate.getHours(),oldDate.getMinutes(),oldDate.getSeconds(),oldDate.getMilliseconds());const updated={...record,manualPlate:plate.display,plateKey:plate.key,created:newDate.toISOString(),description:$('editRecordDescription').value.trim()};
+
  if(kind==='import_entry_manual'){
   const fields=[['goodsText','editGoods'],['permitNo','editPermit'],['firstWeight','editFirst'],['secondWeight','editSecond'],['netWeight','editNet']];
   for(const [key,idField] of fields){const value=$(idField).value.trim();if(!value){$('dailyEditStatus').textContent='لطفاً همه خانه‌های دستی را تکمیل کن.';return}updated[key]=value}
