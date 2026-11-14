@@ -498,6 +498,16 @@ $('closeDrawerBtn').onclick=closeDrawer;$('drawerBackdrop').onclick=closeDrawer;
 $('appDrawer').querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',closeDrawer));
 
 $('impInNet').readOnly=true;
+function focusImportFirstNext(){
+ const next=$('impInSecond');
+ if(!next)return;
+ try{next.focus({preventScroll:true})}catch(_){next.focus()}
+ requestAnimationFrame(()=>{
+  const rect=next.getBoundingClientRect(),viewHeight=window.visualViewport?.height||window.innerHeight;
+  const targetTop=viewHeight*.62,delta=rect.top-targetTop;
+  if(Math.abs(delta)>8)window.scrollBy({top:delta,behavior:'smooth'});
+ });
+}
 function updateImportManualNet(){
  const first=normalizeDigits($('impInFirst').value).replace(/\D/g,'');
  const second=normalizeDigits($('impInSecond').value).replace(/\D/g,'');
@@ -513,19 +523,29 @@ function updateImportManualNet(){
   const digits=normalizeDigits(field.value).replace(/\D/g,'').slice(0,5);
   field.value=digits;
   updateImportManualNet();
-  if(digits.length===5)$(nextId).focus();
+  if(digits.length===5){
+   if(id==='impInFirst')focusImportFirstNext();
+   else $(nextId).focus();
+  }
  });
  field?.addEventListener('paste',e=>{
   e.preventDefault();
   const pasted=normalizeDigits(e.clipboardData?.getData('text')||'').replace(/\D/g,'').slice(0,5);
   field.value=pasted;
   updateImportManualNet();
-  if(pasted.length===5)$(nextId).focus();
+  if(pasted.length===5){
+   if(id==='impInFirst')focusImportFirstNext();
+   else $(nextId).focus();
+  }
  });
  field?.addEventListener('keydown',e=>{
   if(e.key!=='Enter')return;
   e.preventDefault();
   const digits=normalizeDigits(field.value).replace(/\D/g,'');
+  if(id==='impInFirst'){
+   if(digits.length===4)focusImportFirstNext();
+   return;
+  }
   if(digits.length<4){alert('حداقل چهار رقم وزن را وارد کن.');field.focus();return}
   updateImportManualNet();
   if(id==='impInSecond'&&!$('impInNet').value){alert('توزین دوم باید از توزین اول بیشتر یا مساوی باشد.');field.focus();return}
