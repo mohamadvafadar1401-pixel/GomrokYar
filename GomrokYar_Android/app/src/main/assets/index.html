@@ -1290,6 +1290,7 @@ $('dailyEditModal')?.addEventListener('click',e=>{if(e.target===$('dailyEditModa
 $('closeDailyEdit')?.addEventListener('click',()=>$('dailyEditModal').classList.add('hide'));
 $('cancelDailyEdit')?.addEventListener('click',()=>$('dailyEditModal').classList.add('hide'));
 $('saveDailyEdit')?.addEventListener('click',saveDailyEdit);
+ $('editCategory')?.addEventListener('change',()=>{if($('editFirstField')&&!$('editFirstField').classList.contains('hide')){setTimeout(()=>{const field=$('editFirst');if(!field)return;field.focus();field.scrollIntoView({behavior:'smooth',block:'center'})},100)}});
 $('dailyDeleteModal')?.addEventListener('click',e=>{if(e.target===$('dailyDeleteModal'))$('dailyDeleteModal').classList.add('hide')});
 $('closeDailyDelete')?.addEventListener('click',()=>$('dailyDeleteModal').classList.add('hide'));
 $('cancelDailyDelete')?.addEventListener('click',()=>$('dailyDeleteModal').classList.add('hide'));
