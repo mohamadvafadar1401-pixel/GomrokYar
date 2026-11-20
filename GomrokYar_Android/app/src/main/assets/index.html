@@ -533,8 +533,27 @@ async function renderTopTruckDetailsByKey(key){
 let pendingPreviousRecordsReturnTab=null;
 async function notifyPreviousPlateRecords(plateKey,previousRecords){
  if(!Array.isArray(previousRecords)||!previousRecords.length)return;
- const missingCategory=previousRecords.filter(record=>(record.eventType||'weighed')==='weighed'&&!String(record.category||'').trim()).length;
- const message='برای این پلاک '+previousRecords.length.toLocaleString('fa-IR')+' سابقه ورود قبلی پیدا شد.'+(missingCategory?'\nاز این تعداد، '+missingCategory.toLocaleString('fa-IR')+' سابقه صادراتی دسته کالا ندارند.':'')+'\nمی‌خواهی همین حالا سوابق قبلی را ببینی و فیلدهای ناقص را اصلاح کنی؟';
+ const measurableRecords=previousRecords.filter(record=>['weighed','import_entry_manual'].includes(record.eventType||'weighed'));
+ const missingCategory=measurableRecords.filter(record=>!String(record.category||'').trim()).length;
+ const readWeight=record=>{
+  const raw=record.firstWeight??record.emptyWeight??record.first_weight??record.weight1??'';
+  const digits=normalizeDigits(String(raw)).replace(/[^0-9]/g,'');
+  return digits?Number(digits):NaN;
+ };
+ const missingWeight=measurableRecords.filter(record=>{
+  const first=readWeight(record),netRaw=record.netWeight??record.net_weight??'';
+  const netDigits=normalizeDigits(String(netRaw)).replace(/[^0-9]/g,'');
+  return !Number.isFinite(first)||first<=0||!netDigits||Number(netDigits)<=0;
+ }).length;
+ const weights=measurableRecords.map(readWeight).filter(weight=>Number.isFinite(weight)&&weight>0);
+ const weightDifference=weights.length>=2?Math.max(...weights)-Math.min(...weights):null;
+ const redDifference=weightDifference!==null&&weightDifference>1000;
+ if(!missingCategory&&!missingWeight&&!redDifference)return;
+ const reasons=[];
+ if(missingCategory)reasons.push(missingCategory.toLocaleString('fa-IR')+' سابقه بدون دسته‌بندی');
+ if(missingWeight)reasons.push(missingWeight.toLocaleString('fa-IR')+' سابقه بدون وزن کامل');
+ if(redDifference)reasons.push('اختلاف وزن خالی قرمز ('+weightDifference.toLocaleString('fa-IR')+' کیلوگرم)');
+ const message='برای این پلاک '+previousRecords.length.toLocaleString('fa-IR')+' تردد قبلی ثبت شده و نیاز به بررسی دارد:\n'+reasons.join('\n')+'\nمی‌خواهی سوابق را ببینی و موارد ناقص یا اختلاف وزن قرمز را اصلاح کنی؟';
  if(!confirm(message))return;
  const activeRegistrationView=['weighTab','importEntryTab','emptyTab','exitTab'].find(id=>$(id)&&!$(id).classList.contains('hide'));
  pendingPreviousRecordsReturnTab=activeRegistrationView==='weighTab'||activeRegistrationView==='importEntryTab'?activeRegistrationView:null;
