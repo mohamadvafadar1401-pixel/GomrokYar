@@ -530,12 +530,19 @@ async function renderTopTruckDetailsByKey(key){
  const plate=matched.find(record=>record.manualPlate)?.manualPlate||matched[0].plateKey||normalized;
  renderTopTruckReport({key:normalized,plate,records:matched});return true;
 }
+let pendingPreviousRecordsReturnTab=null;
 async function notifyPreviousPlateRecords(plateKey,previousRecords){
  if(!Array.isArray(previousRecords)||!previousRecords.length)return;
  const missingCategory=previousRecords.filter(record=>(record.eventType||'weighed')==='weighed'&&!String(record.category||'').trim()).length;
  const message='برای این پلاک '+previousRecords.length.toLocaleString('fa-IR')+' سابقه ورود قبلی پیدا شد.'+(missingCategory?'\nاز این تعداد، '+missingCategory.toLocaleString('fa-IR')+' سابقه صادراتی دسته کالا ندارند.':'')+'\nمی‌خواهی همین حالا سوابق قبلی را ببینی و فیلدهای ناقص را اصلاح کنی؟';
  if(!confirm(message))return;
+ const activeRegistrationView=['weighTab','importEntryTab','emptyTab','exitTab'].find(id=>$(id)&&!$(id).classList.contains('hide'));
+ pendingPreviousRecordsReturnTab=activeRegistrationView==='weighTab'||activeRegistrationView==='importEntryTab'?activeRegistrationView:null;
  $('topTrucksMinVisits').value='1';$('topTrucksSearch').value='';switchTab('topTrucksTab');await renderTopTrucks();await renderTopTruckDetailsByKey(plateKey);
+}
+function returnToPendingRegistrationAfterEdit(){
+ const target=pendingPreviousRecordsReturnTab;pendingPreviousRecordsReturnTab=null;
+ if(target)switchTab(target);
 }
 async function renderTopTrucks(){
  const list=$('topTrucksList'),summary=$('topTrucksSummary'),details=$('topTruckDetails'),homeList=$('homeTopTrucksList'),homeSummary=$('homeTopTrucksSummary');if(!list||!summary||!details)return;
@@ -1317,7 +1324,7 @@ async function saveDailyEdit(){
   if(!category){$('dailyEditStatus').textContent='دسته کالا را انتخاب کن.';return}
   if(!first){$('dailyEditStatus').textContent='وزن توزین اول را از روی برش وارد کن.';return}
   const updated={...record,category,firstWeight:first};
-  try{await new Promise((resolve,reject)=>{const req=tx('records','readwrite').put(updated);req.onsuccess=resolve;req.onerror=()=>reject(req.error)});$('dailyEditModal').classList.add('hide');pendingDailyEditId=null;await renderRecords();await refreshReportPreview();renderDailyRecords();if($('topTrucksTab')&&!$('topTrucksTab').classList.contains('hide')){await renderTopTrucks();await renderTopTruckDetailsByKey(record.plateKey||record.manualPlate)}}catch(e){$('dailyEditStatus').textContent='ذخیره ویرایش انجام نشد؛ دوباره تلاش کن.'}
+  try{await new Promise((resolve,reject)=>{const req=tx('records','readwrite').put(updated);req.onsuccess=resolve;req.onerror=()=>reject(req.error)});$('dailyEditModal').classList.add('hide');pendingDailyEditId=null;await renderRecords();await refreshReportPreview();renderDailyRecords();if($('topTrucksTab')&&!$('topTrucksTab').classList.contains('hide')){await renderTopTrucks();await renderTopTruckDetailsByKey(record.plateKey||record.manualPlate)}returnToPendingRegistrationAfterEdit()}catch(e){$('dailyEditStatus').textContent='ذخیره ویرایش انجام نشد؛ دوباره تلاش کن.'}
   return;
  }
  const plate=plateData('editPlate');if(!plate.complete){$('dailyEditStatus').textContent='شماره پلاک را کامل وارد کن.';return}
@@ -1332,7 +1339,7 @@ async function saveDailyEdit(){
  try{
   await new Promise((resolve,reject)=>{const req=tx('records','readwrite').put(updated);req.onsuccess=resolve;req.onerror=()=>reject(req.error)});
   $('dailyEditModal').classList.add('hide');pendingDailyEditId=null;
-  await renderRecords();await refreshReportPreview();renderDailyRecords();
+  await renderRecords();await refreshReportPreview();renderDailyRecords();returnToPendingRegistrationAfterEdit();
  }catch(e){$('dailyEditStatus').textContent='ذخیره ویرایش انجام نشد؛ دوباره تلاش کن.'}
 }
 $('topTruckDetails')?.addEventListener('click',async event=>{const button=event.target.closest('[data-top-record-edit]');if(!button)return;const id=Number(button.dataset.topRecordEdit),records=await allRecords(),record=records.find(item=>Number(item.id)===id);if(record)openDailyEdit(record)});
