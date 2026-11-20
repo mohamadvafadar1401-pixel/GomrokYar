@@ -321,7 +321,7 @@ main.wrap:after{content:"✦";position:absolute;top:27px;left:30px;color:#e3bd74
 <div id="deletedReasonModal" class="daily-info-modal hide" role="dialog" aria-modal="true" aria-labelledby="deletedReasonTitle"><div class="daily-info-card"><div class="daily-info-head"><h3 id="deletedReasonTitle">علت حذف</h3><button id="closeDeletedReason" class="secondary" type="button">بستن</button></div><div id="deletedReasonContent" class="daily-info-grid"></div></div></div>
 <div id="permanentDeleteModal" class="daily-info-modal hide" role="dialog" aria-modal="true" aria-labelledby="permanentDeleteTitle"><div class="daily-info-card"><div class="daily-info-head"><h3 id="permanentDeleteTitle">حذف دائمی سابقه</h3><button id="closePermanentDelete" class="secondary" type="button">بستن</button></div><p class="hint" id="permanentDeleteTarget">برای حذف دائمی این سابقه، رمز را وارد کن.</p><label for="permanentDeletePassword">رمز حذف</label><input id="permanentDeletePassword" type="password" inputmode="numeric" autocomplete="off" placeholder="رمز را وارد کن"><div class="row" style="margin-top:12px"><button id="confirmPermanentDelete" class="danger" type="button">تأیید حذف دائمی</button><button id="cancelPermanentDelete" class="secondary" type="button">انصراف</button></div><div id="permanentDeleteStatus" class="status" role="alert"></div></div></div>
 <div id="deletedTab" class="hide"><section class="panel"><h2>سوابق حذف</h2><p class="hint">ثبت‌هایی که از آمار روزانه حذف شده‌اند، همراه با زمان و علت حذف در این بخش نگهداری می‌شوند.</p><div id="deletedRecordCount" class="status"></div><div id="deletedRecordList" class="daily-vehicle-scroll"></div></section></div><div id="historyTab" class="hide"><section class="panel"><h2>فیلتر سوابق</h2><p class="hint">جست‌وجوی سوابق ثبت‌شده در تمام روزها بر اساس نوع کامیون، شماره پلاک، توضیحات و بازه زمانی.</p><label for="historyVehicleNationality">نوع کامیون</label><select id="historyVehicleNationality"><option value="all">همه کامیون‌ها</option><option value="iraqi">کامیون عراقی</option><option value="iranian">کامیون ایرانی</option></select><p class="small">با انتخاب کامیون عراقی، سوابق پلاک‌های K، L و سلیمانیه نمایش داده می‌شود.</p><label for="historyGoodsCategory">نوع کالا</label><select id="historyGoodsCategory"><option value="all">همه کالاها</option></select><label>جست‌وجوی پلاک کامل</label><div class="plate-entry" id="historyPlateEntry"><input id="historyPlateSuffix" inputmode="numeric" maxlength="2" placeholder="۳۳" aria-label="دو رقم آخر"><span>ع</span><input id="historyPlateMiddle" inputmode="numeric" maxlength="3" placeholder="۵۵۵" aria-label="سه رقم میانی"><span>ایران</span><input id="historyPlateCity" inputmode="numeric" maxlength="2" placeholder="۲۹" aria-label="کد شهر"></div><div class="plate-preview" id="historyPlatePreview">پلاک: —</div><label for="historyDescriptionSearch">جستجو در متن توضیحات</label><input id="historyDescriptionSearch" type="search" autocomplete="off" placeholder="مثلاً نقص مدارک یا توقف کامیون"><p class="small">برای جستجوی توضیحات، نیازی به واردکردن پلاک نیست. بخشی از متن را بنویس تا همه سوابق مرتبط نمایش داده شوند.</p><div class="date-filter" style="margin-top:12px"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:8px">بازه زمانی سوابق پلاک</div><div class="grid"><div><label for="historyFrom">از تاریخ (شمسی)</label><input id="historyFrom" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۵" autocomplete="off"></div><div><label for="historyTo">تا تاریخ (شمسی)</label><input id="historyTo" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۲۰" autocomplete="off"></div></div><p class="small">با انتخاب هر دو تاریخ، سوابق پلاک در بازه مشخص‌شده به‌صورت خودکار نمایش داده می‌شود.</p></div><div id="recordCount" class="status">تعداد کل خودروهای ثبت‌شده: ۰</div><div id="records" class="history-results-scroll"></div><div class="row" style="margin-top:10px"><button id="exportHistoryExcel" class="hide">خروجی سوابق</button></div><div id="historyExportStatus" class="status"></div></section></div>
-<div id="topTrucksTab" class="hide"><section class="panel"><h2>پرترددترین کامیون‌ها</h2><p class="hint">رتبه‌بندی بر اساس تمام سوابق فعال ثبت‌شده؛ شامل صادراتی، وارداتی و کامیون خالی. با انتخاب هر پلاک، جزئیات تمام ترددهای آن نمایش داده می‌شود.</p><div class="field"><label for="topTrucksMinVisits">حداقل تعداد تردد برای نمایش کامیون</label><input id="topTrucksMinVisits" type="number" inputmode="numeric" min="1" max="999999" step="1" value="3" placeholder="مثلاً ۳"></div><button id="toggleTopTruckPlateSearch" type="button" class="secondary" aria-expanded="false" style="width:100%;text-align:right;margin:8px 0">＋ جستجو</button><div id="topTruckPlateSearchBox" class="field hide"><div class="top-truck-date-range" dir="rtl"><span>از</span><input id="topTruckFrom" type="text" inputmode="none" placeholder="تقویم" autocomplete="off" readonly aria-label="از تاریخ؛ باز کردن تقویم"><span>الی</span><input id="topTruckTo" type="text" inputmode="none" placeholder="تقویم" autocomplete="off" readonly aria-label="تا تاریخ؛ باز کردن تقویم"></div><label>شماره پلاک کامیون</label><div class="top-truck-plate-line" style="display:flex;align-items:center;gap:7px;direction:rtl"><div class="plate-entry" id="topTruckPlateEntry" style="flex:1;min-width:0"><input id="topTruckPlateSuffix" inputmode="numeric" maxlength="2" placeholder="۳۳" aria-label="دو رقم آخر"><span>ع</span><input id="topTruckPlateMiddle" inputmode="numeric" maxlength="3" placeholder="۵۵۵" aria-label="سه رقم میانی"><span>ایران</span><input id="topTruckPlateCity" inputmode="numeric" maxlength="2" placeholder="۲۹" aria-label="کد شهر"></div><button id="clearTopTruckPlateSearch" type="button" class="secondary" aria-label="پاک کردن شماره پلاک" title="پاک کردن جستجو" style="flex:0 0 38px;width:38px;min-width:38px;height:38px;min-height:38px;padding:0!important;display:inline-flex;align-items:center;justify-content:center;border-radius:10px!important"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2m-11 0 1 14h12l1-14M10 10v6m4-6v6"/></svg></button></div><div class="plate-preview" id="topTruckPlatePreview">پلاک: —</div></div><input id="topTrucksSearch" class="hide" type="search" autocomplete="off" aria-hidden="true"><div id="topTrucksSummary" class="status"></div><div id="topTrucksList" class="daily-vehicle-scroll" style="max-height:55vh"><div class="hint">در حال محاسبه ترددها...</div></div><div id="topTruckDetails" style="margin-top:14px"></div></section></div><div id="reportTab" class="hide"><section class="panel"><h2>گزارش‌گیری</h2><div id="reportBackupCounter" class="date-filter" style="margin:0 0 12px;border-color:#b8d8cc;background:#f1f8f4"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:6px">شمارنده پشتیبان خودکار</div><div id="reportBackupCounterText" style="font-size:14px;font-weight:bold;color:#17483d">در حال دریافت آمار...</div><div style="height:8px;background:#dce9e2;border-radius:8px;overflow:hidden;margin-top:9px"><div id="reportBackupCounterBar" style="height:100%;width:0%;background:#27845e;border-radius:8px"></div></div><div class="small" style="margin-top:6px">با هر ثبت موفق، صادراتی، وارداتی یا توزین دستی، شمارنده یک واحد افزایش می‌یابد.</div></div><div class="date-filter" style="margin:0 0 12px"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:8px">تنظیم بازه زمانی گزارش</div><div class="grid"><div><label for="reportFrom">از تاریخ (شمسی)</label><input id="reportFrom" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۵" autocomplete="off"></div><div><label for="reportTo">تا تاریخ (شمسی)</label><input id="reportTo" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۵" autocomplete="off"></div></div></div><div class="grid" style="margin-top:12px"><div><label for="reportMode">نوع گزارش‌گیری</label><select id="reportMode"><option value="export_tonnage">۱) گزارش تناژ صادرات</option><option value="import_tonnage">۲) گزارش تناژ واردات</option><option value="overview">۳) گزارش کلی آمار</option><option value="comprehensive">۴) گزارش جامع کامیون‌ها</option></select></div></div><div class="row" style="margin-top:12px"><button id="report" class="secondary">دریافت فایل گزارش</button></div><div id="reportPreview" class="report-preview"><div class="small">نوع گزارش را انتخاب کن تا پیش‌نمایش آن همین‌جا نمایش داده شود.</div></div></section></div><div id="backupTab" class="hide"><section class="panel"><h2>پشتیبان و انتقال اطلاعات</h2><p class="hint">برای انتقال سوابق ثبت‌شده توسط نیروها، خروجی روزانه یا بازه‌ای بگیر و فایل دریافتی را از قسمت بازیابی پشتیبان وارد کن. اطلاعات قبلی گوشی حذف نمی‌شود و سوابق تکراری دوباره ثبت نمی‌شوند.</p><p class="hint">پشتیبان خودکار: پس از هر ۵۰ ثبت جدید، فایل کامل JSON بدون دخالت شما ذخیره می‌شود. در گوشی‌های اندروید ۱۰ به بالا مسیر ذخیره: Downloads/GomrokYar/AutoBackups؛ فقط ۱۰ نسخه آخر نگهداری می‌شود.</p><div class="row backup-actions" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center"><button id="export">خروجی کامل پشتیبان</button><label class="btn secondary" for="importFile">بازیابی پشتیبان</label><input id="importFile" type="file" accept="application/json,application/gzip,application/x-gzip,.json,.gz" class="hide"></div><div class="date-filter" style="margin-top:16px"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:8px">خروجی اطلاعات یک روز</div><div class="row" style="display:flex;flex-wrap:wrap;gap:8px;align-items:end"><button id="exportDay" class="secondary">خروجی اطلاعات این روز</button><div style="min-width:190px;flex:1"><label for="transferDate">تاریخ (شمسی)</label><input id="transferDate" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۷" autocomplete="off"></div></div></div><div class="date-filter" style="margin-top:16px"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:8px">خروجی اطلاعات در بازه زمانی</div><div class="grid"><div><label for="backupFrom">از تاریخ (شمسی)</label><input id="backupFrom" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۷" autocomplete="off"></div><div><label for="backupTo">تا تاریخ (شمسی)</label><input id="backupTo" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۹" autocomplete="off"></div></div><div class="row" style="margin-top:10px"><button id="exportRange" class="secondary">خروجی اطلاعات این بازه</button></div></div><div id="backupStatus" class="status"></div><div class="date-filter" style="margin-top:16px"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:8px">سوابق پشتیبان‌های خودکار</div><div class="hint">فهرست فایل‌های ذخیره‌شده در پوشه پشتیبان خودکار؛ تاریخ و تعداد سوابق هر نسخه نمایش داده می‌شود.</div><div id="automaticBackupList" class="small" style="margin-top:10px">در حال دریافت فهرست پشتیبان‌ها...</div><div class="row" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button id="refreshAutomaticBackups" class="secondary" type="button">به‌روزرسانی فهرست</button><button id="openAutomaticBackupFolder" class="secondary" type="button">باز کردن پوشه بک‌آپ‌ها</button></div></div></section></div><div id="jalaliPicker" class="jalali-picker hide" aria-label="تقویم شمسی"><div class="jp-head"><button type="button" id="jpPrev" class="secondary">ماه قبل</button><strong id="jpTitle"></strong><button type="button" id="jpNext" class="secondary">ماه بعد</button></div><div class="jp-grid" id="jpWeek"></div><div class="jp-grid" id="jpDays"></div><div class="jp-foot"><button type="button" id="jpToday" class="secondary">امروز</button><button type="button" id="jpClose" class="secondary">بستن تقویم</button></div></div><p class="hint">اطلاعات فقط در حافظه همین مرورگر ذخیره می‌شود. با پاک کردن داده‌های مرورگر یا حذف برنامه ممکن است سوابق از بین برود؛ مرتباً خروجی پشتیبان بگیر. در بخش باسکول، تصویر برگه برش داده می‌شود و متن یا عدد از روی تصویر به‌صورت خودکار تشخیص داده نمی‌شود.</p>
+<div id="topTrucksTab" class="hide"><section class="panel"><h2>پرترددترین کامیون‌ها</h2><p class="hint">رتبه‌بندی بر اساس تمام سوابق فعال ثبت‌شده؛ شامل صادراتی، وارداتی و کامیون خالی. با انتخاب هر پلاک، جزئیات تمام ترددهای آن نمایش داده می‌شود.</p><div class="field"><label for="topTrucksMinVisits">حداقل تعداد تردد برای نمایش کامیون</label><input id="topTrucksMinVisits" type="number" inputmode="numeric" min="1" max="999999" step="1" value="3" placeholder="مثلاً ۳"></div><button id="toggleTopTruckPlateSearch" type="button" class="secondary" aria-expanded="false" style="width:100%;text-align:right;margin:8px 0">＋ جستجو</button><div id="topTruckPlateSearchBox" class="field hide"><div class="top-truck-date-range" dir="rtl"><span>از</span><input id="topTruckFrom" type="text" inputmode="none" placeholder="تقویم" autocomplete="off" readonly aria-label="از تاریخ؛ باز کردن تقویم"><span>الی</span><input id="topTruckTo" type="text" inputmode="none" placeholder="تقویم" autocomplete="off" readonly aria-label="تا تاریخ؛ باز کردن تقویم"></div><label>شماره پلاک کامیون</label><div class="top-truck-plate-line" style="display:flex;align-items:center;gap:7px;direction:rtl"><div class="plate-entry" id="topTruckPlateEntry" style="flex:1;min-width:0"><input id="topTruckPlateSuffix" inputmode="numeric" maxlength="2" placeholder="۳۳" aria-label="دو رقم آخر"><span>ع</span><input id="topTruckPlateMiddle" inputmode="numeric" maxlength="3" placeholder="۵۵۵" aria-label="سه رقم میانی"><span>ایران</span><input id="topTruckPlateCity" inputmode="numeric" maxlength="2" placeholder="۲۹" aria-label="کد شهر"></div><button id="clearTopTruckPlateSearch" type="button" class="secondary" aria-label="پاک کردن شماره پلاک" title="پاک کردن جستجو" style="flex:0 0 38px;width:38px;min-width:38px;height:38px;min-height:38px;padding:0!important;display:inline-flex;align-items:center;justify-content:center;border-radius:10px!important"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2m-11 0 1 14h12l1-14M10 10v6m4-6v6"/></svg></button></div><div class="plate-preview" id="topTruckPlatePreview">پلاک: —</div></div><input id="topTrucksSearch" class="hide" type="search" autocomplete="off" aria-hidden="true"><div id="topTrucksSummary" class="status"></div><div id="topTrucksList" class="daily-vehicle-scroll" style="max-height:55vh"><div class="hint">در حال محاسبه ترددها...</div></div><div id="topTruckDetails" style="margin-top:14px"></div></section></div><div id="reportTab" class="hide"><section class="panel"><h2>گزارش‌گیری</h2><div id="reportBackupCounter" class="date-filter" style="margin:0 0 12px;border-color:#b8d8cc;background:#f1f8f4"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:6px">شمارنده پشتیبان خودکار</div><div id="reportBackupCounterText" style="font-size:14px;font-weight:bold;color:#17483d">در حال دریافت آمار...</div><div style="height:8px;background:#dce9e2;border-radius:8px;overflow:hidden;margin-top:9px"><div id="reportBackupCounterBar" style="height:100%;width:0%;background:#27845e;border-radius:8px"></div></div><div class="small" style="margin-top:6px">با هر ثبت موفق، صادراتی، وارداتی یا توزین دستی، شمارنده یک واحد افزایش می‌یابد.</div></div><div class="date-filter" style="margin:0 0 12px"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:8px">تنظیم بازه زمانی گزارش</div><div class="grid"><div><label for="reportFrom">از تاریخ (شمسی)</label><input id="reportFrom" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۵" autocomplete="off"></div><div><label for="reportTo">تا تاریخ (شمسی)</label><input id="reportTo" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۵" autocomplete="off"></div></div></div><div class="grid" style="margin-top:12px"><div><label for="reportMode">نوع گزارش‌گیری</label><select id="reportMode"><option value="export_tonnage">۱) گزارش تناژ صادرات</option><option value="import_tonnage">۲) گزارش تناژ واردات</option><option value="overview">۳) گزارش کلی آمار</option><option value="comprehensive">۴) گزارش جامع کامیون‌ها</option></select></div></div><div class="row" style="margin-top:12px"><button id="report" class="secondary">دریافت فایل گزارش</button></div><div id="reportPreview" class="report-preview"><div class="small">نوع گزارش را انتخاب کن تا پیش‌نمایش آن همین‌جا نمایش داده شود.</div></div></section></div><div id="backupTab" class="hide"><section class="panel"><h2>پشتیبان و انتقال اطلاعات</h2><p class="hint">برای انتقال سوابق ثبت‌شده توسط نیروها، خروجی روزانه یا بازه‌ای بگیر و فایل دریافتی را از قسمت بازیابی پشتیبان وارد کن. اطلاعات قبلی گوشی حذف نمی‌شود و سوابق تکراری دوباره ثبت نمی‌شوند.</p><p class="hint">پشتیبان خودکار: ابتدا پس از تکمیل شمارنده فعلی ۵۰ ثبت، یک نسخه کامل از تمام اطلاعات ذخیره می‌شود؛ سپس پشتیبان‌های روزانه و هفتگی (شنبه تا پنجشنبه) ساخته می‌شوند. پس از ذخیره موفق پشتیبان هفتگی، فایل‌های روزانه همان هفته حذف می‌شوند. مسیر ذخیره در اندروید ۱۰ به بالا: Downloads/GomrokYar/AutoBackups.</p><div class="row backup-actions" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center"><button id="export">خروجی کامل پشتیبان</button><label class="btn secondary" for="importFile">بازیابی پشتیبان</label><input id="importFile" type="file" accept="application/json,application/gzip,application/x-gzip,.json,.gz" class="hide"></div><div class="date-filter" style="margin-top:16px"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:8px">خروجی اطلاعات یک روز</div><div class="row" style="display:flex;flex-wrap:wrap;gap:8px;align-items:end"><button id="exportDay" class="secondary">خروجی اطلاعات این روز</button><div style="min-width:190px;flex:1"><label for="transferDate">تاریخ (شمسی)</label><input id="transferDate" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۷" autocomplete="off"></div></div></div><div class="date-filter" style="margin-top:16px"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:8px">خروجی اطلاعات در بازه زمانی</div><div class="grid"><div><label for="backupFrom">از تاریخ (شمسی)</label><input id="backupFrom" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۷" autocomplete="off"></div><div><label for="backupTo">تا تاریخ (شمسی)</label><input id="backupTo" type="text" inputmode="numeric" placeholder="۱۴۰۵/۰۸/۱۹" autocomplete="off"></div></div><div class="row" style="margin-top:10px"><button id="exportRange" class="secondary">خروجی اطلاعات این بازه</button></div></div><div id="backupStatus" class="status"></div><div class="date-filter" style="margin-top:16px"><div style="font-weight:bold;color:#17483d;font-size:13px;margin-bottom:8px">سوابق پشتیبان‌های خودکار</div><div class="hint">فهرست فایل‌های ذخیره‌شده در پوشه پشتیبان خودکار؛ تاریخ و تعداد سوابق هر نسخه نمایش داده می‌شود.</div><div id="automaticBackupList" class="small" style="margin-top:10px">در حال دریافت فهرست پشتیبان‌ها...</div><div class="row" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button id="refreshAutomaticBackups" class="secondary" type="button">به‌روزرسانی فهرست</button><button id="openAutomaticBackupFolder" class="secondary" type="button">باز کردن پوشه بک‌آپ‌ها</button></div></div></section></div><div id="jalaliPicker" class="jalali-picker hide" aria-label="تقویم شمسی"><div class="jp-head"><button type="button" id="jpPrev" class="secondary">ماه قبل</button><strong id="jpTitle"></strong><button type="button" id="jpNext" class="secondary">ماه بعد</button></div><div class="jp-grid" id="jpWeek"></div><div class="jp-grid" id="jpDays"></div><div class="jp-foot"><button type="button" id="jpToday" class="secondary">امروز</button><button type="button" id="jpClose" class="secondary">بستن تقویم</button></div></div><p class="hint">اطلاعات فقط در حافظه همین مرورگر ذخیره می‌شود. با پاک کردن داده‌های مرورگر یا حذف برنامه ممکن است سوابق از بین برود؛ مرتباً خروجی پشتیبان بگیر. در بخش باسکول، تصویر برگه برش داده می‌شود و متن یا عدد از روی تصویر به‌صورت خودکار تشخیص داده نمی‌شود.</p>
 <div id="holidayTab" class="hide"><section class="panel"><h2>مدیریت تعطیلات</h2><p class="hint">جمعه‌ها به‌صورت خودکار تعطیل محاسبه می‌شوند. برای تعطیلی‌های موردی، تاریخ را انتخاب و ثبت کن؛ این وضعیت در نمودار، آمار و خروجی‌ها هم نمایش داده می‌شود.</p><div class="holiday-summary">جمعه‌ها تعطیل هفتگی هستند و نیازی به ثبت دستی ندارند.</div><label for="holidayDate">تاریخ تعطیلی (شمسی)</label><input id="holidayDate" type="text" inputmode="none" readonly placeholder="انتخاب تاریخ"><div class="row" style="margin-top:10px"><button id="addHolidayBtn" type="button">ثبت تعطیلی</button><span class="holiday-legend"><i></i> روز تعطیل در نمودار</span></div><h3 style="font-size:14px;margin:18px 0 8px">تعطیلی‌های موردی ثبت‌شده</h3><div id="holidayList"><div class="hint">در حال بارگذاری...</div></div></section></div></main><footer class="app-credit"><details><summary>درباره سامانه</summary><div class="about-card"><div class="about-title">سامانه ثبت و پایش تردد کامیون‌ها</div><div>حوزه نظارت گمرکات استان کرمانشاه</div><div>گمرک شیخ صله</div><div class="about-sub">طراحی، برنامه‌نویسی و اجرای سامانه</div><div class="about-name">محمد وفادار</div></div></details><div class="signature">توسعه و برنامه‌نویسی و اجرا: محمد وفادار</div></footer><canvas id="work"></canvas>
 <script>
 const FIELDS=[['goods','نوع کالا'],['permit','شماره مجوز بارگیری'],['first','توزین اول'],['second','توزین دوم'],['plate','شماره پلاک'],['net','وزن خالص']];
@@ -503,7 +503,7 @@ async function saveSimpleRecord(kind,plate,goods='',dateInputId){
   const no=await nextEntryNumber(all),item={createdBy:currentUser?.username||'',createdByName:currentUser?.displayName||'',entryNo:no,eventType:kind,vehicleStatus:kind==='empty_entry'?'empty':'loaded_import',manualPlate:plate.display,plateKey:plate.key,goodsText:goods,created:recordDateTime.toISOString(),enteredAt:enteredAt.toISOString(),notes:'',crops:null,original:''};
   if(isDuplicateRecord(item,all)){alert('این تردد با همین پلاک، تاریخ و مشخصات قبلاً ثبت شده است؛ سابقه تکراری ذخیره نشد.');return false}
   await new Promise((r,j)=>{let q=tx('records','readwrite').add(item);q.onsuccess=r;q.onerror=()=>j(q.error)});
-  await setting('nextEntryNo',no+1);await afterSuccessfulRecordSave();await renderRecords();await notifyPreviousPlateRecords(plate.key,previousPlateRecords);return no;
+  await setting('nextEntryNo',no+1);await afterSuccessfulRecordSave(item);await renderRecords();await notifyPreviousPlateRecords(plate.key,previousPlateRecords);return no;
 }
 async function refreshReportBackupCounter(){const box=$('reportBackupCounterText'),bar=$('reportBackupCounterBar');if(!box||!bar)return;const count=Math.max(0,Number(await setting('autoBackupPendingCount'))||0),done=count%50,remaining=50-done;box.textContent='ثبت‌شده از شروع شمارش: '+done.toLocaleString('fa-IR')+' از ۵۰ · باقی‌مانده تا بک‌آپ: '+remaining.toLocaleString('fa-IR')+' ثبت';bar.style.width=(done/50*100)+'%';}
 function normalizeTopTruckKey(value){return String(value||'').replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c))).replace(/[٠-٩]/g,c=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))).replace(/[\s\-–_]/g,'').toUpperCase()}
@@ -743,7 +743,7 @@ $('saveImportEntry').onclick=async()=>{
     const all=await allRecords(),previousPlateRecords=all.filter(record=>normalizeTopTruckKey(record.plateKey||record.manualPlate)===normalizeTopTruckKey(plate.key)),kind='import_entry_manual',enteredAt=new Date(),recordDateTime=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),selectedDate.getDate(),enteredAt.getHours(),enteredAt.getMinutes(),enteredAt.getSeconds(),enteredAt.getMilliseconds());
     const no=await nextEntryNumber(all),item={createdBy:currentUser?.username||'',createdByName:currentUser?.displayName||'',entryNo:no,eventType:kind,vehicleStatus:'import_weighed',manualPlate:plate.display,plateKey:plate.key,goodsText:goods,category,originText:origin,permitNo:permit,firstWeight:first,secondWeight:second,netWeight:net,created:recordDateTime.toISOString(),enteredAt:enteredAt.toISOString(),notes:'',crops:null,original:''};
     if(isDuplicateRecord(item,all)){alert('این تردد با همین پلاک، وزن خالص، تاریخ و شماره مجوز قبلاً ثبت شده است؛ سابقه تکراری ذخیره نشد.');return}
-    await new Promise((r,j)=>{let q=tx('records','readwrite').add(item);q.onsuccess=r;q.onerror=()=>j(q.error)});await setting('nextEntryNo',no+1);await afterSuccessfulRecordSave();await renderRecords();refreshReportPreview();
+    await new Promise((r,j)=>{let q=tx('records','readwrite').add(item);q.onsuccess=r;q.onerror=()=>j(q.error)});await setting('nextEntryNo',no+1);await afterSuccessfulRecordSave(item);await renderRecords();refreshReportPreview();
     clearImportManualPlate();['impInGoods','impInOrigin','impInPermit','impInFirst','impInSecond','impInNet'].forEach(id=>$(id).value='');$('impInCategory').value='';$('impInRecordDate').value=jalaliDisplay(new Date());$('importEntryStatus').textContent='ورود کامیون وارداتی با ردیف '+no+' ثبت شد.';$('impInPlateSuffix').focus();window.scrollTo({top:0,behavior:'smooth'});await notifyPreviousPlateRecords(plate.key,previousPlateRecords);
   }catch(e){alert('ثبت ورود کامیون وارداتی انجام نشد؛ دوباره تلاش کن.')}};
 $('resetImportEntry').onclick=()=>{clearImportManualPlate();['impInGoods','impInOrigin','impInPermit','impInFirst','impInSecond','impInNet'].forEach(id=>$(id).value='');$('impInCategory').value='';$('impInRecordDate').value=jalaliDisplay(new Date());$('importEntryStatus').textContent='فرم پاک شد.';$('impInPlateSuffix').focus()};
@@ -987,7 +987,7 @@ function optimizedJpegData(source,maxSide,quality){const w=source.naturalWidth||
 function cropData(r){let q=toImageRect(r),sx=Math.max(0,Math.round(q.x*image.naturalWidth)),sy=Math.max(0,Math.round(q.y*image.naturalHeight)),sw=Math.max(1,Math.min(image.naturalWidth-sx,Math.round(q.w*image.naturalWidth))),sh=Math.max(1,Math.min(image.naturalHeight-sy,Math.round(q.h*image.naturalHeight))),c=document.createElement('canvas');c.width=sw;c.height=sh;c.getContext('2d').drawImage(image,sx,sy,sw,sh,0,0,sw,sh);return optimizedJpegData(c,900,.76)}
 function makeCrops(){if(!image||FIELDS.some(([k])=>!regions[k]))return;crops={};FIELDS.forEach(([k])=>crops[k]=cropData(regions[k]));let box=$('crops');box.innerHTML='';FIELDS.forEach(([k,n])=>{let d=document.createElement('div');d.className='crop';let controls='';if(k==='goods')controls='<div class="field"><label for="exportCategory">دسته</label><input id="exportCategory" type="text" autocomplete="off" placeholder="برای انتخاب، حرف اول دسته را وارد کن"><div id="categorySuggestions" class="category-suggestions" role="listbox"></div><div class="small">یکی از دسته‌های پیشنهادی را انتخاب کن.</div></div>';else if(k==='first')controls='<div class="field"><label for="firstWeight">توزین اول (ورود دستی، ۴ یا ۵ رقم)</label><input id="firstWeight" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="عدد توزین اول را از روی عکس وارد کن"></div>';else if(k==='plate')controls='<div class="field"><label>شماره پلاک (به ترتیب: دو رقم آخر، سه رقم میانی، کد شهر)</label><div class="plate-entry" id="plateKeyEntry"><input id="plateKeySuffix" inputmode="numeric" maxlength="2" placeholder="۳۳" aria-label="دو رقم آخر"><span>ع</span><input id="plateKeyMiddle" inputmode="numeric" maxlength="3" placeholder="۵۵۵" aria-label="سه رقم میانی"><span>ایران</span><input id="plateKeyCity" inputmode="numeric" maxlength="2" placeholder="۲۹" aria-label="کد شهر"></div><div class="plate-preview" id="plateKeyPreview">پلاک: —</div></div>';else if(k==='net')controls='<div class="field"><label for="netWeight">وزن خالص (ورود دستی، کیلوگرم)</label><input id="netWeight" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="مثلاً 24500"></div>';d.innerHTML=`<b>${n}</b><img src="${crops[k]}" alt="برش ${n}">${controls}`;box.append(d)});setupPlateInputs('plateKey');const netField=$('netWeight');netField?.addEventListener('input',()=>{const digits=normalizeDigits(netField.value).replace(/\\D/g,'').slice(0,5);netField.value=digits;if(digits.length===5)$('recordDate').focus()});netField?.addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();const digits=normalizeDigits(netField.value).replace(/\\D/g,'');if(digits.length===4||digits.length===5)$('recordDate').focus();else alert('وزن خالص باید چهار یا پنج رقم باشد.')});$('dataPanel').classList.remove('hide');$('saveStatus').textContent='برش‌ها آماده بازبینی هستند.';const categories=['مصنوعات پلاستیکی','مصنوعات فلزی','مصالح ساختمان','لوله پلی اتیلن','محصولات شیمیایی','لوازم خانگی','مواد غذایی','افشانه و مواد تحت فشار','متفرقه','مصنوعات چوبی','مصنوعات بلور و شیشه','سایر مصنوعات فلزی','سوخت شرکت نفت','خرده بار','فرش','لوله پی وی سی','کابل برق','تشک و پتو','مصنوعات فلزی، پلاستیکی','مصنوعات فلزی،پلاستیکی،بلور و شیشه','الیاف پلی استر','لاستیک خودرو'];const categoryInput=$('exportCategory'),suggestions=$('categorySuggestions');const focusAndScroll=(id,topRatio=.68)=>{const field=$(id);if(!field)return;try{field.focus({preventScroll:true})}catch(_){field.focus()}requestAnimationFrame(()=>{const rect=field.getBoundingClientRect(),viewHeight=window.visualViewport?.height||window.innerHeight,delta=rect.top-viewHeight*topRatio;if(Math.abs(delta)>8)window.scrollBy({top:delta,behavior:'smooth'})})};const chooseCategory=value=>{categoryInput.value=value;suggestions.innerHTML='';suggestions.classList.remove('open');setTimeout(()=>{const weightField=$('firstWeight');if(weightField){focusAndScroll('firstWeight');weightField.focus()}},100)};const showCategoryMatches=()=>{const query=categoryInput.value.trim();suggestions.innerHTML='';if(!query){suggestions.classList.remove('open');return}const matches=categories.filter(value=>value.startsWith(query)||value.includes(query));if(!matches.length){suggestions.innerHTML='<div class="empty">دسته مشابهی پیدا نشد؛ حرف دیگری وارد کن.</div>';suggestions.classList.add('open');return}matches.forEach(value=>{const option=document.createElement('button');option.type='button';option.textContent=value;option.setAttribute('role','option');option.addEventListener('click',()=>chooseCategory(value));suggestions.append(option)});suggestions.classList.add('open')};categoryInput.addEventListener('input',showCategoryMatches);categoryInput.addEventListener('keydown',event=>{if(event.key==='Enter'&&suggestions.classList.contains('open')){const first=suggestions.querySelector('button');if(first){event.preventDefault();chooseCategory(first.textContent)}}else if(event.key==='Escape'){suggestions.classList.remove('open')}});categoryInput.addEventListener('blur',()=>setTimeout(()=>suggestions.classList.remove('open'),160));requestAnimationFrame(()=>focusAndScroll('exportCategory',.28))}
 async function resetForNext(){image=null;sourceData='';crops={};$('photo').value='';$('cameraPhoto').value='';clearPlate('plateKey');$('firstWeight').value='';$('netWeight').value='';$('recordDate').value=jalaliDisplay(new Date());$('exportDescription').value='';if($('exportCategory'))$('exportCategory').value='';$('preview').src='';$('preview').classList.add('hide');$('dataPanel').classList.add('hide');$('cropPanel').classList.add('hide');$('calibrate').disabled=true;$('crops').innerHTML='';$('saveStatus').textContent='';$('calStatus').textContent='آماده اسکن برگه بعدی هستید.';active='plate';window.scrollTo({top:0,behavior:'smooth'})}
-$('saveRecord').onclick=async()=>{if(!crops.plate){alert('ابتدا عکس را بگیر، محدوده جدول را انتخاب کن و تشخیص خانه‌ها را انجام بده.');return}const category=$('exportCategory').value.trim();if(!['مصنوعات پلاستیکی','مصنوعات فلزی','مصالح ساختمان','لوله پلی اتیلن','محصولات شیمیایی','لوازم خانگی','مواد غذایی','افشانه و مواد تحت فشار','متفرقه','مصنوعات چوبی','مصنوعات بلور و شیشه','سایر مصنوعات فلزی','سوخت شرکت نفت','خرده بار','فرش','لوله پی وی سی','کابل برق','تشک و پتو','مصنوعات فلزی، پلاستیکی','مصنوعات فلزی،پلاستیکی،بلور و شیشه','الیاف پلی استر','لاستیک خودرو'].includes(category)){alert('لطفاً دسته کالا را از فهرست پیشنهادی انتخاب کن.');$('exportCategory').focus();return}const firstWeight=normalizeDigits($('firstWeight').value).replace(/\\D/g,'');if(firstWeight.length<4||firstWeight.length>5){alert('توزین اول باید چهار یا پنج رقم باشد.');$('firstWeight').focus();return}let plate=plateData('plateKey'),key=plate.key;if(!plate.complete){alert('ثبت برگه بدون پلاک کامل امکان‌پذیر نیست. دو رقم آخر، سه رقم میانی و کد شهر را وارد کن.');$('plateKeySuffix').focus();return}const selectedDate=parseJalaliDate($('recordDate').value);if(!selectedDate){alert('لطفاً تاریخ شمسی معتبر برگه را انتخاب کن.');$('recordDate').focus();return}const enteredAt=new Date(),recordDateTime=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),selectedDate.getDate(),enteredAt.getHours(),enteredAt.getMinutes(),enteredAt.getSeconds(),enteredAt.getMilliseconds());let existing=await allRecords();let previousPlateRecords=existing.filter(record=>normalizeTopTruckKey(record.plateKey||record.manualPlate)===normalizeTopTruckKey(key));let savedCounter=Number(await setting('nextEntryNo'))||1;let maxExisting=existing.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);let nextNo=Math.max(savedCounter,maxExisting+1);let item={createdBy:currentUser?.username||'',createdByName:currentUser?.displayName||'',entryNo:nextNo,eventType:'weighed',vehicleStatus:'weighed',created:recordDateTime.toISOString(),enteredAt:enteredAt.toISOString(),plateKey:key,manualPlate:plate.display,firstWeight,netWeight:$('netWeight').value,description:$('exportDescription').value.trim(),category,crops,original:sourceData};if(isDuplicateRecord(item,existing)){alert('این تردد با همین پلاک، وزن خالص و تاریخ قبلاً ثبت شده است؛ سابقه تکراری ذخیره نشد.');$('plateKeySuffix').focus();return}try{await new Promise((r,j)=>{let q=tx('records','readwrite').add(item);q.onsuccess=r;q.onerror=()=>j(q.error)});await setting('nextEntryNo',nextNo+1);await afterSuccessfulRecordSave();await renderRecords();await resetForNext();alert('برگه با موفقیت ثبت شد. شماره ردیف ورود: '+nextNo+' . گمرکیار آماده اسکن کامیون بعدی است.');await notifyPreviousPlateRecords(key,previousPlateRecords)}catch(err){alert('ثبت برگه انجام نشد؛ دوباره تلاش کن.')}};
+$('saveRecord').onclick=async()=>{if(!crops.plate){alert('ابتدا عکس را بگیر، محدوده جدول را انتخاب کن و تشخیص خانه‌ها را انجام بده.');return}const category=$('exportCategory').value.trim();if(!['مصنوعات پلاستیکی','مصنوعات فلزی','مصالح ساختمان','لوله پلی اتیلن','محصولات شیمیایی','لوازم خانگی','مواد غذایی','افشانه و مواد تحت فشار','متفرقه','مصنوعات چوبی','مصنوعات بلور و شیشه','سایر مصنوعات فلزی','سوخت شرکت نفت','خرده بار','فرش','لوله پی وی سی','کابل برق','تشک و پتو','مصنوعات فلزی، پلاستیکی','مصنوعات فلزی،پلاستیکی،بلور و شیشه','الیاف پلی استر','لاستیک خودرو'].includes(category)){alert('لطفاً دسته کالا را از فهرست پیشنهادی انتخاب کن.');$('exportCategory').focus();return}const firstWeight=normalizeDigits($('firstWeight').value).replace(/\\D/g,'');if(firstWeight.length<4||firstWeight.length>5){alert('توزین اول باید چهار یا پنج رقم باشد.');$('firstWeight').focus();return}let plate=plateData('plateKey'),key=plate.key;if(!plate.complete){alert('ثبت برگه بدون پلاک کامل امکان‌پذیر نیست. دو رقم آخر، سه رقم میانی و کد شهر را وارد کن.');$('plateKeySuffix').focus();return}const selectedDate=parseJalaliDate($('recordDate').value);if(!selectedDate){alert('لطفاً تاریخ شمسی معتبر برگه را انتخاب کن.');$('recordDate').focus();return}const enteredAt=new Date(),recordDateTime=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),selectedDate.getDate(),enteredAt.getHours(),enteredAt.getMinutes(),enteredAt.getSeconds(),enteredAt.getMilliseconds());let existing=await allRecords();let previousPlateRecords=existing.filter(record=>normalizeTopTruckKey(record.plateKey||record.manualPlate)===normalizeTopTruckKey(key));let savedCounter=Number(await setting('nextEntryNo'))||1;let maxExisting=existing.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);let nextNo=Math.max(savedCounter,maxExisting+1);let item={createdBy:currentUser?.username||'',createdByName:currentUser?.displayName||'',entryNo:nextNo,eventType:'weighed',vehicleStatus:'weighed',created:recordDateTime.toISOString(),enteredAt:enteredAt.toISOString(),plateKey:key,manualPlate:plate.display,firstWeight,netWeight:$('netWeight').value,description:$('exportDescription').value.trim(),category,crops,original:sourceData};if(isDuplicateRecord(item,existing)){alert('این تردد با همین پلاک، وزن خالص و تاریخ قبلاً ثبت شده است؛ سابقه تکراری ذخیره نشد.');$('plateKeySuffix').focus();return}try{await new Promise((r,j)=>{let q=tx('records','readwrite').add(item);q.onsuccess=r;q.onerror=()=>j(q.error)});await setting('nextEntryNo',nextNo+1);await afterSuccessfulRecordSave(item);await renderRecords();await resetForNext();alert('برگه با موفقیت ثبت شد. شماره ردیف ورود: '+nextNo+' . گمرکیار آماده اسکن کامیون بعدی است.');await notifyPreviousPlateRecords(key,previousPlateRecords)}catch(err){alert('ثبت برگه انجام نشد؛ دوباره تلاش کن.')}};
 $('resetForm').onclick=resetForNext;
 
 let chartMetric='vehicles',chartPeriod='week';
@@ -1227,31 +1227,203 @@ async function saveAutomaticBackup(data,name){
     return false;
   }
 }
-async function afterSuccessfulRecordSave(){
+async function buildAutomaticBackupPayload(records,exportType,range={}){
+  const maxNo=records.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);
+  const data={format:'gomrokyar-transfer',version:4,exportType,automatic:true,exportedAt:new Date().toISOString(),
+    records:records.map(x=>{const r={...x};delete r._syncKey;return r}),
+    nextEntryNo:Math.max(Number(await setting('nextEntryNo'))||1,maxNo+1)};
+  if(exportType==='full_backup'){
+    data.holidays=holidayDatesCache;
+    data.regions=await setting('regions');
+    data.templateMode=await setting('templateMode');
+  }
+  if(range.start)data.periodStart=range.start;
+  if(range.end)data.periodEnd=range.end;
+  return data;
+}
+function showAutomaticBackupNotice(message,done=false){
+  const id='automaticBackupNotice';
+  let box=document.getElementById(id);
+  if(!box){box=document.createElement('div');box.id=id;document.body.appendChild(box)}
+  box.textContent=message;
+  box.style.cssText='position:fixed;z-index:999999;top:12px;left:12px;right:12px;max-width:620px;margin:0 auto;padding:13px 16px;border-radius:12px;background:'+(done?'#e7f5ec':'#173f36')+';color:'+(done?'#155b35':'#fff')+';box-shadow:0 5px 22px rgba(0,0,0,.22);font-size:13px;font-weight:700;text-align:center;direction:rtl';
+  clearTimeout(window.__automaticBackupNoticeTimer);
+  if(done)window.__automaticBackupNoticeTimer=setTimeout(()=>box.remove(),4500);
+}
+function autoBackupDateKey(date){return localISODate(new Date(date.getFullYear(),date.getMonth(),date.getDate()))}
+function autoBackupDateFromKey(key){
+  const m=String(key||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m?new Date(Number(m[1]),Number(m[2])-1,Number(m[3])):null;
+}
+function autoBackupAddDays(date,days){const d=new Date(date.getFullYear(),date.getMonth(),date.getDate());d.setDate(d.getDate()+days);return d}
+function autoBackupWeekStart(date){
+  const d=new Date(date.getFullYear(),date.getMonth(),date.getDate());
+  while(d.getDay()!==6)d.setDate(d.getDate()-1);
+  return d;
+}
+const autoBackupMonthLatin=['farvardin','ordibehesht','khordad','tir','mordad','shahrivar','mehr','aban','azar','dey','bahman','esfand'];
+const autoBackupDayLatin={6:'shanbe',0:'yekshanbe',1:'doshanbe',2:'seshanbe',3:'chaharshanbe',4:'panjshanbe',5:'jome'};
+function autoBackupDailyName(date){
+  const p=jalaliParts(date);
+  return 'gomrokyar-auto-'+autoBackupDayLatin[date.getDay()]+p.d+autoBackupMonthLatin[p.m-1]+p.y+'.json.gz';
+}
+function autoBackupWeeklyInfo(start){
+  const end=autoBackupAddDays(start,5),p=jalaliParts(start),ep=jalaliParts(end);
+  const first=jalaliToGregorian(p.y,p.m,1),firstDate=new Date(first.y,first.m-1,first.d);
+  const offset=(firstDate.getDay()+1)%7;
+  const weekNo=Math.floor((p.d-1+offset)/7)+1;
+  const rangeName=p.m===ep.m
+    ? p.d+'ta'+ep.d+autoBackupMonthLatin[p.m-1]
+    : p.d+autoBackupMonthLatin[p.m-1]+'ta'+ep.d+autoBackupMonthLatin[ep.m-1];
+  return {start:autoBackupDateKey(start),end:autoBackupDateKey(end),
+    name:'gomrokyar-auto-hafte'+weekNo+'_'+rangeName+p.y+'.json.gz',
+    startDate:new Date(start.getFullYear(),start.getMonth(),start.getDate()),
+    endDate:new Date(end.getFullYear(),end.getMonth(),end.getDate())};
+}
+function autoBackupRecordsInRange(records,start,end){
+  const from=new Date(start.getFullYear(),start.getMonth(),start.getDate()).getTime();
+  const until=autoBackupAddDays(end,1).getTime();
+  return records.filter(x=>{const t=Date.parse(x.created);return Number.isFinite(t)&&t>=from&&t<until});
+}
+async function saveAutomaticArchive(records,name,exportType,range){
+  if(!records.length)return true;
+  showAutomaticBackupNotice(exportType==='weekly_backup'?'در حال تهیه پشتیبان هفتگی...':'در حال تهیه پشتیبان روزانه...');
+  const data=await buildAutomaticBackupPayload(records,exportType,range);
+  const saved=await saveAutomaticBackup(data,name);
+  if(saved){
+    const message=(exportType==='weekly_backup'?'پشتیبان هفتگی':'پشتیبان روزانه')+' با موفقیت ذخیره شد؛ '+records.length.toLocaleString('fa-IR')+' سابقه.';
+    const status=$('backupStatus');if(status)status.textContent=message;
+    showAutomaticBackupNotice(message,true);
+  }else{
+    const message='ذخیره پشتیبان خودکار انجام نشد؛ فایل‌های قبلی حفظ شدند و برنامه در نوبت بعد دوباره تلاش می‌کند.';
+    const status=$('backupStatus');if(status)status.textContent=message;
+    showAutomaticBackupNotice(message,true);
+  }
+  return saved;
+}
+async function createInitialAutomaticBackup(){
+  if(await setting('autoBackupBaselineCreated'))return true;
+  const records=await allRecords(true);
+  const maxNo=records.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);
+  const data=await buildAutomaticBackupPayload(records,'full_backup');
+  const name='gomrokyar-auto-base-'+localISODate()+'-'+Date.now()+'.json.gz';
+  showAutomaticBackupNotice('در حال تهیه پشتیبان اولیه کامل گمرکیار...');
+  const saved=await saveAutomaticBackup(data,name);
+  if(!saved){
+    const status=$('backupStatus');if(status)status.textContent='تهیه پشتیبان اولیه ناموفق بود؛ شمارنده ۵۰ ثبت حفظ شده و دوباره تلاش می‌شود.';
+    showAutomaticBackupNotice('تهیه پشتیبان اولیه ناموفق بود؛ اطلاعات قبلی حذف نشد.',true);
+    return false;
+  }
+  const todayKey=localISODate(new Date());
+  await setting('autoBackupBaselineCreated',true);
+  await setting('autoBackupStartDate',todayKey);
+  await setting('autoBackupDailyDone',[]);
+  await setting('autoBackupWeeklyArchives',[]);
+  await setting('autoBackupPendingCount',0);
+  refreshReportBackupCounter();
+  const status=$('backupStatus');if(status)status.textContent='پشتیبان اولیه کامل با '+records.length.toLocaleString('fa-IR')+' سابقه ذخیره شد؛ از این پس پشتیبان‌گیری روزانه و هفتگی فعال است.';
+  showAutomaticBackupNotice('پشتیبان اولیه کامل ذخیره شد؛ پشتیبان‌گیری روزانه و هفتگی فعال شد.',true);
+  return true;
+}
+async function runAutomaticBackupMaintenance(changedRecord=null){
   try{
-    let pendingCount=Number(await setting('autoBackupPendingCount'))||0;
-    pendingCount++;
-    await setting('autoBackupPendingCount',pendingCount);
-    refreshReportBackupCounter();
-    if(pendingCount<50)return;
-    const records=await allRecords(true);
-    const maxNo=records.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);
-    const data={format:'gomrokyar-transfer',version:4,exportType:'full_backup',automatic:true,exportedAt:new Date().toISOString(),records:records.map(x=>{const r={...x};delete r._syncKey;return r}),holidays:holidayDatesCache,regions:await setting('regions'),templateMode:await setting('templateMode'),nextEntryNo:Math.max(Number(await setting('nextEntryNo'))||1,maxNo+1)};
-    const name='gomrokyar-auto-'+localISODate()+'-'+Date.now()+'.json.gz';
-    const saved=await saveAutomaticBackup(data,name);
-    if(saved){
-      await setting('autoBackupPendingCount',0);
-      refreshReportBackupCounter();
-      const status=$('backupStatus');
-      if(status)status.textContent='پشتیبان خودکار با موفقیت ذخیره شد؛ '+records.length.toLocaleString('fa-IR')+' سابقه در فایل قرار گرفت. '+'';
-    }else{
-      const status=$('backupStatus');
-      if(status)status.textContent='به ۵۰ ثبت رسیده‌ایم، اما ذخیره خودکار انجام نشد. شمارنده حفظ شده و در ثبت بعدی دوباره تلاش می‌شود.';
+    if(!(await setting('autoBackupBaselineCreated'))){
+      const count=Number(await setting('autoBackupPendingCount'))||0;
+      if(count>=50)await createInitialAutomaticBackup();
+      return;
     }
+    const today=new Date();today.setHours(0,0,0,0);
+    const startKey=await setting('autoBackupStartDate')||localISODate(today);
+    const startDate=autoBackupDateFromKey(startKey)||today;
+    let dailyDone=new Set((await setting('autoBackupDailyDone'))||[]);
+    let weeklyArchives=await setting('autoBackupWeeklyArchives')||[];
+    let records=await allRecords(true);
+    const bridge=window.AndroidBridge;
+    const changedDate=changedRecord&&changedRecord.created?new Date(changedRecord.created):null;
+    if(changedDate&&Number.isFinite(changedDate.getTime())){
+      changedDate.setHours(0,0,0,0);
+      if(changedDate<today){
+        const key=autoBackupDateKey(changedDate);
+        const archivedWeek=weeklyArchives.find(w=>key>=w.start&&key<=w.end);
+        if(archivedWeek){
+          const info={start:archivedWeek.start,end:archivedWeek.end,name:archivedWeek.name};
+          const from=autoBackupDateFromKey(info.start),to=autoBackupDateFromKey(info.end);
+          const weekRecords=autoBackupRecordsInRange(records,from,to);
+          if(weekRecords.length){
+            const saved=await saveAutomaticArchive(weekRecords,info.name,'weekly_backup',info);
+            if(!saved)return false;
+          }
+        }else{
+          const dayRecords=records.filter(x=>x.created&&autoBackupDateKey(new Date(x.created))===key);
+          if(dayRecords.length){
+            const saved=await saveAutomaticArchive(dayRecords,autoBackupDailyName(changedDate),'daily_backup',{start:key,end:key});
+            if(!saved)return false;
+          }
+          dailyDone.add(key);
+        }
+      }
+    }
+    let cursor=new Date(startDate.getFullYear(),startDate.getMonth(),startDate.getDate());
+    while(cursor<today){
+      const key=autoBackupDateKey(cursor);
+      if(!dailyDone.has(key)){
+        const dayRecords=records.filter(x=>x.created&&autoBackupDateKey(new Date(x.created))===key);
+        if(dayRecords.length){
+          const saved=await saveAutomaticArchive(dayRecords,autoBackupDailyName(cursor),'daily_backup',{start:key,end:key});
+          if(!saved){await setting('autoBackupDailyDone',[...dailyDone]);return false}
+        }
+        dailyDone.add(key);
+        await setting('autoBackupDailyDone',[...dailyDone]);
+      }
+      cursor=autoBackupAddDays(cursor,1);
+    }
+    const currentWeekStart=autoBackupWeekStart(today);
+    let weekStart=autoBackupWeekStart(startDate);
+    while(weekStart<currentWeekStart){
+      const info=autoBackupWeeklyInfo(weekStart);
+      if(info.end>=startKey&&!weeklyArchives.some(w=>w.start===info.start)){
+        const weekRecords=autoBackupRecordsInRange(records,info.startDate,info.endDate);
+        if(weekRecords.length){
+          const saved=await saveAutomaticArchive(weekRecords,info.name,'weekly_backup',info);
+          if(!saved){await setting('autoBackupDailyDone',[...dailyDone]);return false}
+        }
+        if(bridge&&typeof bridge.deleteAutomaticBackup==='function'){
+          let day=info.startDate;
+          while(day<=info.endDate){
+            const dailyName=autoBackupDailyName(day);
+            try{bridge.deleteAutomaticBackup(dailyName)}catch(err){console.warn('Could not remove merged daily backup',dailyName,err)}
+            day=autoBackupAddDays(day,1);
+          }
+        }
+        weeklyArchives.push({start:info.start,end:info.end,name:info.name,createdAt:new Date().toISOString()});
+        await setting('autoBackupWeeklyArchives',weeklyArchives);
+      }
+      weekStart=autoBackupAddDays(weekStart,7);
+    }
+    await setting('autoBackupDailyDone',[...dailyDone]);
+    await setting('autoBackupWeeklyArchives',weeklyArchives);
+    return true;
+  }catch(err){
+    console.error('Automatic backup maintenance failed',err);
+    const status=$('backupStatus');if(status)status.textContent='بررسی پشتیبان‌های روزانه و هفتگی با خطا روبه‌رو شد؛ فایل‌های قبلی حذف نشدند.';
+    showAutomaticBackupNotice('بررسی پشتیبان‌های خودکار با خطا روبه‌رو شد؛ نسخه‌های قبلی حفظ شدند.',true);
+    return false;
+  }
+}
+async function afterSuccessfulRecordSave(record=null){
+  try{
+    if(!(await setting('autoBackupBaselineCreated'))){
+      let pendingCount=Number(await setting('autoBackupPendingCount'))||0;
+      pendingCount++;
+      await setting('autoBackupPendingCount',pendingCount);
+      refreshReportBackupCounter();
+      if(pendingCount>=50)await createInitialAutomaticBackup();
+      return;
+    }
+    await runAutomaticBackupMaintenance(record);
   }catch(err){
     console.error('Automatic backup preparation failed',err);
-    const status=$('backupStatus');
-    if(status)status.textContent='آماده‌سازی پشتیبان خودکار با خطا روبه‌رو شد؛ شمارنده ثبت‌ها حفظ شده است.';
+    const status=$('backupStatus');if(status)status.textContent='آماده‌سازی پشتیبان خودکار با خطا روبه‌رو شد؛ شمارنده و فایل‌های قبلی حفظ شده‌اند.';
   }
 }
 
@@ -1419,7 +1591,7 @@ async function confirmDailyDelete(){
  try{
   await new Promise((resolve,reject)=>{const req=tx('records','readwrite').put(updated);req.onsuccess=resolve;req.onerror=()=>reject(req.error)});
   $('dailyDeleteModal').classList.add('hide');$('dailyInfoModal').classList.add('hide');pendingDailyDeleteId=null;
-  await renderRecords();await refreshReportPreview();renderDailyRecords();await renderDeletedRecords();switchTab('homeTab');
+  await renderRecords();await refreshReportPreview();renderDailyRecords();await renderDeletedRecords();await runAutomaticBackupMaintenance();switchTab('homeTab');
  }catch(e){$('dailyDeleteStatus').textContent='حذف ثبت انجام نشد؛ دوباره تلاش کن.'}
 }
 async function renderDeletedRecords(){
