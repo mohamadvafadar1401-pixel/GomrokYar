@@ -505,7 +505,7 @@ async function saveSimpleRecord(kind,plate,goods='',dateInputId){
   await new Promise((r,j)=>{let q=tx('records','readwrite').add(item);q.onsuccess=r;q.onerror=()=>j(q.error)});
   await setting('nextEntryNo',no+1);await afterSuccessfulRecordSave(item);await renderRecords();await notifyPreviousPlateRecords(plate.key,previousPlateRecords);return no;
 }
-async function refreshReportBackupCounter(){const box=$('reportBackupCounterText'),bar=$('reportBackupCounterBar');if(!box||!bar)return;const count=Math.max(0,Number(await setting('autoBackupPendingCount'))||0),done=count%50,remaining=50-done;box.textContent='ثبت‌شده از شروع شمارش: '+done.toLocaleString('fa-IR')+' از ۵۰ · باقی‌مانده تا بک‌آپ: '+remaining.toLocaleString('fa-IR')+' ثبت';bar.style.width=(done/50*100)+'%';}
+async function refreshReportBackupCounter(){const box=$('reportBackupCounterText'),bar=$('reportBackupCounterBar');if(!box||!bar)return;const count=Math.max(0,Number(await setting('autoBackupPendingCount'))||0),done=Math.min(count,50),remaining=Math.max(0,50-done);box.textContent='ثبت‌شده از شروع شمارش: '+done.toLocaleString('fa-IR')+' از ۵۰ · باقی‌مانده تا بک‌آپ: '+remaining.toLocaleString('fa-IR')+' ثبت';bar.style.width=(done/50*100)+'%';}
 function normalizeTopTruckKey(value){return String(value||'').replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c))).replace(/[٠-٩]/g,c=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))).replace(/[\s\-–_]/g,'').toUpperCase()}
 function renderTopTruckReport(truck){
  const details=$('topTruckDetails');if(!details||!truck)return;
