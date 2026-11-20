@@ -344,6 +344,7 @@ public class MainActivity extends Activity {
                         while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
                     }
                 }
+                deleteAutomaticBackupsByName(saveName, insertedUri);
                 if (pendingReportFile != null) pendingReportFile.delete();
                 pendingReportFile = null;
                 pendingReportName = null;
@@ -357,6 +358,45 @@ public class MainActivity extends Activity {
                 }
                 return false;
             }
+        }
+
+        private boolean deleteAutomaticBackupsByName(String fileName, Uri keepUri) {
+            if (fileName == null || fileName.trim().isEmpty() || fileName.contains("/") || fileName.contains("\\")) return false;
+            boolean success = true;
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    String relativePath = Environment.DIRECTORY_DOWNLOADS + "/GomrokYar/AutoBackups/";
+                    String[] projection = {MediaStore.MediaColumns._ID};
+                    List<Uri> matches = new ArrayList<>();
+                    try (Cursor cursor = getContentResolver().query(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                            projection, MediaStore.MediaColumns.RELATIVE_PATH + "=? AND "
+                                    + MediaStore.MediaColumns.DISPLAY_NAME + "=?",
+                            new String[]{relativePath, fileName}, null)) {
+                        if (cursor != null) {
+                            int idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID);
+                            while (cursor.moveToNext()) {
+                                Uri uri = ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cursor.getLong(idCol));
+                                if (keepUri == null || !keepUri.equals(uri)) matches.add(uri);
+                            }
+                        }
+                    }
+                    for (Uri uri : matches) {
+                        if (getContentResolver().delete(uri, null, null) <= 0) success = false;
+                    }
+                } else {
+                    File documents = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+                    if (documents == null) return false;
+                    File target = new File(new File(documents, "GomrokYar/AutoBackups"), fileName);
+                    if (target.exists() && !target.delete()) success = false;
+                }
+            } catch (Exception e) {
+                success = false;
+            }
+            return success;
+        }
+
+        @JavascriptInterface public synchronized boolean deleteAutomaticBackup(String fileName) {
+            return deleteAutomaticBackupsByName(fileName, null);
         }
 
         private int countBackupRecords(InputStream input) {
