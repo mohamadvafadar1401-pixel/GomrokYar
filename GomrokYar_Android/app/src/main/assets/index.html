@@ -1063,19 +1063,20 @@ function renderCategoryBreakdown(records=lastChartRecords){
  const colors=['#16745f','#e5a13b','#477fb0','#9b6bc1','#d66a67','#5a9c91','#b77d4d','#82964b','#54718d','#c15b91','#7b8794','#d18a45','#4b9aaf','#8b7dba'];let cursor=0;
  const stops=items.map((item,i)=>{const start=cursor;cursor+=item.kg/total*100;return colors[i%colors.length]+' '+start.toFixed(3)+'% '+cursor.toFixed(3)+'%'}).join(',');
  const legend=items.map((item,i)=>{const pct=item.kg/total*100;return '<div class="category-share-item"><i class="category-share-dot" style="background:'+colors[i%colors.length]+'"></i><span class="category-share-name">'+esc(item.name)+'</span><span class="category-share-values"><b>'+pct.toLocaleString('fa-IR',{maximumFractionDigits:1})+'٪</b><small>'+item.tons.toLocaleString('fa-IR',{maximumFractionDigits:2})+' تن</small></span></div>'}).join('');
- const uncategorizedIndex=items.findIndex(item=>item.name==='دسته‌بندی نشده'||item.name==='مشخص نشده');const pieAction=(kind==='import_entry_manual'||kind==='weighed')&&uncategorizedIndex>=0;
+ const uncategorizedIndex=items.findIndex(item=>item.name==='دسته‌بندی نشده'||item.name==='مشخص نشده'),miscIndex=items.findIndex(item=>item.name==='متفرقه');const pieAction=(kind==='import_entry_manual'||kind==='weighed')&&(uncategorizedIndex>=0||miscIndex>=0);
  panel.innerHTML='<div class="category-pie-stage"><div class="category-pie-shadow"></div><div class="category-pie" style="background:conic-gradient('+stops+')"><div class="category-pie-center"><strong>'+totalTons.toLocaleString('fa-IR',{maximumFractionDigits:1})+'</strong><span>تن مجموع</span></div></div></div><div class="category-share-legend">'+legend+'</div>';
- const pie=panel.querySelector('.category-pie');if(pie&&pieAction){pie.tabIndex=0;pie.setAttribute('role','button');pie.setAttribute('aria-label','برای اصلاح سوابق دسته‌بندی نشده، بخش مربوطه را لمس کن');const missingRecords=()=>records.filter(record=>{const time=Date.parse(record.created);return isUncategorizedForKind(record,kind)&&Number.isFinite(time)&&time>=from.getTime()&&time<=to.getTime()});const openSlice=event=>{const rect=pie.getBoundingClientRect(),x=event.clientX-rect.left-rect.width/2,y=event.clientY-rect.top-rect.height/2;const position=((Math.atan2(y,x)*180/Math.PI+90+360)%360)/360;let cumulative=0,selected=-1;for(let index=0;index<items.length;index++){cumulative+=items[index].kg/total;if(position<=cumulative+0.000001){selected=index;break}}if(selected===uncategorizedIndex){openUncategorizedImports(missingRecords(),kind)}};pie.addEventListener('click',openSlice);pie.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openUncategorizedImports(missingRecords(),kind)}});const uncategorizedLegend=panel.querySelectorAll('.category-share-item')[uncategorizedIndex];if(uncategorizedLegend){uncategorizedLegend.style.cursor='pointer';uncategorizedLegend.setAttribute('role','button');uncategorizedLegend.tabIndex=0;uncategorizedLegend.title='برای اصلاح این سوابق لمس کن';const openList=()=>openUncategorizedImports(missingRecords(),kind);uncategorizedLegend.addEventListener('click',openList);uncategorizedLegend.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openList()}})}}
+ const pie=panel.querySelector('.category-pie');if(pie&&pieAction){pie.tabIndex=0;pie.setAttribute('role','button');pie.setAttribute('aria-label','برای مشاهده و اصلاح سوابق متفرقه یا دسته‌بندی‌نشده، بخش مربوطه را لمس کن');const recordsForCategory=sourceCategory=>records.filter(record=>{const time=Date.parse(record.created),category=String(record.category||'').trim();const matches=sourceCategory==='متفرقه'?category==='متفرقه':isUncategorizedForKind(record,kind);return (record.eventType||'weighed')===kind&&matches&&Number.isFinite(time)&&time>=from.getTime()&&time<=to.getTime()});const openCategory=(index)=>{if(index===miscIndex)openUncategorizedImports(recordsForCategory('متفرقه'),kind,'متفرقه');else if(index===uncategorizedIndex)openUncategorizedImports(recordsForCategory('uncategorized'),kind,'uncategorized')};const openSlice=event=>{const rect=pie.getBoundingClientRect(),x=event.clientX-rect.left-rect.width/2,y=event.clientY-rect.top-rect.height/2;const position=((Math.atan2(y,x)*180/Math.PI+90+360)%360)/360;let cumulative=0,selected=-1;for(let index=0;index<items.length;index++){cumulative+=items[index].kg/total;if(position<=cumulative+0.000001){selected=index;break}}openCategory(selected)};pie.addEventListener('click',openSlice);pie.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();if(miscIndex>=0)openCategory(miscIndex);else openCategory(uncategorizedIndex)}});[uncategorizedIndex,miscIndex].forEach(index=>{if(index<0)return;const legendItem=panel.querySelectorAll('.category-share-item')[index];if(legendItem){legendItem.style.cursor='pointer';legendItem.setAttribute('role','button');legendItem.tabIndex=0;legendItem.title='برای مشاهده و اصلاح سوابق این دسته لمس کن';const openList=()=>openCategory(index);legendItem.addEventListener('click',openList);legendItem.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openList()}})}})}
 }
 
 const uncategorizedCategories=['مصنوعات پلاستیکی','مصنوعات فلزی','مصالح ساختمان','لوله پلی اتیلن','محصولات شیمیایی','لوازم خانگی','مواد غذایی','افشانه و مواد تحت فشار','متفرقه','مصنوعات چوبی','مصنوعات بلور و شیشه','سایر مصنوعات فلزی','سوخت شرکت نفت','خرده بار','فرش','لوله پی وی سی','کابل برق','تشک و پتو','الیاف پلی استر','لاستیک خودرو','لوازم صنعتی','پارچه','کولر گازی','مصنوعات فلزی، پلاستیکی','مصنوعات فلزی،پلاستیکی،بلور و شیشه'];
-let uncategorizedEditKind='import_entry_manual';
+let uncategorizedEditKind='import_entry_manual',uncategorizedEditSource='uncategorized';
 function isUncategorizedForKind(record,kind){const category=String(record&&record.category||'').trim();return (record&&record.eventType||'weighed')===kind&&(!category||category==='دسته‌بندی نشده'||category==='مشخص نشده')}
+function isEditablePieCategoryRecord(record,kind,source){const category=String(record&&record.category||'').trim();return (record&&record.eventType||'weighed')===kind&&(source==='متفرقه'?category==='متفرقه':isUncategorizedForKind(record,kind))}
 function isUncategorizedImport(record){return isUncategorizedForKind(record,'import_entry_manual')}
-function openUncategorizedImports(items,kind='import_entry_manual'){
- uncategorizedEditKind=kind;
+function openUncategorizedImports(items,kind='import_entry_manual',source='uncategorized'){
+ uncategorizedEditKind=kind;uncategorizedEditSource=source;
  const list=$('uncategorizedList'),summary=$('uncategorizedSummary');if(!list||!summary)return;
- summary.textContent='تعداد '+items.length.toLocaleString('fa-IR')+' سابقه '+(kind==='weighed'?'صادراتی':'وارداتی')+' بدون دسته در بازه انتخاب‌شده. برای هر ردیف دسته درست را انتخاب کن.';
+ summary.textContent='تعداد '+items.length.toLocaleString('fa-IR')+' سابقه '+(kind==='weighed'?'صادراتی':'وارداتی')+(source==='متفرقه'?' با دسته فعلی «متفرقه»':' بدون دسته')+' در بازه انتخاب‌شده. نوع کالا کنار پلاک نمایش داده می‌شود؛ برای هر ردیف دسته درست را انتخاب کن.';
  $('uncategorizedStatus').textContent='';
  const esc=value=>String(value==null?'':value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  if(!items.length){list.innerHTML='<div class="category-share-empty">موردی برای اصلاح باقی نمانده است.</div>'}
@@ -1083,7 +1084,7 @@ function openUncategorizedImports(items,kind='import_entry_manual'){
   list.innerHTML=items.map((record,index)=>{
    const options='<option value="">انتخاب دسته کالا</option>'+uncategorizedCategories.map(name=>'<option value="'+esc(name)+'">'+esc(name)+'</option>').join('');
    const date=record.created&&Number.isFinite(Date.parse(record.created))?jalaliDisplay(new Date(record.created)):'—';
-   return '<div class="uncategorized-row" data-uncategorized-id="'+Number(record.id)+'"><div class="uncategorized-meta"><b>ردیف '+(Number(record.entryNo)||Number(record.id)||0).toLocaleString('fa-IR')+' · '+esc(record.manualPlate||record.plateKey||'بدون پلاک')+'</b>نوع کالا: '+esc(record.goodsText||'ثبت نشده')+'<br>تاریخ: '+esc(date)+' · وزن خالص: '+esc(record.netWeight||'—')+'</div><select aria-label="دسته کالا برای ردیف '+(index+1)+'">'+options+'</select></div>';
+   return '<div class="uncategorized-row" data-uncategorized-id="'+Number(record.id)+'"><div class="uncategorized-meta"><b>ردیف '+(Number(record.entryNo)||Number(record.id)||0).toLocaleString('fa-IR')+' · پلاک: '+esc(record.manualPlate||record.plateKey||'بدون پلاک')+'</b><div style="margin-top:5px;font-weight:700;color:#245b4b">نوع کالا: '+esc(record.goodsText||'ثبت نشده')+'</div><div class="small">تاریخ: '+esc(date)+' · وزن خالص: '+esc(record.netWeight||'—')+'</div></div><select aria-label="دسته کالا برای ردیف '+(index+1)+'">'+options+'</select></div>';
   }).join('');
  }
  $('uncategorizedModal').classList.remove('hide');
@@ -1096,16 +1097,16 @@ async function saveUncategorizedCategories(){
   const all=await allRecords(),byId=new Map(all.map(record=>[Number(record.id),record]));
   await new Promise((resolve,reject)=>{
    const transaction=db.transaction('records','readwrite'),store=transaction.objectStore('records');
-   updates.forEach(item=>{const record=byId.get(item.id);if(record&&isUncategorizedForKind(record,uncategorizedEditKind))store.put({...record,category:item.category,categoryUpdatedAt:new Date().toISOString()})});
+   updates.forEach(item=>{const record=byId.get(item.id);if(record&&isEditablePieCategoryRecord(record,uncategorizedEditKind,uncategorizedEditSource))store.put({...record,category:item.category,categoryUpdatedAt:new Date().toISOString()})});
    transaction.oncomplete=resolve;transaction.onerror=()=>reject(transaction.error||new Error('category_update_failed'));transaction.onabort=()=>reject(transaction.error||new Error('category_update_aborted'));
   });
   const changed=updates.length;
   await renderRecords();await refreshReportPreview();renderDailyRecords();
   $('uncategorizedStatus').textContent=changed.toLocaleString('fa-IR')+' سابقه با موفقیت اصلاح شد.';
   renderCategoryBreakdown(lastChartRecords);
-  const remaining=lastChartRecords.filter(record=>isUncategorizedForKind(record,uncategorizedEditKind));
-  if(!remaining.length){$('uncategorizedList').innerHTML='<div class="category-share-empty">همه دسته‌ها اصلاح شدند؛ مورد اصلاح‌نشده‌ای باقی نمانده است.</div>'}
-  else openUncategorizedImports(remaining,uncategorizedEditKind);
+  const remaining=lastChartRecords.filter(record=>isEditablePieCategoryRecord(record,uncategorizedEditKind,uncategorizedEditSource));
+  if(!remaining.length){$('uncategorizedList').innerHTML='<div class="category-share-empty">همه سوابق این فهرست اصلاح شدند؛ موردی باقی نمانده است.</div>'}
+  else openUncategorizedImports(remaining,uncategorizedEditKind,uncategorizedEditSource);
  }catch(error){console.error('Uncategorized category update failed',error);$('uncategorizedStatus').textContent='ذخیره دسته‌ها انجام نشد؛ دوباره تلاش کن.'}
 }
 function closeUncategorizedImports(){$('uncategorizedModal')&&$('uncategorizedModal').classList.add('hide')}
