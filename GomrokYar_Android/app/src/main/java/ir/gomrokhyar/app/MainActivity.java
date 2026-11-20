@@ -344,7 +344,7 @@ public class MainActivity extends Activity {
                         while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
                     }
                 }
-                deleteAutomaticBackupsByName(saveName, insertedUri);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) deleteAutomaticBackupsByName(saveName, insertedUri);
                 if (pendingReportFile != null) pendingReportFile.delete();
                 pendingReportFile = null;
                 pendingReportName = null;
