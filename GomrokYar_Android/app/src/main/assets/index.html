@@ -449,11 +449,12 @@ function focusExportPlateNext(){
   if(Math.abs(delta)>8)window.scrollBy({top:delta,behavior:'smooth'});
  });
 }
-document.addEventListener('input',e=>{if(e.target?.id!=='firstWeight')return;const el=e.target;el.value=normalizeDigits(el.value).replace(/\\D/g,'').slice(0,5);if(el.value.length===5)$('netWeight')?.focus()});
-document.addEventListener('keydown',e=>{if(e.target?.id!=='firstWeight'||e.key!=='Enter')return;e.preventDefault();const digits=normalizeDigits(e.target.value).replace(/\\D/g,'');if(digits.length===4||digits.length===5)$('netWeight')?.focus();else alert('توزین اول باید چهار یا پنج رقم باشد.')});$('netWeight')?.addEventListener('input',()=>{const el=$('netWeight'),digits=normalizeDigits(el.value).replace(/\\D/g,'').slice(0,5);el.value=digits;if(digits.length===5)$('exportClearanceAgent')?.focus()});
+document.addEventListener('input',e=>{if(e.target?.id!=='firstWeight')return;const el=e.target;el.value=normalizeDigits(el.value).replace(/\\D/g,'').slice(0,5);if(el.value.length===5)focusExportPlateNext()});
+document.addEventListener('keydown',e=>{if(e.target?.id!=='firstWeight'||e.key!=='Enter')return;e.preventDefault();const digits=normalizeDigits(e.target.value).replace(/\\D/g,'');if(digits.length===4||digits.length===5)focusExportPlateNext();else alert('توزین اول باید چهار یا پنج رقم باشد.')});$('netWeight')?.addEventListener('input',()=>{const el=$('netWeight'),digits=normalizeDigits(el.value).replace(/\\D/g,'').slice(0,5);el.value=digits;if(digits.length===5)$('exportClearanceAgent')?.focus()});
 $('netWeight')?.addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();const digits=normalizeDigits($('netWeight').value).replace(/\\D/g,'');if(digits.length===4||digits.length===5)$('exportClearanceAgent')?.focus();else alert('وزن خالص باید چهار یا پنج رقم باشد.')});
 $('exportClearanceAgent')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('exportParkingPosition')?.focus()}});
-$('exportParkingPosition')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('recordDate')?.focus()}});function typeLabel(t){return ({weighed:'ورود صادراتی با برگه باسکول',import_entry_manual:'ورود وارداتی با باسکول دستی',empty_entry:'ورود کامیون خالی',import_exit:'خروج کامیون وارداتی'})[t]||'ثبت برگه باسکول'}
+$('exportParkingPosition')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('recordDate')?.focus()}});$('recordDate')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('saveRecord')?.focus()}});
+function typeLabel(t){return ({weighed:'ورود صادراتی با برگه باسکول',import_entry_manual:'ورود وارداتی با باسکول دستی',empty_entry:'ورود کامیون خالی',import_exit:'خروج کامیون وارداتی'})[t]||'ثبت برگه باسکول'}
 function statusLabel(x){if(x.vehicleStatus==='empty')return 'خالی';if(x.vehicleStatus==='loaded_import')return 'حامل کالای وارداتی';if(x.vehicleStatus==='import_weighed')return 'وارداتی ـ باسکول دستی';return 'باسکول‌شده'}
 async function nextEntryNumber(all){let stored=Number(await setting('nextEntryNo'))||1,max=all.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);return Math.max(stored,max+1)}
 function duplicateRecordKey(record){
@@ -749,7 +750,6 @@ $('saveImportEntry').onclick=async()=>{
     clearImportManualPlate();['impInGoods','impInOrigin','impInPermit','impInFirst','impInSecond','impInNet','impInClearanceAgent'].forEach(id=>$(id).value='');$('impInParkingPosition').value='';$('impInCategory').value='';$('impInRecordDate').value=jalaliDisplay(new Date());$('importEntryStatus').textContent='ورود کامیون وارداتی با ردیف '+no+' ثبت شد.';$('impInPlateSuffix').focus();window.scrollTo({top:0,behavior:'smooth'});await notifyPreviousPlateRecords(plate.key,previousPlateRecords);
   }catch(e){alert('ثبت ورود کامیون وارداتی انجام نشد؛ دوباره تلاش کن.')}};
 $('resetImportEntry').onclick=()=>{clearImportManualPlate();['impInGoods','impInOrigin','impInPermit','impInFirst','impInSecond','impInNet','impInClearanceAgent'].forEach(id=>$(id).value='');$('impInParkingPosition').value='';$('impInCategory').value='';$('impInRecordDate').value=jalaliDisplay(new Date());$('importEntryStatus').textContent='فرم پاک شد.';$('impInPlateSuffix').focus()};
-$('exportClearanceAgent')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('plateKeySuffix')?.focus()}});
 $('exportParkingPosition')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('recordDate')?.focus()}});
 $('impInFirst')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('impInSecond')?.focus()}});
 $('impInSecond')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('impInClearanceAgent')?.focus()}});
