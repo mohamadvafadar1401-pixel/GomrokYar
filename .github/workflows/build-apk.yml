@@ -18,6 +18,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Node for legacy Android WebView compatibility
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -67,6 +72,10 @@ jobs:
           fi
           echo "CHECK 3 PASSED: key alias exists."
           echo "CHECK 4 DEFERRED: the actual Gradle release-signing task will verify the private-key password."
+
+      - name: Prepare JavaScript for Android 7 WebView
+        run: |
+          node scripts/prepare-android7-webview.cjs
 
       - name: Build signed release APK
         env:
