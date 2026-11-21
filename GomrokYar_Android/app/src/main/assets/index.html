@@ -248,7 +248,7 @@ main.wrap:after{content:"✦";position:absolute;top:27px;left:30px;color:#e3bd74
  });
 })();
 </script><div id="userManager"><div class="modal"><h2>مدیریت کاربران</h2><p class="hint">یک حساب مدیر و حداکثر پنج حساب کاربری قابل تعریف است.</p><div id="userList"></div><hr><h3>تعریف کاربر جدید</h3><label>نام کاربری</label><input id="newUsername" maxlength="32"><label>نام و نام خانوادگی / عنوان</label><input id="newDisplayName" maxlength="50"><label>رمز عبور (حداقل ۸ نویسه)</label><input id="newUserPassword" type="password"><div class="auth-toolbar"><button id="addUserBtn" class="btn">افزودن کاربر</button><button id="closeUserManager" class="btn secondary">بستن</button></div><div id="userManagerError" class="hint"></div></div></div><header><div class="header-row"><button id="openDrawerBtn" class="menu-toggle" type="button" aria-label="بازکردن منو">☰</button><div class="header-titles"><h1>گمرکیار</h1></div><span style="width:44px"></span></div></header><div id="drawerBackdrop" class="drawer-backdrop"></div><aside id="appDrawer" class="side-drawer" aria-label="منوی برنامه"><div class="drawer-head"><strong>منوی گمرک شیخ صله</strong><button id="closeDrawerBtn" class="drawer-close" type="button">✕</button></div><div id="activeUserLabel" class="drawer-user">کاربر فعال</div><details class="drawer-account"><summary class="drawer-item">حساب کاربری من</summary><button id="manageUsersBtn" class="drawer-item secondary" type="button">مدیریت کاربران</button><button id="changeMyProfileBtn" class="drawer-item secondary" type="button">تغییر مشخصات</button><button id="changeMyPasswordBtn" class="drawer-item secondary" type="button">تغییر رمز عبور</button></details><button id="goSearchBtn" class="drawer-item" type="button" data-tab="searchTab">آمار روزانه</button><button class="drawer-item" type="button" data-tab="holidayTab">مدیریت تعطیلات</button><button class="drawer-item" type="button" data-tab="deletedTab">سوابق حذف</button><button class="drawer-item" type="button" data-tab="reportTab">گزارش‌گیری</button><button class="drawer-item" type="button" data-tab="backupTab">پشتیبان</button><button class="drawer-item" type="button" data-tab="historyTab">جستجوی سوابق</button><button class="drawer-item" type="button" data-tab="topTrucksTab">پرترددترین کامیون‌ها</button><button id="lockAppBtn" class="drawer-item" type="button">قفل برنامه / خروج</button></aside><main class="wrap">
-<nav class="tabs" aria-label="بخش‌های ثبت"><button class="tabbtn active" data-tab="weighTab">ورود صادراتی با برگه باسکول</button><button class="tabbtn" data-tab="importEntryTab">ورود وارداتی با باسکول دستی</button><button class="tabbtn" data-tab="emptyTab">ورود کامیون خالی</button><button class="tabbtn" data-tab="exitTab">خروج کامیون وارداتی</button></nav>
+<nav class="tabs" aria-label="بخش‌های ثبت"><button class="tabbtn active" data-tab="weighTab">ورود صادراتی با برگه باسکول</button><button class="tabbtn" data-tab="importEntryTab">ورود وارداتی با باسکول دستی</button><button class="tabbtn" data-tab="emptyTab">ورود کامیون خالی</button><button class="tabbtn" data-tab="exitTab">خروج کامیون وارداتی</button></nav><section class="panel" style="padding:10px 14px;margin-top:10px;margin-bottom:10px"><label for="autoBackupToggle" style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:700;margin:0"><input id="autoBackupToggle" type="checkbox" checked style="width:20px;height:20px;margin:0;accent-color:#27845e"><span>پشتیبان‌گیری خودکار فعال باشد</span></label><div id="autoBackupToggleHint" class="small" style="margin:6px 0 0 30px">در حالت روشن، پشتیبان‌گیری خودکار طبق روال برنامه انجام می‌شود.</div></section>
 <div id="weighTab">
 <section class="panel"><h2>۱) انتخاب یا گرفتن عکس برگه</h2><div class="row"><label class="btn" for="photo">🖼️ انتخاب عکس از گالری</label><input id="photo" type="file" accept="image/*" class="hide"><label class="btn secondary" for="cameraPhoto">📷 گرفتن عکس با دوربین</label><input id="cameraPhoto" type="file" accept="image/*" capture="environment" class="hide"><button id="calibrate" class="secondary hide" disabled>تنظیم محل برش‌ها</button></div><p class="hint">پس از گرفتن عکس، محدوده جدول را با انگشت مشخص کن. برنامه فقط همان قسمت را برش می‌دهد، شبکه ۱۰×۳ را پیدا می‌کند و خانه‌های موردنیاز را جدا می‌سازد؛ متن داخل خانه‌ها به‌صورت OCR خوانده نمی‌شود.</p><img id="preview" class="preview hide" alt="پیش‌نمایش برگه"><canvas id="tableSelectCanvas" class="preview hide"></canvas><div id="tableSelectActionRow" class="row" style="margin-top:8px"><button id="selectTableBtn" class="hide" type="button">محدوده بررسی اطلاعات عکس</button><button id="perspectiveBtn" class="hide" type="button">اصلاح پرسپکتیو</button></div><div id="tableSelectControls" class="hide"><div class="row" style="margin-top:10px"><button id="confirmTableRegion">تأیید محدوده و تشخیص اطلاعات</button></div><div id="tableSelectStatus" class="status"></div></div><div id="calStatus" class="status"></div></section>
 <section id="cropPanel" class="panel hide"><h2>۲) تنظیم محدوده برش</h2><p id="cropInstruction" class="hint">ابتدا دکمه فیلد را بزن تا انتخاب شود؛ سپس روی خود تصویر از گوشه اول تا گوشه مقابل آن فیلد انگشتت را بکش.</p><div class="row" id="fieldButtons"></div><canvas id="overlay" class="preview"></canvas><div class="row" style="margin-top:10px"><button id="saveTemplate">ذخیره الگو</button><button id="cancelCal" class="secondary">انصراف</button></div><p class="small">محدوده‌ها نسبت به کادر مشکی ذخیره می‌شوند؛ کادر باید در عکس‌های بعدی کامل و واضح دیده شود.</p></section>
@@ -1058,6 +1058,7 @@ async function saveAutomaticBackup(data,name){
 }
 async function afterSuccessfulRecordSave(){
   try{
+    if((await setting('autoBackupEnabled'))===false)return;
     let pendingCount=Number(await setting('autoBackupPendingCount'))||0;
     pendingCount++;
     await setting('autoBackupPendingCount',pendingCount);
@@ -1346,6 +1347,7 @@ async function loadAutomaticBackupList(){
  }catch(err){box.textContent='خواندن فهرست پشتیبان‌ها ناموفق بود. دوباره فهرست را به‌روزرسانی کن.'}
 }
 $('refreshAutomaticBackups').onclick=loadAutomaticBackupList;
+$('autoBackupToggle').addEventListener('change',async()=>{const enabled=$('autoBackupToggle').checked;try{await setting('autoBackupEnabled',enabled);$('autoBackupToggleHint').textContent=enabled?'پشتیبان‌گیری خودکار روشن است و طبق روال برنامه انجام می‌شود.':'پشتیبان‌گیری خودکار خاموش است؛ هنگام ثبت اطلاعات فایل خودکار ساخته نمی‌شود.';}catch(err){$('autoBackupToggle').checked=!enabled;alert('ذخیره وضعیت پشتیبان‌گیری ناموفق بود؛ وضعیت قبلی حفظ شد.');}});
 $('openAutomaticBackupFolder').onclick=()=>{
  const bridge=window.AndroidBridge;
  if(bridge&&typeof bridge.openAutomaticBackupFolder==='function'){
@@ -1353,7 +1355,6 @@ $('openAutomaticBackupFolder').onclick=()=>{
  }else alert('باز کردن پوشه فقط در نسخه نصب‌شده اندروید امکان‌پذیر است.');
 };
 document.querySelectorAll('[data-tab="backupTab"]').forEach(el=>el?.addEventListener('click',()=>setTimeout(loadAutomaticBackupList,250)));
-loadAutomaticBackupList();
 $('exportRange').onclick=async()=>{
   const fromText=$('backupFrom').value.trim(),toText=$('backupTo').value.trim(),from=parseJalaliDate(fromText),to=parseJalaliDate(toText);
   if(!fromText||!toText||!from||!to){alert('لطفاً هر دو تاریخ شمسی معتبر را انتخاب کن.');return}
@@ -1534,6 +1535,9 @@ $('lockAppBtn').onclick=()=>{closeDrawer();currentUser=null;$('loginUsername').v
 (async()=>{
  try{
   db=await openDB();
+  const autoBackupEnabled=await setting('autoBackupEnabled');
+  $('autoBackupToggle').checked=autoBackupEnabled!==false;
+  $('autoBackupToggleHint').textContent=autoBackupEnabled===false?'پشتیبان‌گیری خودکار خاموش است؛ هنگام ثبت اطلاعات فایل خودکار ساخته نمی‌شود.':'پشتیبان‌گیری خودکار روشن است و طبق روال برنامه انجام می‌شود.';
   await initAuth();
   regions=await setting('regions')||{};
   templateMode=(await setting('templateMode'))===true;
