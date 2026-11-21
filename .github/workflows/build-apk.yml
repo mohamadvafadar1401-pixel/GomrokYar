@@ -1,4 +1,5 @@
 name: Build GomrokYar APK
+# Integrated Original 8 build: shared goods type options and labels.
 
 on:
   push:
