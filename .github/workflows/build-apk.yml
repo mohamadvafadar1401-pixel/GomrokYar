@@ -1,8 +1,9 @@
 name: Build GomrokYar APK
+# Integrated Original 8 build: shared goods type options and labels.
 
 on:
   push:
-    branches: [ main, master, stable/v74-login-baseline, feature/v106-daily-stats-report-drawer, feature/v106-requested-ui-updates, feature/recent-vehicles-only-v106, feature/daily-jalali-partial-plate-search, feature/original-v3-report-daily-transfer, feature/original-v4-plate-history-export, feature/original-v5-branding-colors, feature/release-signing-updates, feature/release-1.0.8-deleted-daily-export, feature/deleted-records-password-delete, feature/account-menu-user-management, feature/image-export-optimization, feature/auto-backup-50-image-compression, feature/holiday-management-app-icon, feature/modern-ui-refresh, feature/modern-ui-refresh-v2, feature/import-manual-weighing-autocalc, feature/original-v6-export-description-search ]
+    branches: [ main, master, stable/v74-login-baseline, feature/v106-daily-stats-report-drawer, feature/v106-requested-ui-updates, feature/recent-vehicles-only-v106, feature/daily-jalali-partial-plate-search, feature/original-v3-report-daily-transfer, feature/original-v4-plate-history-export, feature/original-v5-branding-colors, feature/release-signing-updates, feature/release-1.0.8-deleted-daily-export, feature/deleted-records-password-delete, feature/account-menu-user-management, feature/image-export-optimization, feature/auto-backup-50-image-compression, feature/holiday-management-app-icon, feature/modern-ui-refresh, feature/modern-ui-refresh-v2, feature/import-manual-weighing-autocalc, feature/original-v6-export-description-search, feature/original-v7-export-description-search, feature/original-v8-integrated-search-backups ]
   workflow_dispatch:
 
 permissions:
@@ -95,3 +96,7 @@ jobs:
           path: GomrokYar_Android/app/build/outputs/apk/release/app-release.apk
 
 # All future updates must use this same permanent signing key and keep applicationId unchanged.
+
+# Rebuild after completing the full weighbridge-record editor in Original 7.
+
+# Rebuild after narrowing the weighbridge edit form to the two requested crops and fields.
