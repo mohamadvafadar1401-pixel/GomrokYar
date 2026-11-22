@@ -1187,10 +1187,32 @@ async function runCategoryTruckSearch(){
  if(from.getTime()>to.getTime()){summary.textContent='تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد.';return}
  const all=await allRecords(),data=all.filter(x=>(x.eventType||'weighed')===type&&String(x.category||'').trim()===category).filter(x=>{const t=Date.parse(x.created);return Number.isFinite(t)&&t>=from.getTime()&&t<=to.getTime()}).sort((a,b)=>Date.parse(a.created)-Date.parse(b.created)||(Number(a.entryNo)||Number(a.id)||0)-(Number(b.entryNo)||Number(b.id)||0));
  const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const value=(v)=>v===undefined||v===null||String(v).trim()===''?'ثبت نشده':esc(v);
+ const cropHtml=(x,key,fallback,label)=>{const src=x.crops&&x.crops[key];if(src&&String(src).startsWith('data:image/'))return '<img alt="'+esc(label)+'" src="'+src+'" style="display:block;max-width:100%;max-height:90px;object-fit:contain;margin:5px auto">';return value(fallback)};
+ const field=(label,v)=>'<div><b>'+esc(label)+'</b><div>'+value(v)+'</div></div>';
  const count=data.length;
  summary.textContent='تعداد کامیون‌های '+(type==='weighed'?'صادراتی':'وارداتی')+': '+count.toLocaleString('fa-IR')+' دستگاه · نوع کالا: '+category+' · بازه: '+fromText+' تا '+toText;
  if(!count){results.innerHTML='<div class="hint">برای این نوع کالا و بازه زمانی، کامیونی پیدا نشد.</div>';return}
- results.innerHTML=data.map((x,i)=>{const permitCrop=x.crops&&x.crops.permit,permitHtml=permitCrop&&String(permitCrop).startsWith('data:image/')?'<img alt="تصویر شماره مجوز بارگیری" src="'+permitCrop+'" style="display:block;max-width:150px;max-height:65px;object-fit:contain;margin-top:4px">': '<strong>'+esc(x.permitNo||'در تصویر برگه ثبت شده')+'</strong>';return '<article class="record" style="margin:8px 0;padding:12px"><b>کامیون '+(i+1).toLocaleString('fa-IR')+' ـ ردیف ثبت '+esc(Number(x.entryNo)||Number(x.id)||'—')+'</b><div class="grid" style="margin-top:8px;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px"><div><span class="small">شماره مجوز بارگیری</span>'+permitHtml+'</div><div><span class="small">پلاک کامیون</span><strong>'+esc(x.manualPlate||x.plateKey||'ثبت نشده')+'</strong></div><div><span class="small">وزن خالص (کیلوگرم)</span><strong>'+esc(x.netWeight||'ثبت نشده')+'</strong></div><div><span class="small">تاریخ ورود</span><strong>'+esc(new Date(x.created).toLocaleDateString('fa-IR'))+'</strong></div></div></article>'}).join('');
+ results.innerHTML=data.map((x,i)=>{
+  const created=new Date(x.created),createdText=Number.isFinite(created.getTime())?created.toLocaleString('fa-IR'):'ثبت نشده';
+  const fields=[
+   field('نوع عملیات',typeLabel(x.eventType||'weighed')),
+   field('شماره پلاک',x.manualPlate||x.plateKey),
+   field('نوع کالا / شرح کالا',x.goodsText),
+   field('دسته‌بندی کالا',x.category),
+   field('مبدأ',x.originText||x.origin),
+   field('شماره مجوز بارگیری',cropHtml(x,'permit',x.permitNo,'تصویر شماره مجوز بارگیری')),
+   field('وزن اول / توزین اول (کیلوگرم)',cropHtml(x,'first',x.firstWeight,'تصویر توزین اول')),
+   field('وزن دوم / توزین دوم (کیلوگرم)',cropHtml(x,'second',x.secondWeight,'تصویر توزین دوم')),
+   field('وزن خالص (کیلوگرم)',cropHtml(x,'net',x.netWeight,'تصویر وزن خالص')),
+   field('نام ترخیص‌کار',x.clearanceAgent||x.exportClearanceAgent),
+   field('شماره جایگاه',x.parkingPosition),
+   field('تاریخ و ساعت ثبت',createdText),
+   field('ثبت‌کننده',x.createdByName||x.createdBy),
+   field('توضیحات',x.description||x.notes)
+  ];
+  return '<article class="record" style="margin:8px 0;padding:12px"><b>کامیون '+(i+1).toLocaleString('fa-IR')+' ـ ردیف ثبت '+value(Number(x.entryNo)||Number(x.id))+'</b><div class="history-record-grid" style="grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px">'+fields.join('')+'</div></article>';
+ }).join('');
 }
 async function prepareCategoryTruckSearch(){
  const all=await allRecords(),select=$('categoryTruckSearchCategory');
