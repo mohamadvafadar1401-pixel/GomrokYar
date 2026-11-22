@@ -1189,7 +1189,7 @@ async function runCategoryTruckSearch(){
  const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const value=(v)=>v===undefined||v===null||String(v).trim()===''?'ثبت نشده':esc(v);
  const cropHtml=(x,key,fallback,label)=>{const src=x.crops&&x.crops[key];if(src&&String(src).startsWith('data:image/'))return '<img alt="'+esc(label)+'" src="'+src+'" style="display:block;max-width:100%;max-height:90px;object-fit:contain;margin:5px auto">';return value(fallback)};
- const field=(label,v)=>'<div><b>'+esc(label)+'</b><div>'+value(v)+'</div></div>';
+ const field=(label,v,isHtml=false)=>'<div><b>'+esc(label)+'</b><div>'+(isHtml?(v||value('')):value(v))+'</div></div>';
  const count=data.length;
  summary.textContent='تعداد کامیون‌های '+(type==='weighed'?'صادراتی':'وارداتی')+': '+count.toLocaleString('fa-IR')+' دستگاه · نوع کالا: '+category+' · بازه: '+fromText+' تا '+toText;
  if(!count){results.innerHTML='<div class="hint">برای این نوع کالا و بازه زمانی، کامیونی پیدا نشد.</div>';return}
@@ -1201,10 +1201,10 @@ async function runCategoryTruckSearch(){
    field('نوع کالا / شرح کالا',x.goodsText),
    field('دسته‌بندی کالا',x.category),
    field('مبدأ',x.originText||x.origin),
-   field('شماره مجوز بارگیری',cropHtml(x,'permit',x.permitNo,'تصویر شماره مجوز بارگیری')),
-   field('وزن اول / توزین اول (کیلوگرم)',cropHtml(x,'first',x.firstWeight,'تصویر توزین اول')),
-   field('وزن دوم / توزین دوم (کیلوگرم)',cropHtml(x,'second',x.secondWeight,'تصویر توزین دوم')),
-   field('وزن خالص (کیلوگرم)',cropHtml(x,'net',x.netWeight,'تصویر وزن خالص')),
+   field('شماره مجوز بارگیری',cropHtml(x,'permit',x.permitNo,'تصویر شماره مجوز بارگیری'),true),
+   field('وزن اول / توزین اول (کیلوگرم)',cropHtml(x,'first',x.firstWeight,'تصویر توزین اول'),true),
+   field('وزن دوم / توزین دوم (کیلوگرم)',cropHtml(x,'second',x.secondWeight,'تصویر توزین دوم'),true),
+   field('وزن خالص (کیلوگرم)',cropHtml(x,'net',x.netWeight,'تصویر وزن خالص'),true),
    field('نام ترخیص‌کار',x.clearanceAgent||x.exportClearanceAgent),
    field('شماره جایگاه',x.parkingPosition),
    field('تاریخ و ساعت ثبت',createdText),
