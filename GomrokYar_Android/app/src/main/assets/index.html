@@ -1189,6 +1189,7 @@ async function runCategoryTruckSearch(){
  const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const value=(v)=>v===undefined||v===null||String(v).trim()===''?'ثبت نشده':esc(v);
  const cropHtml=(x,key,fallback,label)=>{const src=x.crops&&x.crops[key];if(src&&String(src).startsWith('data:image/'))return '<img alt="'+esc(label)+'" src="'+src+'" style="display:block;max-width:100%;max-height:90px;object-fit:contain;margin:5px auto">';return value(fallback)};
+ const getImportOrigin=x=>{const direct=[x.originText,x.origin,x.originName,x.originCountry,x.originCity,x.originPlace,x.loadingOrigin,x.sourceOrigin,x.mabda,x.mabdaText];for(const v of direct){if(v!==undefined&&v!==null&&String(v).trim()!=='')return v}for(const [k,v] of Object.entries(x)){if(/origin|mabda|مبدأ|مبدا/i.test(k)&&v!==undefined&&v!==null&&typeof v!=='object'&&String(v).trim()!=='')return v}return ''};
  const field=(label,v,isHtml=false)=>'<div><b>'+esc(label)+'</b><div>'+(isHtml?(v||value('')):value(v))+'</div></div>';
  const count=data.length;
  summary.textContent='تعداد کامیون‌های '+(type==='weighed'?'صادراتی':'وارداتی')+': '+count.toLocaleString('fa-IR')+' دستگاه · نوع کالا: '+category+' · بازه: '+fromText+' تا '+toText;
@@ -1200,7 +1201,7 @@ async function runCategoryTruckSearch(){
    field('شماره پلاک',x.manualPlate||x.plateKey),
    field('نوع کالا / شرح کالا',x.goodsText),
    field('دسته‌بندی کالا',x.category),
-   field('مبدأ',x.originText||x.origin),
+   field('مبدأ بار',getImportOrigin(x)),
    field('شماره مجوز بارگیری',cropHtml(x,'permit',x.permitNo,'تصویر شماره مجوز بارگیری'),true),
    field('وزن اول / توزین اول (کیلوگرم)',cropHtml(x,'first',x.firstWeight,'تصویر توزین اول'),true),
    field('وزن دوم / توزین دوم (کیلوگرم)',cropHtml(x,'second',x.secondWeight,'تصویر توزین دوم'),true),
@@ -1685,7 +1686,7 @@ async function saveDailyEdit(){
 
  if(kind==='import_entry_manual'){
   const category=$('editCategory').value.trim();if(!category){$('dailyEditStatus').textContent='نوع کالا را انتخاب کن.';return}updated.category=category;
-  const fields=[['goodsText','editGoods'],['permitNo','editPermit'],['firstWeight','editFirst'],['secondWeight','editSecond'],['netWeight','editNet']];
+  const fields=[['goodsText','editGoods'],['originText','editOrigin'],['permitNo','editPermit'],['firstWeight','editFirst'],['secondWeight','editSecond'],['netWeight','editNet']];
   for(const [key,idField] of fields){const value=$(idField).value.trim();if(!value){$('dailyEditStatus').textContent='لطفاً همه خانه‌های دستی را تکمیل کن.';return}updated[key]=value}
  }
  if(kind==='import_exit'){const goods=$('editGoods').value.trim();if(!goods){$('dailyEditStatus').textContent='نوع کالا را وارد کن.';return}updated.goodsText=goods}
