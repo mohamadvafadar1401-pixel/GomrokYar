@@ -799,8 +799,15 @@ async function straightenToBlackFrame(im){
   const probe=document.createElement('canvas');probe.width=w;probe.height=h;
   const base=probe.getContext('2d');base.fillStyle='#fff';base.fillRect(0,0,w,h);base.drawImage(im,0,0,w,h);
   let best={angle:0,score:-1};
-  // جست‌وجوی زاویه در بازه ۲۰- تا ۲۰+ درجه؛ هر بار بوم گسترش می‌یابد تا گوشه‌های برگه بریده نشوند.
-  for(let a=-20;a<=20.001;a+=.25){
+  // ابتدا جست‌وجوی درشت و سپس دقیق؛ دقت نهایی همان گام ۰٫۲۵ درجه حفظ می‌شود.
+  // این روش تعداد چرخش‌ها و اسکن‌های پیکسلی را از ۱۶۱ بار به حدود ۵۰ بار کاهش می‌دهد.
+  for(let a=-20;a<=20.001;a+=1){
+    const c=rotateOnExpandedCanvas(probe,a);const r=detectBlackFrame(c);if(!r)continue;const score=scoreFrame(c,r);
+    if(score>best.score+0.0005||(Math.abs(score-best.score)<=0.0005&&Math.abs(a)<Math.abs(best.angle)))best={angle:a,score};
+  }
+  const coarseBest=best.angle;
+  for(let a=Math.max(-20,coarseBest-1);a<=Math.min(20,coarseBest+1)+0.001;a+=.25){
+    if(Math.abs(a-coarseBest)<0.0001)continue;
     const c=rotateOnExpandedCanvas(probe,a);const r=detectBlackFrame(c);if(!r)continue;const score=scoreFrame(c,r);
     if(score>best.score+0.0005||(Math.abs(score-best.score)<=0.0005&&Math.abs(a)<Math.abs(best.angle)))best={angle:a,score};
   }
@@ -1153,9 +1160,9 @@ function renderRecentVehicles(records){
  }else{list.style.maxHeight='none';}
 }
 let lastChartRecords=[];
-async function renderHistoryResults(){
+async function renderHistoryResults(recordsOverride=null){
  const directionSelect=$('historyDirectionFilter'),selectedDirection=directionSelect?.value||'all';
- const all=await allRecords(),p=plateData('historyPlate'),descriptionQuery=$('historyDescriptionSearch').value.trim().toLocaleLowerCase('fa'),nationality=$('historyVehicleNationality')?.value||'all',direction=selectedDirection,goodsCategory=$('historyGoodsCategory')?.value||'all',fromText=$('historyFrom').value.trim(),toText=$('historyTo').value.trim(),from=fromText?parseJalaliDate(fromText):null,to=toText?parseJalaliDate(toText):null;
+ const all=Array.isArray(recordsOverride)?recordsOverride:await allRecords(),p=plateData('historyPlate'),descriptionQuery=$('historyDescriptionSearch').value.trim().toLocaleLowerCase('fa'),nationality=$('historyVehicleNationality')?.value||'all',direction=selectedDirection,goodsCategory=$('historyGoodsCategory')?.value||'all',fromText=$('historyFrom').value.trim(),toText=$('historyTo').value.trim(),from=fromText?parseJalaliDate(fromText):null,to=toText?parseJalaliDate(toText):null;
  const isIraqiTruck=x=>{const key=String(x.plateKey||'').trim().toUpperCase(),plate=String(x.manualPlate||'').trim();return key.startsWith('SUL-')||key.startsWith('K')||key.startsWith('L')||/^سلیمانیه\s*/.test(plate)||/^[۰-۹٠-٩]{2}\s*[KL]/i.test(plate)};
  const isImportRecord=x=>['import_entry_manual','import_exit'].includes(String(x.eventType||''))||['loaded_import','import_weighed'].includes(String(x.vehicleStatus||''));
  const isExportRecord=x=>String(x.eventType||'')==='weighed'||String(x.vehicleStatus||'')==='weighed';
@@ -1242,7 +1249,7 @@ async function prepareCategoryTruckSearch(){
 $('runCategoryTruckSearch').onclick=runCategoryTruckSearch;
 $('resetCategoryTruckSearch').onclick=()=>{$('categoryTruckSearchType').value='weighed';$('categoryTruckSearchCategory').value='';$('categoryTruckSearchFrom').value='';$('categoryTruckSearchTo').value='';$('categoryTruckSearchSummary').textContent='برای شروع، نوع کالا و بازه زمانی را مشخص کن.';$('categoryTruckSearchResults').innerHTML=''};
 $('categoryTruckSearchType').addEventListener('change',()=>{$('categoryTruckSearchResults').innerHTML='';$('categoryTruckSearchSummary').textContent='نوع ثبت تغییر کرد؛ برای مشاهده نتایج دوباره جست‌وجو کن.'});
-async function renderRecords(){const all=await allRecords();await refreshHolidayCache();lastChartRecords=all;renderChart(all);renderRecentVehicles(all);await renderHistoryResults()}
+async function renderRecords(){const all=await allRecords();await refreshHolidayCache();lastChartRecords=all;renderChart(all);renderRecentVehicles(all);await renderHistoryResults(all)}
 
 function jalaliToGregorian(jy,jm,jd){jy=Number(jy);jm=Number(jm);jd=Number(jd);if(!Number.isInteger(jy)||!Number.isInteger(jm)||!Number.isInteger(jd)||jm<1||jm>12||jd<1||jd>(jm<=6?31:jm<=11?30:30))return null;const fmt=new Intl.DateTimeFormat('en-u-ca-persian',{year:'numeric',month:'numeric',day:'numeric',timeZone:'UTC'});const start=Date.UTC(jy+621,2,18),end=Date.UTC(jy+622,2,25);for(let t=start;t<=end;t+=86400000){const date=new Date(t),parts=fmt.formatToParts(date),v={};parts.forEach(p=>{if(p.type!=='literal')v[p.type]=Number(p.value)});if(v.year===jy&&v.month===jm&&v.day===jd)return {y:date.getUTCFullYear(),m:date.getUTCMonth()+1,d:date.getUTCDate()}}return null}
 function normalizeDigits(s){return String(s??'').replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c))).replace(/[٠-٩]/g,c=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))).replace(/[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069\ufeff]/g,'').trim()}
