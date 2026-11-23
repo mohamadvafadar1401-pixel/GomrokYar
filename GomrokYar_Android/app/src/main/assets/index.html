@@ -583,7 +583,7 @@ async function renderTopTrucks(){
   });
   return [...groups.values()].sort((a,b)=>b.records.length-a.records.length||b.last-a.last);
  };
- const colorLegend='<div class="top-truck-color-legend" style="display:flex;flex-wrap:wrap;gap:7px;margin:8px 0"><button type="button" data-top-color="all" class="secondary" style="padding:6px 9px;min-width:0;border:2px solid '+(topTruckColorFilter==='all'?'var(--accent,#23734f)':'transparent')+'">همه</button><button type="button" data-top-color="green" class="secondary" style="padding:6px 9px;min-width:0;border:2px solid '+(topTruckColorFilter==='green'?'var(--accent,#23734f)':'transparent')+'"><i class="top-truck-color-dot" style="background:#23734f"></i> سبز: تا ۲۰۰</button><button type="button" data-top-color="yellow" class="secondary" style="padding:6px 9px;min-width:0;border:2px solid '+(topTruckColorFilter==='yellow'?'var(--accent,#23734f)':'transparent')+'"><i class="top-truck-color-dot" style="background:#d6a51b"></i> زرد: ۲۰۱ تا ۵۰۰</button><button type="button" data-top-color="purple" class="secondary" style="padding:6px 9px;min-width:0;border:2px solid '+(topTruckColorFilter==='purple'?'var(--accent,#23734f)':'transparent')+'"><i class="top-truck-color-dot" style="background:#7544a8"></i> بنفش: ۵۰۱ تا ۱۰۰۰</button><button type="button" data-top-color="red" class="secondary" style="padding:6px 9px;min-width:0;border:2px solid '+(topTruckColorFilter==='red'?'var(--accent,#23734f)':'transparent')+'"><i class="top-truck-color-dot" style="background:#a93434"></i> قرمز: ۱۰۰۱ به بالا</button><button type="button" data-top-color="unknown" class="secondary" style="padding:6px 9px;min-width:0;border:2px solid '+(topTruckColorFilter==='unknown'?'var(--accent,#23734f)':'transparent')+'"><i class="top-truck-color-dot" style="background:#68736e"></i> خاکستری: اطلاعات ناکافی</button></div>';
+ const colorLegend='<div class="top-truck-color-legend" style="display:flex;flex-wrap:wrap;gap:7px;margin:8px 0"><button type="button" data-top-color="all" class="secondary" style="padding:6px 9px;min-width:0;border:2px solid '+(topTruckColorFilter==='all'?'var(--accent,#23734f)':'transparent')+'">همه</button><button type="button" data-top-color="green" class="secondary" style="padding:6px 9px;min-width:0;border:2px solid '+(topTruckColorFilter==='green'?'var(--accent,#23734f)':'transparent')+'"><i class="top-truck-color-dot" style="background:#23734f"></i> سبز: تا ۲۰۰</button><button type="button" data-top-color="yellow" class="secondary" style="padding:6px 9px;min-width:0;border:2px solid '+(topTruckColorFilter==='yellow'?'var(--accent,#23734f)':'transparent')+'"><i class="top-truck-color-dot" style="background:#d6a51b"></i> زرد: ۲۰۱ تا ۵۰۰</button><button type="button" data-top-color="purple" class="secondary" style="padding:6px 9px;min-width:0;border:2px solid '+(topTruckColorFilter==='purple'?'var(--accent,#23734f)':'transparent')+'"><i class="top-truck-color-dot" style="background:#7544a8"></i> بنفش: ۵۰۱ تا ۱۰۰۰</button><button type="button" data-top-color="red" class="secondary" style="padding:6px 9px;min-width:0;border:2px solid '+(topTruckColorFilter==='red'?'var(--accent,#23734f)':'transparent')+'"><i class="top-truck-color-dot" style="background:#a93434"></i> قرمز: ۱۰۰۱ به بالا</button><button type="button" data-top-color="unknown" class="secondary" style="padding:6px 9px;min-width:0;border:2px solid '+(topTruckColorFilter==='unknown'?'var(--accent,#23734f)':'transparent')+'"><i class="top-truck-color-dot" style="background:#68736e"></i> خاکستری: اطلاعات ناکافی</button><button type="button" data-export-top-color="" class="primary" style="padding:7px 10px;min-width:0">خروجی اکسل این رنگ</button></div>';
  const renderCards=trucks=>colorLegend+(trucks.length?trucks.map((truck,index)=>{
   const emptyWeights=truck.records.map(record=>{const raw=record.firstWeight??record.emptyWeight??record.first_weight??record.weight1??'';const digits=normalizeDigits(String(raw)).replace(/[^0-9]/g,'');return digits?Number(digits):NaN}).filter(weight=>Number.isFinite(weight)&&weight>0);
   const hasComparison=emptyWeights.length>=2,difference=hasComparison?Math.max(...emptyWeights)-Math.min(...emptyWeights):null;
@@ -599,6 +599,7 @@ async function renderTopTrucks(){
   if(homeSummary)homeSummary.textContent=homeTrucks.length.toLocaleString('fa-IR')+' پلاک در رنگ‌بندی انتخاب‌شده · مرتب‌شده از بیشترین به کمترین';
   homeList.querySelectorAll('[data-top-truck]').forEach(button=>button?.addEventListener('click',()=>{const truck=homeTrucks.find(item=>item.key===button.dataset.topTruck);if(truck){switchTab('topTrucksTab');renderTopTruckReport(truck)}}));
   homeList.querySelectorAll('[data-top-color]').forEach(button=>button.addEventListener('click',()=>{topTruckColorFilter=button.dataset.topColor;renderTopTrucks()}));
+  bindTopTruckColorExport(homeList,homeTrucks);
  }
  if((fromText&&!fromDate)||(toText&&!toDate)){summary.textContent='تاریخ واردشده معتبر نیست؛ از تقویم انتخاب کن.';list.innerHTML='<div class="hint">برای جستجو، تاریخ شمسی معتبر انتخاب کن.</div>';return}
  let fromTime=-Infinity,toTime=Infinity;if(fromDate){fromDate.setHours(0,0,0,0);fromTime=fromDate.getTime()}if(toDate){toDate.setHours(23,59,59,999);toTime=toDate.getTime()}
@@ -609,6 +610,7 @@ async function renderTopTrucks(){
  list.innerHTML=renderCards(filtered);
  list.querySelectorAll('[data-top-truck]').forEach(button=>button?.addEventListener('click',()=>{const truck=colorFiltered.find(item=>item.key===button.dataset.topTruck);if(truck)renderTopTruckReport(truck)}));
  list.querySelectorAll('[data-top-color]').forEach(button=>button.addEventListener('click',()=>{topTruckColorFilter=button.dataset.topColor;renderTopTrucks()}));
+ bindTopTruckColorExport(list,colorFiltered);
 
 }
 $('topTrucksSearch')?.addEventListener('input',renderTopTrucks);
@@ -1622,6 +1624,65 @@ async function compactExcelCrop(src,maxWidth=480,maxHeight=320){
  const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
  ctx.drawImage(im,0,0,canvas.width,canvas.height);
  return canvas.toDataURL('image/jpeg',.90);
+}
+async function downloadTopTruckColorExcel(trucks,color){
+ if(!Array.isArray(trucks)||!trucks.length)throw new Error('برای این رنگ پلاکی جهت خروجی وجود ندارد.');
+ const colorNames={all:'همه رنگ‌ها',green:'سبز',yellow:'زرد',purple:'بنفش',red:'قرمز',unknown:'خاکستری'};
+ const headers=['تاریخ و ساعت','نوع تردد','شماره پلاک','وزن خالی','نوع کالا','شماره مجوز بارگیری','تصویر برش‌خورده مجوز'];
+ const images=[],drawings=[],drawingRels=[],rowsXml=[];let rowNo=1,entryCount=0;
+ const addRow=(cells,height=26,style=0)=>{rowsXml.push('<row r="'+rowNo+'" ht="'+height+'" customHeight="1">'+cells.map(v=>excelCell(v,style)).join('')+'</row>');rowNo++;};
+ addRow(['گزارش پرونده کامیون‌های پرتردد - '+(colorNames[color]||color)],30,4);
+ addRow(['تاریخ تهیه',new Date().toLocaleString('fa-IR'),'تعداد پلاک',trucks.length.toLocaleString('fa-IR'),'تعداد کل ترددها',trucks.reduce((n,t)=>n+t.records.length,0).toLocaleString('fa-IR')],24,2);
+ addRow(['راهنمای گزارش','هر پلاک در بخش مستقل؛ سوابق به ترتیب تاریخ؛ تصاویر در ستون آخر درج شده‌اند.'],28,2);addRow([],8,0);
+ for(let ti=0;ti<trucks.length;ti++){
+  const truck=trucks[ti],sorted=[...truck.records].sort((a,b)=>(Date.parse(a.created)||0)-(Date.parse(b.created)||0));
+  const weights=sorted.map(x=>Number(normalizeDigits(String(x.firstWeight??x.emptyWeight??x.first_weight??x.weight1??'')).replace(/\D/g,''))).filter(x=>Number.isFinite(x)&&x>0);
+  const diff=weights.length>1?Math.max(...weights)-Math.min(...weights):null;
+  addRow(['پرونده پلاک '+(truck.plate||truck.key),'تعداد تردد',sorted.length.toLocaleString('fa-IR'),'اختلاف وزن خالی',diff===null?'قابل محاسبه نیست':diff.toLocaleString('fa-IR')+' کیلوگرم'],28,4);
+  addRow(headers,30,1);
+  for(const record of sorted){
+   const crop=record.crops&&record.crops.permit,cropUrl=typeof crop==='string'?crop:(crop&&typeof crop==='object'?[crop.dataUrl,crop.src,crop.image].find(v=>typeof v==='string'&&v.startsWith('data:image/')):'');
+   const values=[record.created?new Date(record.created).toLocaleString('fa-IR'):'نامشخص',typeLabel(record.eventType||'weighed'),record.manualPlate||record.plateKey||truck.plate||'',record.firstWeight??record.emptyWeight??record.first_weight??record.weight1??'ثبت نشده',record.category||record.goodsText||'ثبت نشده',record.permitNo||'ثبت نشده',cropUrl?'تصویر درج شده':'تصویر موجود نیست'];
+   const sheetRow=rowNo;addRow(values,86,3);entryCount++;
+   if(cropUrl&&/^data:image\/(jpeg|jpg|png);base64,/i.test(cropUrl)){
+    let optimized=cropUrl;try{optimized=await compactExcelCrop(cropUrl)}catch(err){console.warn('Excel permit crop optimization skipped',err)}
+    const ext=/^data:image\/png/i.test(optimized)?'png':'jpg',bytes=Uint8Array.from(atob(optimized.split(',')[1]),c=>c.charCodeAt(0)),idx=images.length+1;
+    images.push({name:'xl/media/image'+idx+'.'+ext,data:bytes});
+    drawingRels.push('<Relationship Id="rId'+idx+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image'+idx+'.'+ext+'"/>');
+    drawings.push('<xdr:oneCellAnchor><xdr:from><xdr:col>6</xdr:col><xdr:colOff>40000</xdr:colOff><xdr:row>'+(sheetRow-1)+'</xdr:row><xdr:rowOff>35000</xdr:rowOff></xdr:from><xdr:ext cx="1500000" cy="850000"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="'+idx+'" name="تصویر مجوز پلاک '+excelXmlText(truck.plate||truck.key)+'"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId'+idx+'"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1500000" cy="850000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor>');
+   }
+  }
+  if(ti<trucks.length-1)addRow([],12,0);
+ }
+ const hasImages=images.length>0;
+ const sheet='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetViews><sheetView rightToLeft="1" workbookViewId="0"/></sheetViews><sheetFormatPr defaultRowHeight="26"/><cols>'+[22,18,22,18,24,24,25].map((w,i)=>'<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>').join('')+'</cols><sheetData>'+rowsXml.join('')+'</sheetData><pageMargins left="0.25" right="0.25" top="0.5" bottom="0.5" header="0.2" footer="0.2"/>'+(hasImages?'<drawing r:id="rId1"/>':'')+'</worksheet>';
+ const styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="10"/><name val="Arial"/></font><font><b/><sz val="10"/><name val="Arial"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE8EFEB"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFDCEBE3"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FF999999"/></left><right style="thin"><color rgb="FF999999"/></right><top style="thin"><color rgb="FF999999"/></top><bottom style="thin"><color rgb="FF999999"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="5"><xf xfId="0" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf xfId="0" fontId="1" fillId="2" borderId="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf xfId="0" fontId="1" fillId="0" borderId="1" applyAlignment="1"><alignment horizontal="right" vertical="center" wrapText="1"/></xf><xf xfId="0" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf xfId="0" fontId="1" fillId="3" borderId="1" applyAlignment="1"><alignment horizontal="right" vertical="center" wrapText="1"/></xf></cellXfs></styleSheet>';
+ const files=[
+  {name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpg" ContentType="image/jpeg"/><Default Extension="png" ContentType="image/png"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+(hasImages?'<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>':'')+'</Types>'},
+  {name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+  {name:'xl/workbook.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="پرونده رنگی" sheetId="1" r:id="rId1"/></sheets></workbook>'},
+  {name:'xl/_rels/workbook.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+  {name:'xl/styles.xml',data:styles},{name:'xl/worksheets/sheet1.xml',data:sheet}
+ ];
+ if(hasImages){
+  files.push({name:'xl/worksheets/_rels/sheet1.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/></Relationships>'});
+  files.push({name:'xl/drawings/drawing1.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+drawings.join('')+'</xdr:wsDr>'});
+  files.push({name:'xl/drawings/_rels/drawing1.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+drawingRels.join('')+'</Relationships>'});files.push(...images);
+ }
+ const bytes=await zipStore(files),slug=(colorNames[color]||'all').replace(/[^\u0600-\u06FFa-zA-Z0-9_-]/g,'')||'all',name='gomrokyar-trucks-'+slug+'-'+new Date().toISOString().slice(0,10)+'.xlsx',mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+ try{if(window.AndroidBridge&&typeof AndroidBridge.saveFile==='function'){let binary='';for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(bytes.length,i+0x8000)));AndroidBridge.saveFile(name,mime,btoa(binary));return {images:images.length,name,entries:entryCount,plates:trucks.length}}}catch(err){console.error('Android color Excel save failed',err)}
+ const blob=new Blob([bytes],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);return {images:images.length,name,entries:entryCount,plates:trucks.length};
+}
+function bindTopTruckColorExport(container,trucks){
+ if(!container)return;
+ container.querySelectorAll('[data-export-top-color]').forEach(button=>button.addEventListener('click',async()=>{
+  const selected=button.dataset.exportTopColor||topTruckColorFilter,eligible=(trucks||[]).filter(truck=>selected==='all'||topTruckColorOf(truck)===selected);
+  if(!eligible.length){alert('برای این رنگ پلاکی جهت تهیه گزارش وجود ندارد.');return}
+  button.disabled=true;const oldText=button.textContent;button.textContent='در حال ساخت فایل...';
+  try{const result=await downloadTopTruckColorExcel(eligible,selected);alert('گزارش اکسل آماده شد.\n'+result.plates.toLocaleString('fa-IR')+' پلاک\n'+result.entries.toLocaleString('fa-IR')+' سابقه\n'+result.images.toLocaleString('fa-IR')+' تصویر مجوز درج‌شده')}
+  catch(err){console.error(err);alert('ساخت فایل اکسل انجام نشد؛ دوباره تلاش کن.')}
+  finally{button.disabled=false;button.textContent=oldText}
+ }));
 }
 async function downloadHistoryExcel(rows,meta){
  const headers=['ردیف','نوع ثبت','شماره پلاک','نوع کالا','مبدأ','شماره مجوز بارگیری','توزین اول','توزین دوم','وزن خالص','تاریخ و ساعت','ثبت‌کننده','توضیحات'];
