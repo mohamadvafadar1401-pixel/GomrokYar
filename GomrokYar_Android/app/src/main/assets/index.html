@@ -250,6 +250,8 @@ main.wrap:after{content:"✦";position:absolute;top:27px;left:30px;color:#e3bd74
 .category-share-values small{font-size:8px!important}
 @media(min-width:650px){.category-share-legend{grid-template-columns:repeat(2,minmax(0,1fr))!important}.home-shortcut{min-height:92px!important}.home-shortcut b{font-size:12px}}
 @media(max-width:380px){.home-shortcuts{gap:7px}.home-shortcut{gap:6px;padding:9px!important;min-height:78px!important}.shortcut-icon{width:29px;height:29px;flex-basis:29px}.home-shortcut b{font-size:10px}.category-share-item{grid-template-columns:7px minmax(0,1fr)!important}.category-share-values{grid-column:2;text-align:right}.category-share-values b,.category-share-values small{display:inline;margin-left:4px}}
+
+.backup-accordion{margin-top:12px;border:1px solid var(--line,#d8e2dc);border-radius:13px;background:var(--card,#fff);overflow:hidden}.backup-accordion>summary{list-style:none;cursor:pointer;padding:15px 42px 15px 14px;position:relative;font-weight:800;color:var(--text,#173f36);display:flex;flex-direction:column;gap:4px}.backup-accordion>summary::-webkit-details-marker{display:none}.backup-accordion>summary:after{content:'＋';position:absolute;right:15px;top:50%;transform:translateY(-50%);font-size:19px;color:#27845e}.backup-accordion[open]>summary:after{content:'−'}.backup-accordion[open]>summary{border-bottom:1px solid var(--line,#d8e2dc);background:rgba(39,132,94,.055)}.backup-accordion-subtitle{font-size:11px;font-weight:400;color:var(--muted,#64756d)}.backup-accordion-body{padding:14px}.backup-main-action{width:100%;margin-top:12px}.backup-manual-tools{margin-top:14px;padding:13px;border:1px dashed var(--line,#cbd8d0);border-radius:12px}.backup-manual-title{font-size:13px;font-weight:800;margin-bottom:5px;color:var(--text,#173f36)}.backup-counter{margin:14px 0 0!important;border-color:#b8d8cc!important;background:#f1f8f4!important}.backup-auto-toggle{margin-top:10px!important;border-color:#b8d8cc!important}.backup-advanced-setting{border-top:1px solid var(--line,#d8e2dc);margin-top:14px;padding-top:12px}
 </style></head><body><div id="authGate"><div id="authCard"><div class="brand"><h2>ورود به سامانه گمرک شیخ صله</h2></div><div id="firstAdminSetup" class="hide"><p>برای راه‌اندازی، حساب مدیر اصلی را بسازید. این حساب امکان تعریف پنج کاربر دیگر را دارد.</p><label>نام کاربری مدیر</label><input id="setupUsername" autocomplete="username" maxlength="64" value="muhamadvafadar22@gmail.com"><label>نام نمایشی</label><input id="setupDisplayName" maxlength="50" placeholder="مثلاً مدیر سامانه"><label>رمز عبور (حداقل ۸ نویسه)</label><input id="setupPassword" type="password" autocomplete="new-password"><label>تکرار رمز عبور</label><input id="setupPassword2" type="password" autocomplete="new-password"><button id="createAdminBtn" class="btn" style="width:100%;margin-top:16px">ساخت حساب مدیر</button></div><div id="userLogin"><p>برای استفاده از برنامه، با حساب کاربری خود وارد شوید.</p><label>نام کاربری</label><input id="loginUsername" autocomplete="username"><label>رمز عبور</label><input id="loginPassword" type="password" autocomplete="current-password"><button id="loginBtn" class="btn" style="width:100%;margin-top:16px">ورود به برنامه</button></div><div id="authError" role="alert"></div><button id="recoverAuthBtn" type="button" class="btn secondary" style="width:100%;margin-top:12px">بازیابی ورود مدیر (بدون حذف سوابق)</button><p class="hint" style="margin-top:14px">حساب‌ها و رمزها روی همین گوشی نگهداری می‌شوند. در صورت حذف داده‌های برنامه، اطلاعات ورود محلی نیز پاک می‌شود.</p></div></div><script>
 (function(){
  const showError=(message)=>{const e=document.getElementById('authError');if(e)e.textContent=message;};
@@ -509,7 +511,7 @@ async function saveSimpleRecord(kind,plate,goods='',dateInputId){
   await new Promise((r,j)=>{let q=tx('records','readwrite').add(item);q.onsuccess=r;q.onerror=()=>j(q.error)});
   await setting('nextEntryNo',no+1);await afterSuccessfulRecordSave(item);await renderRecords(item);await notifyPreviousPlateRecords(plate.key,previousPlateRecords);return no;
 }
-async function refreshReportBackupCounter(){const box=$('reportBackupCounterText'),bar=$('reportBackupCounterBar');if(!box||!bar)return;const baseline=!!(await setting('autoBackupBaselineCreated')),count=Math.max(0,Number(await setting('autoBackupPendingCount'))||0),done=baseline?50:Math.min(count,50),remaining=Math.max(0,50-done);box.textContent='ثبت‌شده از شروع شمارش: '+done.toLocaleString('fa-IR')+' از ۵۰ · باقی‌مانده تا پشتیبان اولیه: '+remaining.toLocaleString('fa-IR')+' ثبت';bar.style.width=(done/50*100)+'%';}
+async function refreshReportBackupCounter(){const box=$('reportBackupCounterText'),bar=$('reportBackupCounterBar');if(!box||!bar)return;const baseline=!!(await setting('autoBackupBaselineCreated')),enabled=(await setting('autoBackupEnabled'))!==false,count=Math.max(0,Number(await setting('autoBackupPendingCount'))||0),done=baseline?50:Math.min(count,50),remaining=Math.max(0,50-done);box.textContent='ثبت‌شده از شروع شمارش: '+done.toLocaleString('fa-IR')+' از ۵۰ · باقی‌مانده تا پشتیبان اولیه: '+remaining.toLocaleString('fa-IR')+' ثبت'+(enabled?'':' · پشتیبان خودکار خاموش است');bar.style.width=(done/50*100)+'%';bar.style.opacity=enabled?'1':'.4';}
 function normalizeTopTruckKey(value){return String(value||'').replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c))).replace(/[٠-٩]/g,c=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))).replace(/[\s\-–_]/g,'').toUpperCase()}
 function renderTopTruckReport(truck){
  const details=$('topTruckDetails');if(!details||!truck)return;
@@ -1438,6 +1440,7 @@ async function saveAutomaticArchive(records,name,exportType,range){
   return saved;
 }
 async function createInitialAutomaticBackup(){
+  if((await setting('autoBackupEnabled'))===false)return false;
   if(await setting('autoBackupBaselineCreated'))return true;
   const records=await allRecords(true);
   const maxNo=records.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);
@@ -1463,6 +1466,7 @@ async function createInitialAutomaticBackup(){
 }
 async function runAutomaticBackupMaintenance(changedRecord=null){
   try{
+    if((await setting('autoBackupEnabled'))===false)return false;
     if(!(await setting('autoBackupBaselineCreated'))){
       const count=Number(await setting('autoBackupPendingCount'))||0;
       if(count>=50)await createInitialAutomaticBackup();
@@ -1548,6 +1552,7 @@ async function runAutomaticBackupMaintenance(changedRecord=null){
 }
 async function afterSuccessfulRecordSave(record=null){
   try{
+    if((await setting('autoBackupEnabled'))===false){refreshReportBackupCounter();return;}
     if(!(await setting('autoBackupBaselineCreated'))){
       let pendingCount=Number(await setting('autoBackupPendingCount'))||0;
       pendingCount++;
@@ -1836,14 +1841,15 @@ async function loadAutomaticBackupList(){
 }
 $('refreshAutomaticBackups').onclick=loadAutomaticBackupList;
 $('retroactiveBackupToggle').addEventListener('change',async()=>{const enabled=$('retroactiveBackupToggle').checked;try{await setting('autoBackupRetroactiveEnabled',enabled);$('retroactiveBackupToggleHint').textContent=enabled?'بازسازی پشتیبان‌های تاریخ‌های گذشته فعال است.':'بازسازی پشتیبان‌های تاریخ‌های گذشته خاموش است؛ پشتیبان‌های معمول روزانه و هفتگی ادامه دارند.';}catch(err){$('retroactiveBackupToggle').checked=!enabled;alert('ذخیره وضعیت این گزینه ناموفق بود؛ وضعیت قبلی حفظ شد.');}});
+$('autoBackupEnabledToggle').addEventListener('change',async()=>{const toggle=$('autoBackupEnabledToggle'),enabled=toggle.checked,hint=$('autoBackupEnabledHint');try{await setting('autoBackupEnabled',enabled);hint.textContent=enabled?'پشتیبان‌گیری خودکار فعال است؛ شمارنده ۵۰ ثبت و پشتیبان‌های روزانه و هفتگی طبق روال ادامه دارند.':'پشتیبان‌گیری خودکار خاموش شد؛ شمارنده و ساخت پشتیبان‌های خودکار متوقف است. خروجی دستی و بازیابی همچنان فعال می‌مانند.';await refreshReportBackupCounter();}catch(err){toggle.checked=!enabled;alert('ذخیره وضعیت پشتیبان خودکار ناموفق بود؛ وضعیت قبلی حفظ شد.');}});
 $('openAutomaticBackupFolder').onclick=()=>{
  const bridge=window.AndroidBridge;
  if(bridge&&typeof bridge.openAutomaticBackupFolder==='function'){
   if(!bridge.openAutomaticBackupFolder())alert('باز کردن پوشه پشتیبان‌ها ممکن نشد.');
  }else alert('باز کردن پوشه فقط در نسخه نصب‌شده اندروید امکان‌پذیر است.');
 };
-document.querySelectorAll('[data-tab="backupTab"]').forEach(el=>el?.addEventListener('click',()=>setTimeout(loadAutomaticBackupList,250)));
-loadAutomaticBackupList();
+document.querySelectorAll('[data-tab="backupTab"]').forEach(el=>el?.addEventListener('click',()=>setTimeout(()=>{const section=$('automaticBackupList')?.closest('details');if(section?.open)loadAutomaticBackupList()},250)));
+$('automaticBackupList')?.closest('details')?.addEventListener('toggle',function(){if(this.open)loadAutomaticBackupList()});
 $('exportRange').onclick=async()=>{
   const fromText=$('backupFrom').value.trim(),toText=$('backupTo').value.trim(),from=parseJalaliDate(fromText),to=parseJalaliDate(toText);
   if(!fromText||!toText||!from||!to){alert('لطفاً هر دو تاریخ شمسی معتبر را انتخاب کن.');return}
@@ -2026,6 +2032,7 @@ $('lockAppBtn').onclick=()=>{closeDrawer();currentUser=null;$('loginUsername').v
   db=await openDB();
   await prepareCategoryTruckSearch();
   const retroactiveBackupEnabled=await setting('autoBackupRetroactiveEnabled');$('retroactiveBackupToggle').checked=retroactiveBackupEnabled!==false;$('retroactiveBackupToggleHint').textContent=retroactiveBackupEnabled===false?'بازسازی پشتیبان‌های تاریخ‌های گذشته خاموش است؛ پشتیبان‌های معمول روزانه و هفتگی ادامه دارند.':'بازسازی پشتیبان‌های تاریخ‌های گذشته فعال است.';
+  const automaticBackupEnabled=(await setting('autoBackupEnabled'))!==false;$('autoBackupEnabledToggle').checked=automaticBackupEnabled;$('autoBackupEnabledHint').textContent=automaticBackupEnabled?'پشتیبان‌گیری خودکار فعال است؛ شمارنده ۵۰ ثبت و پشتیبان‌های روزانه و هفتگی طبق روال ادامه دارند.':'پشتیبان‌گیری خودکار خاموش است؛ شمارنده و ساخت پشتیبان‌های خودکار متوقف است. خروجی دستی و بازیابی همچنان فعال می‌مانند.';
   await refreshReportBackupCounter();
   await initAuth();
   regions=await setting('regions')||{};
