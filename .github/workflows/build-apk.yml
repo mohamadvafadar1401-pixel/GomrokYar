@@ -89,11 +89,13 @@ jobs:
           test -n "$GOMROKYAR_KEY_ALIAS" || (echo "Missing GOMROKYAR_KEY_ALIAS repository secret" && exit 1)
           gradle --no-daemon -p GomrokYar_Android assembleRelease
 
-      - name: Upload signed APK
-        uses: actions/upload-artifact@v4
+      - name: Publish signed APK as GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: GomrokYar-APK
-          path: GomrokYar_Android/app/build/outputs/apk/release/app-release.apk
+          tag_name: gomrokyar-build-${{ github.run_number }}
+          name: GomrokYar APK - Build ${{ github.run_number }}
+          files: GomrokYar_Android/app/build/outputs/apk/release/app-release.apk
+          fail_on_unmatched_files: true
 
 # All future updates must use this same permanent signing key and keep applicationId unchanged.
 
