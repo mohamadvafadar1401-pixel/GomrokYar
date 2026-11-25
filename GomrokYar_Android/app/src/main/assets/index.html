@@ -678,7 +678,7 @@ async function passengerExportRosterFile(){
  }catch(e){console.error('passenger roster export error',e);alert('تهیه فایل فهرست خودروها انجام نشد.')}
 }
 function passengerValidTransferVehicle(v){
- return !!v&&typeof v==='object'&&!Array.isArray(v)&&/^\\d{4}$/.test(String(v.code||''))&&typeof v.plateKey==='string'&&v.plateKey.length>=6&&typeof v.plateDisplay==='string'&&v.plateDisplay.trim()&&typeof v.driverName==='string'&&v.driverName.trim()&&typeof v.carType==='string'&&v.carType.trim()&&['export','import','staff'].includes(v.activity);
+ return !!v&&typeof v==='object'&&!Array.isArray(v)&&/^\d{4}$/.test(String(v.code||''))&&typeof v.plateKey==='string'&&v.plateKey.length>=6&&typeof v.plateDisplay==='string'&&v.plateDisplay.trim()&&typeof v.driverName==='string'&&v.driverName.trim()&&typeof v.carType==='string'&&v.carType.trim()&&['export','import','staff'].includes(v.activity);
 }
 async function passengerImportRosterFile(file){
  if(!file)return;
