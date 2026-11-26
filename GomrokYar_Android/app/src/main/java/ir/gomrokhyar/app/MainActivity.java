@@ -27,10 +27,14 @@ import java.io.OutputStream;
 import java.io.InputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.PushbackInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.zip.Deflater;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import android.util.JsonReader;
 
 import androidx.core.content.FileProvider;
 
@@ -51,6 +55,12 @@ public class MainActivity extends Activity {
     private static final int CAMERA_REQUEST = 502;
     private static final int REPORT_SAVE_REQUEST = 503;
     private static final int FILE_SAVE_REQUEST = 504;
+    private static final int BACKUP_RESTORE_REQUEST = 505;
+    private Uri backupRestoreUri;
+    private Reader backupRestoreReader;
+    private final char[] backupReadBuffer = new char[65536];
+    private final ReportBridge reportBridge = new ReportBridge();
+    private volatile boolean saveDocumentPending;
     private byte[] pendingReportBytes;
     private File pendingReportFile;
     private OutputStream chunkedSaveStream;
@@ -69,7 +79,7 @@ public class MainActivity extends Activity {
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
         webView.setWebViewClient(new WebViewClient());
-        webView.addJavascriptInterface(new ReportBridge(), "AndroidBridge");
+        webView.addJavascriptInterface(reportBridge, "AndroidBridge");
         webView.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 clearPendingCallback();
@@ -168,10 +178,85 @@ public class MainActivity extends Activity {
     }
 
     private class ReportBridge {
+        @JavascriptInterface public String convertPersianDate(int year, int month, int day, boolean toGregorian) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return "";
+            try {
+                return PersianCalendarConversion.convert(year, month, day, toGregorian);
+            } catch (IllegalArgumentException invalidDate) {
+                return "";
+            }
+        }
+
+        @JavascriptInterface public void pickBackupFile() {
+            runOnUiThread(() -> {
+                Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                picker.addCategory(Intent.CATEGORY_OPENABLE);
+                picker.setType("*/*");
+                picker.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                try {
+                    startActivityForResult(picker, BACKUP_RESTORE_REQUEST);
+                } catch (Exception ignored) {
+                    picker.setAction(Intent.ACTION_GET_CONTENT);
+                    try {
+                        startActivityForResult(picker, BACKUP_RESTORE_REQUEST);
+                    } catch (Exception unavailable) {
+                        webView.evaluateJavascript("nativeBackupSelected(false, true)", null);
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface public synchronized boolean openBackupInput() {
+            closeBackupInput();
+            if (backupRestoreUri == null) return false;
+            try {
+                InputStream source = getContentResolver().openInputStream(backupRestoreUri);
+                if (source == null) return false;
+                backupRestoreReader = new InputStreamReader(openBackupStream(source),
+                        StandardCharsets.UTF_8.newDecoder());
+                return true;
+            } catch (Exception ignored) {
+                return false;
+            }
+        }
+
+        @JavascriptInterface public synchronized String readBackupInput() {
+            if (backupRestoreReader == null) return null;
+            try {
+                int count = backupRestoreReader.read(backupReadBuffer);
+                if (count == -1) return "";
+                // Keep UTF-16 pairs together across separate bridge calls.
+                if (Character.isHighSurrogate(backupReadBuffer[count - 1])) {
+                    int next = backupRestoreReader.read();
+                    if (next == -1) return null;
+                    return new String(backupReadBuffer, 0, count) + (char) next;
+                }
+                return new String(backupReadBuffer, 0, count);
+            } catch (Exception ignored) {
+                return null;
+            }
+        }
+
+        @JavascriptInterface public synchronized void closeBackupInput() {
+            if (backupRestoreReader != null) {
+                try { backupRestoreReader.close(); } catch (Exception ignored) { }
+                backupRestoreReader = null;
+            }
+        }
+
+        @JavascriptInterface public synchronized void releaseBackupInput() {
+            closeBackupInput();
+            backupRestoreUri = null;
+        }
+
         @JavascriptInterface public void saveReport(String fileName, String base64) {
             saveFile(fileName, "text/html", base64);
         }
-        @JavascriptInterface public void saveFile(String fileName, String mimeType, String base64) {
+        @JavascriptInterface public synchronized void saveFile(String fileName, String mimeType, String base64) {
+            if (saveDocumentPending || chunkedSaveStream != null) {
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "یک خروجی دیگر در حال ذخیره است.", Toast.LENGTH_LONG).show());
+                return;
+            }
             try {
                 byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
                 String safeName = (fileName == null || fileName.trim().isEmpty())
@@ -179,6 +264,7 @@ public class MainActivity extends Activity {
                         : fileName.replaceAll("[\\\\/:*?\\\"<>|]", "_");
                 String safeMime = (mimeType == null || mimeType.trim().isEmpty())
                         ? "application/octet-stream" : mimeType;
+                saveDocumentPending = true;
                 runOnUiThread(() -> {
                     pendingReportBytes = bytes;
                     pendingReportName = safeName;
@@ -192,6 +278,7 @@ public class MainActivity extends Activity {
                         pendingReportBytes = null;
                         pendingReportName = null;
                         pendingMimeType = "application/octet-stream";
+                        saveDocumentPending = false;
                         Toast.makeText(MainActivity.this, "امکان باز کردن محل ذخیره فایل وجود ندارد.", Toast.LENGTH_LONG).show();
                     }
                 });
@@ -201,6 +288,7 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface public synchronized boolean beginFileSave(String fileName, String mimeType) {
+            if (saveDocumentPending || chunkedSaveStream != null) return false;
             try {
                 if (chunkedSaveStream != null) { chunkedSaveStream.close(); chunkedSaveStream = null; }
                 if (pendingReportFile != null) { pendingReportFile.delete(); pendingReportFile = null; }
@@ -223,6 +311,7 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface public synchronized boolean beginGzipFileSave(String fileName, String mimeType) {
+            if (saveDocumentPending || chunkedSaveStream != null) return false;
             try {
                 if (chunkedSaveStream != null) { chunkedSaveStream.close(); chunkedSaveStream = null; }
                 if (pendingReportFile != null) { pendingReportFile.delete(); pendingReportFile = null; }
@@ -234,7 +323,9 @@ public class MainActivity extends Activity {
                         ? "application/gzip" : mimeType;
                 pendingReportBytes = null;
                 pendingReportFile = File.createTempFile("gomrokyar-export-", ".tmp", getCacheDir());
-                chunkedSaveStream = new GZIPOutputStream(new FileOutputStream(pendingReportFile, false), 32768);
+                chunkedSaveStream = new GZIPOutputStream(new FileOutputStream(pendingReportFile, false), 65536) {
+                    { def.setLevel(Deflater.BEST_SPEED); }
+                };
                 return true;
             } catch (Exception e) {
                 try { if (chunkedSaveStream != null) chunkedSaveStream.close(); } catch (Exception ignored) { }
@@ -245,21 +336,13 @@ public class MainActivity extends Activity {
             }
         }
 
-        @JavascriptInterface public String decompressGzip(String base64) {
+        @JavascriptInterface public synchronized boolean appendBackupText(String text) {
             try {
-                byte[] compressed = Base64.decode(base64, Base64.DEFAULT);
-                try (GZIPInputStream gzip = new GZIPInputStream(new java.io.ByteArrayInputStream(compressed));
-                     ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-                    byte[] chunk = new byte[16384];
-                    int count;
-                    while ((count = gzip.read(chunk)) != -1) {
-                        if (output.size() + count > 512 * 1024 * 1024) throw new java.io.IOException("Backup exceeds 512 MB restore limit");
-                        output.write(chunk, 0, count);
-                    }
-                    return output.toString("UTF-8");
-                }
+                if (chunkedSaveStream == null || text == null) return false;
+                chunkedSaveStream.write(text.getBytes(StandardCharsets.UTF_8));
+                return true;
             } catch (Exception e) {
-                throw new IllegalArgumentException("Invalid GZIP backup", e);
+                return false;
             }
         }
 
@@ -282,6 +365,7 @@ public class MainActivity extends Activity {
                 chunkedSaveStream = null;
                 final String saveName = pendingReportName;
                 final String saveMime = pendingMimeType;
+                saveDocumentPending = true;
                 runOnUiThread(() -> {
                     Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
                     intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -293,6 +377,7 @@ public class MainActivity extends Activity {
                         pendingReportFile = null;
                         pendingReportName = null;
                         pendingMimeType = "application/octet-stream";
+                        saveDocumentPending = false;
                         Toast.makeText(MainActivity.this, "امکان باز کردن محل ذخیره فایل وجود ندارد.", Toast.LENGTH_LONG).show();
                     }
                 });
@@ -336,15 +421,24 @@ public class MainActivity extends Activity {
                     if (documents == null) throw new java.io.IOException("App documents directory unavailable");
                     File directory = new File(documents, "GomrokYar/AutoBackups");
                     if (!directory.exists() && !directory.mkdirs()) throw new java.io.IOException("Could not create automatic backup directory");
-                    File destination = new File(directory, saveName);
-                    try (InputStream in = new FileInputStream(pendingReportFile);
-                         OutputStream out = new FileOutputStream(destination, false)) {
-                        byte[] buffer = new byte[32768];
-                        int count;
-                        while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
+                    File staging = File.createTempFile(".gomrokyar-", ".tmp", directory);
+                    try {
+                        try (InputStream in = new FileInputStream(pendingReportFile);
+                             FileOutputStream out = new FileOutputStream(staging)) {
+                            copyFile(in, out);
+                            out.getFD().sync();
+                        }
+                        android.system.Os.rename(staging.getAbsolutePath(), new File(directory, saveName).getAbsolutePath());
+                    } finally {
+                        staging.delete();
                     }
                 }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) deleteAutomaticBackupsByName(saveName, insertedUri);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && deleteAutomaticBackupsByName(saveName, insertedUri)) {
+                    // MediaStore may have added a numeric suffix while the older file still existed.
+                    ContentValues name = new ContentValues();
+                    name.put(MediaStore.MediaColumns.DISPLAY_NAME, saveName);
+                    try { getContentResolver().update(insertedUri, name, null, null); } catch (Exception ignored) { }
+                }
                 if (pendingReportFile != null) pendingReportFile.delete();
                 pendingReportFile = null;
                 pendingReportName = null;
@@ -366,18 +460,18 @@ public class MainActivity extends Activity {
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     String relativePath = Environment.DIRECTORY_DOWNLOADS + "/GomrokYar/AutoBackups/";
-                    String[] projection = {MediaStore.MediaColumns._ID};
+                    String[] projection = {MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME};
                     List<Uri> matches = new ArrayList<>();
                     try (Cursor cursor = getContentResolver().query(MediaStore.Downloads.EXTERNAL_CONTENT_URI,
                             projection, MediaStore.MediaColumns.RELATIVE_PATH + "=? AND "
-                                    + MediaStore.MediaColumns.DISPLAY_NAME + "=?",
-                            new String[]{relativePath, fileName}, null)) {
-                        if (cursor != null) {
-                            int idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID);
-                            while (cursor.moveToNext()) {
-                                Uri uri = ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cursor.getLong(idCol));
-                                if (keepUri == null || !keepUri.equals(uri)) matches.add(uri);
-                            }
+                                    + MediaStore.MediaColumns.DISPLAY_NAME + " LIKE ?",
+                            new String[]{relativePath, backupBaseName(fileName) + "%"}, null)) {
+                        if (cursor == null) return false;
+                        int idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID);
+                        int nameCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME);
+                        while (cursor.moveToNext()) {
+                            Uri uri = ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cursor.getLong(idCol));
+                            if (!uri.equals(keepUri) && matchesBackupName(fileName, cursor.getString(nameCol))) matches.add(uri);
                         }
                     }
                     for (Uri uri : matches) {
@@ -399,27 +493,47 @@ public class MainActivity extends Activity {
             return deleteAutomaticBackupsByName(fileName, null);
         }
 
-        private int countBackupRecords(InputStream input) {
-            try {
-                PushbackInputStream probe = new PushbackInputStream(input, 2);
-                int first = probe.read(), second = probe.read();
-                if (second >= 0) probe.unread(second);
-                if (first >= 0) probe.unread(first);
-                InputStream decoded = first == 0x1f && second == 0x8b ? new GZIPInputStream(probe) : probe;
-                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-                byte[] chunk = new byte[16384];
-                int read;
-                while ((read = decoded.read(chunk)) != -1) {
-                    if (buffer.size() + read > 150 * 1024 * 1024) return 0;
-                    buffer.write(chunk, 0, read);
-                }
-                JSONObject json = new JSONObject(buffer.toString("UTF-8"));
-                JSONArray records = json.optJSONArray("records");
-                return records == null ? 0 : records.length();
-            } catch (Exception ignored) { return 0; }
+        private String backupBaseName(String fileName) {
+            return fileName.endsWith(".json.gz") ? fileName.substring(0, fileName.length() - 8) : fileName;
         }
 
-        @JavascriptInterface public synchronized String getAutomaticBackups() {
+        private boolean matchesBackupName(String expected, String actual) {
+            if (expected.equals(actual)) return true;
+            return expected.endsWith(".json.gz") && actual != null && actual.matches(
+                    java.util.regex.Pattern.quote(backupBaseName(expected))
+                            + "(?: \\([0-9]+\\)\\.json|\\.json \\([0-9]+\\))\\.gz");
+        }
+
+        private int countBackupRecords(InputStream input) {
+            try (JsonReader json = new JsonReader(new InputStreamReader(openBackupStream(input), StandardCharsets.UTF_8))) {
+                json.beginObject();
+                while (json.hasNext()) {
+                    if ("records".equals(json.nextName())) {
+                        int count = 0;
+                        json.beginArray();
+                        while (json.hasNext()) {
+                            json.skipValue();
+                            count++;
+                        }
+                        return count;
+                    }
+                    json.skipValue();
+                }
+            } catch (Exception ignored) { }
+            return 0;
+        }
+
+        @JavascriptInterface public void requestAutomaticBackups(int requestId) {
+            new Thread(() -> {
+                String result = getAutomaticBackups();
+                runOnUiThread(() -> {
+                    if (!isDestroyed()) webView.evaluateJavascript(
+                            "showAutomaticBackupList(" + requestId + "," + JSONObject.quote(result) + ")", null);
+                });
+            }, "gomrokyar-backup-list").start();
+        }
+
+        private String getAutomaticBackups() {
             JSONArray result = new JSONArray();
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -518,32 +632,88 @@ public class MainActivity extends Activity {
         }
     }
 
+    private static InputStream openBackupStream(InputStream source) throws java.io.IOException {
+        PushbackInputStream probe = new PushbackInputStream(new java.io.BufferedInputStream(source, 65536), 2);
+        try {
+            int first = probe.read(), second = probe.read();
+            if (second != -1) probe.unread(second);
+            if (first != -1) probe.unread(first);
+            return first == 0x1f && second == 0x8b ? new GZIPInputStream(probe, 65536) : probe;
+        } catch (java.io.IOException error) {
+            probe.close();
+            throw error;
+        }
+    }
+
+    @android.annotation.TargetApi(Build.VERSION_CODES.N)
+    private static class PersianCalendarConversion {
+        static String convert(int year, int month, int day, boolean toGregorian) {
+            android.icu.util.TimeZone utc = android.icu.util.TimeZone.getTimeZone("UTC");
+            android.icu.util.Calendar persian = android.icu.util.Calendar.getInstance(
+                    utc, new android.icu.util.ULocale("fa_IR@calendar=persian"));
+            android.icu.util.Calendar gregorian = new android.icu.util.GregorianCalendar(utc);
+            android.icu.util.Calendar source = toGregorian ? persian : gregorian;
+            android.icu.util.Calendar target = toGregorian ? gregorian : persian;
+            source.clear();
+            source.setLenient(false);
+            source.set(year, month - 1, day);
+            target.setTimeInMillis(source.getTimeInMillis());
+            return target.get(android.icu.util.Calendar.YEAR) + ","
+                    + (target.get(android.icu.util.Calendar.MONTH) + 1) + ","
+                    + target.get(android.icu.util.Calendar.DATE);
+        }
+    }
+
+    private static void copyFile(InputStream in, OutputStream out) throws java.io.IOException {
+        byte[] buffer = new byte[65536];
+        int count;
+        while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
+    }
+
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REPORT_SAVE_REQUEST || requestCode == FILE_SAVE_REQUEST) {
-            if (resultCode == Activity.RESULT_OK && data != null && data.getData() != null
-                    && (pendingReportBytes != null || pendingReportFile != null)) {
-                try (OutputStream out = getContentResolver().openOutputStream(data.getData())) {
-                    if (out == null) throw new java.io.IOException("Cannot open destination");
-                    if (pendingReportFile != null && pendingReportFile.exists()) {
-                        try (java.io.FileInputStream in = new java.io.FileInputStream(pendingReportFile)) {
-                            byte[] buffer = new byte[32768];
-                            int count;
-                            while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
-                        }
-                    } else if (pendingReportBytes != null) {
-                        out.write(pendingReportBytes);
-                    }
-                    Toast.makeText(this, "فایل گزارش با موفقیت ذخیره شد.", Toast.LENGTH_LONG).show();
-                } catch (Exception e) {
-                    Toast.makeText(this, "ذخیره فایل گزارش ناموفق بود.", Toast.LENGTH_LONG).show();
-                }
+        if (requestCode == BACKUP_RESTORE_REQUEST) {
+            boolean selected;
+            synchronized (reportBridge) {
+                backupRestoreUri = resultCode == Activity.RESULT_OK && data != null ? data.getData() : null;
+                selected = backupRestoreUri != null;
             }
-            pendingReportBytes = null;
-            if (pendingReportFile != null) pendingReportFile.delete();
-            pendingReportFile = null;
-            pendingReportName = null;
-            pendingMimeType = "application/octet-stream";
+            webView.evaluateJavascript("nativeBackupSelected(" + selected + ", false)", null);
+            return;
+        }
+        if (requestCode == REPORT_SAVE_REQUEST || requestCode == FILE_SAVE_REQUEST) {
+            final File file;
+            final byte[] bytes;
+            synchronized (reportBridge) {
+                file = pendingReportFile;
+                bytes = pendingReportBytes;
+                pendingReportFile = null;
+                pendingReportBytes = null;
+                pendingReportName = null;
+                pendingMimeType = "application/octet-stream";
+                saveDocumentPending = false;
+            }
+            Uri destination = resultCode == Activity.RESULT_OK && data != null ? data.getData() : null;
+            if (destination == null || (file == null && bytes == null)) {
+                if (file != null) file.delete();
+                return;
+            }
+            new Thread(() -> {
+                String message;
+                try (OutputStream out = getContentResolver().openOutputStream(destination)) {
+                    if (out == null) throw new java.io.IOException("Cannot open destination");
+                    if (file != null) {
+                        try (InputStream in = new FileInputStream(file)) { copyFile(in, out); }
+                    } else out.write(bytes);
+                    message = "فایل با موفقیت ذخیره شد.";
+                } catch (Exception e) {
+                    message = "ذخیره فایل ناموفق بود.";
+                } finally {
+                    if (file != null) file.delete();
+                }
+                final String status = message;
+                runOnUiThread(() -> Toast.makeText(this, status, Toast.LENGTH_LONG).show());
+            }, "gomrokyar-document-save").start();
             return;
         }
         if (requestCode == CAMERA_REQUEST) {
@@ -581,6 +751,7 @@ public class MainActivity extends Activity {
 
     @Override protected void onDestroy() {
         clearPendingCallback();
+        reportBridge.releaseBackupInput();
         if (cameraOutputFile != null && cameraOutputFile.exists()) cameraOutputFile.delete();
         if (chunkedSaveStream != null) { try { chunkedSaveStream.close(); } catch (Exception ignored) { } chunkedSaveStream = null; }
         if (pendingReportFile != null && pendingReportFile.exists()) pendingReportFile.delete();
