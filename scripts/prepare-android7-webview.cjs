@@ -41,6 +41,15 @@ if (!html.includes(polyfillMarker)) {
     '    }});',
     '  }',
     '  if (!Object.entries) { Object.entries = function (value) { var object = Object(value), result = [], key; for (key in object) if (Object.prototype.hasOwnProperty.call(object, key)) result.push([key, object[key]]); return result; }; }',
+    '  if (!Object.getOwnPropertyDescriptors) {',
+    '    Object.getOwnPropertyDescriptors = function (value) {',
+    '      var object = Object(value), result = {};',
+    '      Reflect.ownKeys(object).forEach(function (key) {',
+    '        Object.defineProperty(result, key, { value: Object.getOwnPropertyDescriptor(object, key), configurable: true, writable: true, enumerable: true });',
+    '      });',
+    '      return result;',
+    '    };',
+    '  }',
     '})();',
     '</script>'
   ].join('\n') + '\n';
