@@ -411,7 +411,6 @@ const DB='gomrokyar_offline_v1';
 function openDB(){return new Promise((res,rej)=>{let q=indexedDB.open(DB,3);q.onupgradeneeded=()=>{const d=q.result,t=q.transaction;const records=d.objectStoreNames.contains('records')?t.objectStore('records'):d.createObjectStore('records',{keyPath:'id',autoIncrement:true});const settings=d.objectStoreNames.contains('settings')?t.objectStore('settings'):d.createObjectStore('settings');if(!records.indexNames.contains('plateKey'))records.createIndex('plateKey','plateKey',{unique:false});if(!records.indexNames.contains('manualPlate'))records.createIndex('manualPlate','manualPlate',{unique:false});if(!d.objectStoreNames.contains('passengerVehicles'))d.createObjectStore('passengerVehicles',{keyPath:'id',autoIncrement:true});let maxNo=0;const cursor=records.openCursor();cursor.onsuccess=()=>{const c=cursor.result;if(c){const x=c.value;maxNo=Math.max(maxNo,Number(x.entryNo)||Number(x.id)||0);c.continue()}else{const current=settings.get('nextEntryNo');current.onsuccess=()=>settings.put(Math.max(Number(current.result)||1,maxNo+1),'nextEntryNo')}}};q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
 function tx(store,mode='readonly'){return db.transaction(store,mode).objectStore(store)}
 async function setting(k,v){if(arguments.length>1)return new Promise((r,j)=>{let q=tx('settings','readwrite').put(v,k);q.onsuccess=()=>r();q.onerror=()=>j(q.error)});return new Promise((r,j)=>{let q=tx('settings').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}
-async function allRecords(includeDeleted=false){return new Promise((r,j)=>{let q=tx('records').getAll();q.onsuccess=()=>r(includeDeleted?q.result:q.result.filter(x=>!x.isDeleted));q.onerror=()=>j(q.error)})}
 async function recordsForPlate(plateKey,manualPlate){const store=tx('records'),queries=[];const add=(indexName,value)=>{if(value!==undefined&&value!==null&&String(value)!==''&&store.indexNames.contains(indexName))queries.push(new Promise((resolve,reject)=>{const request=store.index(indexName).getAll(value);request.onsuccess=()=>resolve(request.result||[]);request.onerror=()=>reject(request.error)}))};add('plateKey',plateKey);add('manualPlate',manualPlate);const groups=await Promise.all(queries),unique=new Map();groups.forEach(group=>group.forEach(record=>unique.set(record.id,record)));const normalized=normalizeTopTruckKey(plateKey||manualPlate);return [...unique.values()].filter(record=>!record.isDeleted&&normalizeTopTruckKey(record.plateKey||record.manualPlate)===normalized)}
 let holidayDatesCache=[];
 function holidayInfo(date){const key=jalaliDisplay(date);return date.getDay()===5?{holiday:true,reason:'جمعه هفتگی'}:holidayDatesCache.includes(key)?{holiday:true,reason:'تعطیلی ثبت‌شده'}:{holiday:false,reason:''}}
@@ -474,7 +473,7 @@ function isDuplicateRecord(candidate,records){
  return !!key&&(records||[]).some(record=>!record.isDeleted&&duplicateRecordKey(record)===key);
 }
 async function cleanupDuplicateRecords(){
- const records=await allRecords(false),groups=new Map();
+ const records=await allRecordSummaries(),groups=new Map();
  for(const record of records){
   const key=duplicateRecordKey(record);if(!key)continue;
   if(!groups.has(key))groups.set(key,[]);
@@ -517,14 +516,16 @@ function normalizeTopTruckKey(value){return String(value||'').replace(/[۰-۹]/g
 let topTruckColorFilter='all';
 function topTruckColorOf(truck){const weights=truck.records.map(record=>{const raw=record.firstWeight??record.emptyWeight??record.first_weight??record.weight1??'';const digits=normalizeDigits(String(raw)).replace(/[^0-9]/g,'');return digits?Number(digits):NaN}).filter(weight=>Number.isFinite(weight)&&weight>0);if(weights.length<2)return 'unknown';const diff=Math.max(...weights)-Math.min(...weights);return diff<=200?'green':diff<=500?'yellow':diff<=1000?'purple':'red'}
 function topTruckColorMatches(truck){return topTruckColorFilter==='all'||topTruckColorOf(truck)===topTruckColorFilter}
-function renderTopTruckReport(truck){
+let topTruckDetailsRevision=0;
+async function renderTopTruckReport(truck){
+ const revision=++topTruckDetailsRevision;
  const details=$('topTruckDetails');if(!details||!truck)return;
  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const sorted=[...truck.records].sort((a,b)=>(Date.parse(b.created)||0)-(Date.parse(a.created)||0));
  const emptyWeights=truck.records.map(record=>Number(normalizeDigits(String(record.firstWeight??'')).replace(/\D/g,''))).filter(weight=>Number.isFinite(weight)&&weight>0);
  const emptyWeightDifference=emptyWeights.length>1?Math.max(...emptyWeights)-Math.min(...emptyWeights):null;
  const emptyWeightDifferenceText=emptyWeightDifference===null?'قابل محاسبه نیست':emptyWeightDifference.toLocaleString('fa-IR')+' کیلوگرم';
- const rows=sorted.map((record,index)=>{
+ const renderRow=record=>{
   const date=record.created?new Date(record.created).toLocaleString('fa-IR'):'نامشخص';
   const type=typeof typeLabel==='function'?typeLabel(record.eventType||'weighed'):(record.eventType||'تردد');
   const weight=String(record.firstWeight??'').trim()||'ثبت نشده';
@@ -533,15 +534,25 @@ function renderTopTruckReport(truck){
   const cropUrl=typeof crop==='string'&&crop.startsWith('data:image/')?crop:(crop&&typeof crop==='object'?[crop.dataUrl,crop.src,crop.image].find(value=>typeof value==='string'&&value.startsWith('data:image/')):'');
   const permitView='<div style="font-weight:800;overflow-wrap:anywhere">'+esc(permit)+'</div>'+(cropUrl?'<img src="'+cropUrl+'" alt="برش شماره مجوز بارگیری" style="display:block;width:100%;max-width:150px;max-height:105px;object-fit:contain;margin:5px auto 0;border:1px solid #d5dfda;border-radius:7px;background:#fff;padding:3px">':'<small style="color:var(--muted,#777)">تصویر برش‌خورده موجود نیست</small>');
   return '<tr><td class="top-compare-date">'+esc(date)+'</td><td class="top-compare-type">'+esc(type)+'</td><td class="top-compare-weight">'+esc(weight)+'</td><td class="top-compare-category">'+esc(category)+'</td><td style="padding:6px 4px;border:1px solid #d5dfda;vertical-align:middle">'+permitView+'</td><td class="top-compare-action"><button type="button" class="secondary" data-top-record-edit="'+Number(record.id)+'" style="padding:5px 8px;font-size:10px;min-width:0">ویرایش</button></td></tr>';
- }).join('');
- details.innerHTML='<section class="panel"><div class="chart-head"><h2 style="margin:0">گزارش جامع پلاک '+esc(truck.plate)+'</h2><b>'+truck.records.length.toLocaleString('fa-IR')+' تردد</b></div><p class="small">اختلاف کمترین تا بیشترین وزن خالی: '+emptyWeightDifferenceText+'</p><div style="border:1px solid #b8c9c1;border-radius:12px;padding:6px;background:var(--panel,#fff);overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;min-width:720px;border-collapse:collapse;table-layout:fixed;font-size:11px;text-align:center"><thead><tr><th style="width:20%;padding:8px 4px;border:1px solid #d5dfda">تاریخ و ساعت</th><th style="width:11%;padding:8px 4px;border:1px solid #d5dfda">نوع تردد</th><th style="width:11%;padding:8px 4px;border:1px solid #d5dfda">وزن خالی</th><th style="width:14%;padding:8px 4px;border:1px solid #d5dfda">نوع کالا</th><th style="width:34%;padding:8px 4px;border:1px solid #d5dfda">شماره مجوز بارگیری / تصویر برش‌خورده</th><th style="width:10%;padding:8px 3px;border:1px solid #d5dfda">عملیات</th></tr></thead><tbody>'+rows+'</tbody></table></div></div></section>';
+ };
+ const pageSize=30;
+ async function showPage(page){
+  const first=page*pageSize,records=await fullRecordsFor(sorted.slice(first,first+pageSize));
+  if(revision!==topTruckDetailsRevision)return;
+  const rows=records.map(renderRow).join('');
+  details.innerHTML='<section class="panel"><div class="chart-head"><h2 style="margin:0">گزارش جامع پلاک '+esc(truck.plate)+'</h2><b>'+truck.records.length.toLocaleString('fa-IR')+' تردد</b></div><p class="small">اختلاف کمترین تا بیشترین وزن خالی: '+emptyWeightDifferenceText+'</p><div style="border:1px solid #b8c9c1;border-radius:12px;padding:6px;background:var(--panel,#fff);overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;min-width:720px;border-collapse:collapse;table-layout:fixed;font-size:11px;text-align:center"><thead><tr><th style="width:20%;padding:8px 4px;border:1px solid #d5dfda">تاریخ و ساعت</th><th style="width:11%;padding:8px 4px;border:1px solid #d5dfda">نوع تردد</th><th style="width:11%;padding:8px 4px;border:1px solid #d5dfda">وزن خالی</th><th style="width:14%;padding:8px 4px;border:1px solid #d5dfda">نوع کالا</th><th style="width:34%;padding:8px 4px;border:1px solid #d5dfda">شماره مجوز بارگیری / تصویر برش‌خورده</th><th style="width:10%;padding:8px 3px;border:1px solid #d5dfda">عملیات</th></tr></thead><tbody>'+rows+'</tbody></table></div></div></section>';
+  if(sorted.length>pageSize)addRecordsPager(details,page,pageSize,sorted.length,showPage);
+ }
+ await showPage(0);
+ if(revision!==topTruckDetailsRevision)return;
  details.scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function renderTopTruckDetailsByKey(key){
- const records=await allRecords(),normalized=normalizeTopTruckKey(key),matched=records.filter(record=>normalizeTopTruckKey(record.plateKey||record.manualPlate)===normalized);
+ const normalized=normalizeTopTruckKey(key),matched=[];
+ await scanBackupRecords(record=>{if(!record.isDeleted&&normalizeTopTruckKey(record.plateKey||record.manualPlate)===normalized)matched.push(recordSummary(record))});
  if(!matched.length)return false;
  const plate=matched.find(record=>record.manualPlate)?.manualPlate||matched[0].plateKey||normalized;
- renderTopTruckReport({key:normalized,plate,records:matched});return true;
+ await renderTopTruckReport({key:normalized,plate,records:matched});return true;
 }
 let pendingPreviousRecordsReturnTab=null;
 async function notifyPreviousPlateRecords(plateKey,previousRecords){
@@ -578,7 +589,7 @@ function returnToPendingRegistrationAfterEdit(){
 }
 async function renderTopTrucks(){
  const list=$('topTrucksList'),summary=$('topTrucksSummary'),details=$('topTruckDetails'),homeList=$('homeTopTrucksList'),homeSummary=$('homeTopTrucksSummary');if(!list||!summary||!details)return;
- const query=String($('topTrucksSearch').value||'').trim().toLocaleLowerCase('fa'),minVisits=Math.max(1,Math.floor(Number($('topTrucksMinVisits')?.value)||3)),records=await allRecords(),fromText=$('topTruckFrom')?.value.trim()||'',toText=$('topTruckTo')?.value.trim()||'',fromDate=parseJalaliDate(fromText),toDate=parseJalaliDate(toText);
+ const query=String($('topTrucksSearch').value||'').trim().toLocaleLowerCase('fa'),minVisits=Math.max(1,Math.floor(Number($('topTrucksMinVisits')?.value)||3)),records=await allRecordSummaries(),fromText=$('topTruckFrom')?.value.trim()||'',toText=$('topTruckTo')?.value.trim()||'',fromDate=parseJalaliDate(fromText),toDate=parseJalaliDate(toText);
  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const groupRecords=source=>{
   const groups=new Map();
@@ -800,7 +811,7 @@ async function renderTireCategoryMatches(){
  if(category!=='لاستیک خودرو'){panel.classList.add('hide');list.replaceChildren();return}
  panel.classList.remove('hide');
  const normalizeGoods=value=>String(value||'').replace(/[ي]/g,'ی').replace(/[ك]/g,'ک').replace(/\s+/g,' ').trim().toLocaleLowerCase('fa');
- const records=await allRecords();
+ const records=await allRecordSummaries();
  const matches=records.filter(record=>record.eventType==='import_entry_manual'&&String(record.category||'').trim()==='متفرقه'&&normalizeGoods(record.goodsText).includes('لاستیک خودرو')).sort((a,b)=>(Date.parse(b.created)||0)-(Date.parse(a.created)||0));
  list.replaceChildren();
  if(!matches.length){const empty=document.createElement('div');empty.className='hint';empty.textContent='سابقه وارداتی با نوع کالای «لاستیک خودرو» و نوع کالای «متفرقه» پیدا نشد.';list.append(empty);return}
@@ -815,7 +826,7 @@ async function renderTireCategoryMatches(){
   button.addEventListener('click',async()=>{
    button.disabled=true;button.textContent='در حال ذخیره…';
    try{
-    const latest=await allRecords(),current=latest.find(item=>Number(item.id)===Number(record.id));
+    const current=await getRecordById(record.id);
     if(!current){await renderTireCategoryMatches();return}
     await new Promise((resolve,reject)=>{const req=tx('records','readwrite').put({...current,category:'لاستیک خودرو'});req.onsuccess=resolve;req.onerror=()=>reject(req.error)});
     await renderTireCategoryMatches();await renderRecords();await refreshReportPreview();renderDailyRecords();
@@ -1199,7 +1210,8 @@ let uncategorizedEditKind='import_entry_manual',uncategorizedEditSource='uncateg
 function isUncategorizedForKind(record,kind){const category=String(record&&record.category||'').trim();return (record&&record.eventType||'weighed')===kind&&(!category||category==='دسته‌بندی نشده'||category==='مشخص نشده')}
 function isEditablePieCategoryRecord(record,kind,source){const category=String(record&&record.category||'').trim();return (record&&record.eventType||'weighed')===kind&&(source==='متفرقه'?category==='متفرقه':isUncategorizedForKind(record,kind))}
 function isUncategorizedImport(record){return isUncategorizedForKind(record,'import_entry_manual')}
-function openUncategorizedImports(items,kind='import_entry_manual',source='uncategorized'){
+async function openUncategorizedImports(items,kind='import_entry_manual',source='uncategorized'){
+ items=await fullRecordsFor(items);
  uncategorizedEditKind=kind;uncategorizedEditSource=source;
  const list=$('uncategorizedList'),summary=$('uncategorizedSummary');if(!list||!summary)return;
  summary.textContent='تعداد '+items.length.toLocaleString('fa-IR')+' سابقه '+(kind==='weighed'?'صادراتی':'وارداتی')+(source==='متفرقه'?' با نوع کالای فعلی «متفرقه»':' بدون نوع کالا')+' در بازه انتخاب‌شده. نوع کالا کنار پلاک نمایش داده می‌شود؛ برای هر ردیف نوع کالای درست را انتخاب کن.';
@@ -1222,7 +1234,8 @@ async function saveUncategorizedCategories(){
  for(const row of rows){const category=row.querySelector('select')&&row.querySelector('select').value;if(category)updates.push({id:Number(row.dataset.uncategorizedId),category})}
  if(!updates.length){$('uncategorizedStatus').textContent='ابتدا برای حداقل یک سابقه نوع کالا انتخاب کن.';return}
  try{
-  const all=await allRecords(),byId=new Map(all.map(record=>[Number(record.id),record]));
+  const current=await fullRecordsFor(updates);
+  const byId=new Map(current.map(record=>[Number(record.id),record]));
   await new Promise((resolve,reject)=>{
    const transaction=db.transaction('records','readwrite'),store=transaction.objectStore('records');
    updates.forEach(item=>{const record=byId.get(item.id);if(record&&isEditablePieCategoryRecord(record,uncategorizedEditKind,uncategorizedEditSource))store.put({...record,category:item.category,categoryUpdatedAt:new Date().toISOString()})});
@@ -1281,10 +1294,24 @@ function renderRecentVehicles(records){
   list.style.maxHeight=Math.ceil(visibleHeight+2)+'px';
  }else{list.style.maxHeight='none';}
 }
-let lastChartRecords=[];
+function addRecordsPager(container,page,pageSize,count,showPage){
+ const pager=document.createElement('div');
+ pager.className='row';
+ const previous=document.createElement('button'),next=document.createElement('button'),position=document.createElement('span');
+ previous.className=next.className='secondary';
+ previous.textContent='صفحه قبل';next.textContent='صفحه بعد';
+ const first=page*pageSize;
+ previous.disabled=page===0;next.disabled=first+pageSize>=count;
+ previous.onclick=()=>showPage(page-1);next.onclick=()=>showPage(page+1);
+ position.textContent=(first+1).toLocaleString('fa-IR')+' تا '+Math.min(first+pageSize,count).toLocaleString('fa-IR');
+ pager.appendChild(previous);pager.appendChild(position);pager.appendChild(next);container.appendChild(pager);
+}
+let lastChartRecords=[],historyRevision=0;
 async function renderHistoryResults(recordsOverride=null){
+ const revision=++historyRevision;
  const directionSelect=$('historyDirectionFilter'),selectedDirection=directionSelect?.value||'all';
- const all=Array.isArray(recordsOverride)?recordsOverride:await allRecords(),p=plateData('historyPlate'),descriptionQuery=$('historyDescriptionSearch').value.trim().toLocaleLowerCase('fa'),nationality=$('historyVehicleNationality')?.value||'all',direction=selectedDirection,goodsCategory=$('historyGoodsCategory')?.value||'all',fromText=$('historyFrom').value.trim(),toText=$('historyTo').value.trim(),from=fromText?parseJalaliDate(fromText):null,to=toText?parseJalaliDate(toText):null;
+ const all=Array.isArray(recordsOverride)?recordsOverride:await allRecordSummaries(),p=plateData('historyPlate'),descriptionQuery=$('historyDescriptionSearch').value.trim().toLocaleLowerCase('fa'),nationality=$('historyVehicleNationality')?.value||'all',direction=selectedDirection,goodsCategory=$('historyGoodsCategory')?.value||'all',fromText=$('historyFrom').value.trim(),toText=$('historyTo').value.trim(),from=fromText?parseJalaliDate(fromText):null,to=toText?parseJalaliDate(toText):null;
+ if(revision!==historyRevision)return;
  const isIraqiTruck=x=>{const key=String(x.plateKey||'').trim().toUpperCase(),plate=String(x.manualPlate||'').trim();return key.startsWith('SUL-')||key.startsWith('K')||key.startsWith('L')||/^سلیمانیه\s*/.test(plate)||/^[۰-۹٠-٩]{2}\s*[KL]/i.test(plate)};
  const isImportRecord=x=>['import_entry_manual','import_exit'].includes(String(x.eventType||''))||['loaded_import','import_weighed'].includes(String(x.vehicleStatus||''));
  const isExportRecord=x=>String(x.eventType||'')==='weighed'||String(x.vehicleStatus||'')==='weighed';
@@ -1295,7 +1322,7 @@ async function renderHistoryResults(recordsOverride=null){
   if(optionsChanged){
    const fragment=document.createDocumentFragment();
    desired.forEach(([value,label])=>{const option=document.createElement('option');option.value=value;option.textContent=label;fragment.appendChild(option)});
-   categorySelect.replaceChildren(fragment);
+   categorySelect.textContent='';categorySelect.appendChild(fragment);
   }
   categorySelect.value=categoryValues.includes(selected)?selected:'all';
  }
@@ -1313,14 +1340,26 @@ async function renderHistoryResults(recordsOverride=null){
  const toKg=v=>{let z=String(v??'').replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c))).replace(/[٠-٩]/g,c=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))).replace(/[٬،,]/g,'').replace(/٫/g,'.').replace(/[^\d.+-]/g,'');let n=Number(z);return Number.isFinite(n)?n:0};
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const getHistoryOrigin=x=>{const direct=[x.originText,x.origin,x.originName,x.originCountry,x.originCity,x.originPlace,x.loadingOrigin,x.sourceOrigin,x.mabda,x.mabdaText];for(const v of direct){if(v!==undefined&&v!==null&&String(v).trim()!=='')return v}for(const [k,v] of Object.entries(x)){if(/origin|mabda|مبدأ|مبدا/i.test(k)&&v!==undefined&&v!==null&&typeof v!=='object'&&String(v).trim()!=='')return v}return ''};
- const cropCell=(x,k,fallback)=>{let v=x.crops&&x.crops[k];if(v&&String(v).startsWith('data:image/'))return '<img class="cropimg" alt="" src="'+v+'">';return esc(fallback||((v)?'تصویر برش ذخیره شده':''))};
- const rows=data.map((x,i)=>{let t=x.eventType||'weighed',num=(Number(x.entryNo)||Number(x.id)||i+1).toLocaleString('fa-IR'),plate=x.manualPlate||x.plateKey||p.display,goods=x.goodsText||'',origin=getHistoryOrigin(x),permit=x.permitNo||'',first=x.firstWeight||'',second=x.secondWeight||'',net=x.netWeight||'',created=new Date(x.created).toLocaleString('fa-IR');return '<tr><td>'+num+'</td><td>'+esc(typeLabel(t))+'</td><td>'+esc(plate)+'</td><td>'+cropCell(x,'goods',goods)+'</td><td>'+esc(origin||'—')+'</td><td>'+cropCell(x,'permit',permit)+'</td><td>'+cropCell(x,'first',first)+'</td><td>'+cropCell(x,'second',second)+'</td><td>'+cropCell(x,'net',net)+'</td><td>'+esc(created)+'</td><td>'+esc(x.createdByName||x.createdBy||'نامشخص')+'</td><td>'+esc(x.description||'')+'</td></tr>'}).join('');
+ const cropCell=(x,k,fallback)=>{let v=x.crops&&x.crops[k];if(v&&String(v).startsWith('data:image/'))return '<img class="cropimg" alt="" src="'+esc(v)+'">';return esc(fallback||((v)?'تصویر برش ذخیره شده':''))};
+ const historyRow=(x,i)=>{let t=x.eventType||'weighed',num=(Number(x.entryNo)||Number(x.id)||i+1).toLocaleString('fa-IR'),plate=x.manualPlate||x.plateKey||p.display,goods=x.goodsText||'',origin=getHistoryOrigin(x),permit=x.permitNo||'',first=x.firstWeight||'',second=x.secondWeight||'',net=x.netWeight||'',created=new Date(x.created).toLocaleString('fa-IR');return '<tr><td>'+num+'</td><td>'+esc(typeLabel(t))+'</td><td>'+esc(plate)+'</td><td>'+cropCell(x,'goods',goods)+'</td><td>'+esc(origin||'—')+'</td><td>'+cropCell(x,'permit',permit)+'</td><td>'+cropCell(x,'first',first)+'</td><td>'+cropCell(x,'second',second)+'</td><td>'+cropCell(x,'net',net)+'</td><td>'+esc(created)+'</td><td>'+esc(x.createdByName||x.createdBy||'نامشخص')+'</td><td>'+esc(x.description||'')+'</td></tr>'};
  const statsHtml='<section class="stats"><div><strong>تعداد دفعات ورود</strong><b>'+entryCount.toLocaleString('fa-IR')+'</b></div></section>';
- const detailsHtml='<table><thead><tr><th>ردیف</th><th>نوع ثبت</th><th>شماره پلاک</th><th>نوع کالا</th><th>مبدأ</th><th>شماره مجوز بارگیری</th><th>توزین اول</th><th>توزین دوم</th><th>وزن خالص</th><th>تاریخ و ساعت</th><th>ثبت‌کننده</th><th>توضیحات</th></tr></thead><tbody>'+rows+'</tbody></table>';
- box.innerHTML='<div class="preview-body">'+statsHtml+detailsHtml+'</div>';
+ const tableStart='<table><thead><tr><th>ردیف</th><th>نوع ثبت</th><th>شماره پلاک</th><th>نوع کالا</th><th>مبدأ</th><th>شماره مجوز بارگیری</th><th>توزین اول</th><th>توزین دوم</th><th>وزن خالص</th><th>تاریخ و ساعت</th><th>ثبت‌کننده</th><th>توضیحات</th></tr></thead><tbody>';
+ let pageRequest=0;
+ async function showPage(page){
+  const request=++pageRequest,pageSize=30,first=page*pageSize;
+  const pageRows=await fullRecordsFor(data.slice(first,first+pageSize));
+  if(request!==pageRequest||revision!==historyRevision)return;
+  const rows=pageRows.map(historyRow).join('');
+  box.innerHTML='<div class="preview-body">'+statsHtml+tableStart+rows+'</tbody></table></div>';
+  if(data.length>pageSize)addRecordsPager(box,page,pageSize,data.length,showPage);
+ }
+ await showPage(0);
+ if(revision!==historyRevision)return;
  exportBtn.classList.remove('hide');window.historyExportRows=data;window.historyExportMeta={plate:p.complete?p.display:'همه پلاک‌ها',category:goodsCategory,from:fromText,to:toText};
 }
+let categoryTruckRevision=0;
 async function runCategoryTruckSearch(){
+ const request=++categoryTruckRevision;
  const type=$('categoryTruckSearchType').value,category=$('categoryTruckSearchCategory').value,fromText=$('categoryTruckSearchFrom').value.trim(),toText=$('categoryTruckSearchTo').value.trim(),summary=$('categoryTruckSearchSummary'),results=$('categoryTruckSearchResults');
  results.innerHTML='';
  if(!category){summary.textContent='لطفاً نوع کالا را انتخاب کن.';return}
@@ -1329,16 +1368,16 @@ async function runCategoryTruckSearch(){
  if(!from||!to){summary.textContent='تاریخ شمسی معتبر نیست؛ تاریخ‌ها را بررسی کن.';return}
  from.setHours(0,0,0,0);to.setHours(23,59,59,999);
  if(from.getTime()>to.getTime()){summary.textContent='تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد.';return}
- const all=await allRecords(),data=all.filter(x=>(x.eventType||'weighed')===type&&String(x.category||'').trim()===category).filter(x=>{const t=Date.parse(x.created);return Number.isFinite(t)&&t>=from.getTime()&&t<=to.getTime()}).sort((a,b)=>Date.parse(a.created)-Date.parse(b.created)||(Number(a.entryNo)||Number(a.id)||0)-(Number(b.entryNo)||Number(b.id)||0));
+ const all=await allRecordSummaries(),data=all.filter(x=>(x.eventType||'weighed')===type&&String(x.category||'').trim()===category).filter(x=>{const t=Date.parse(x.created);return Number.isFinite(t)&&t>=from.getTime()&&t<=to.getTime()}).sort((a,b)=>Date.parse(a.created)-Date.parse(b.created)||(Number(a.entryNo)||Number(a.id)||0)-(Number(b.entryNo)||Number(b.id)||0));
  const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const value=(v)=>v===undefined||v===null||String(v).trim()===''?'ثبت نشده':esc(v);
- const cropHtml=(x,key,fallback,label)=>{const src=x.crops&&x.crops[key];if(src&&String(src).startsWith('data:image/'))return '<img alt="'+esc(label)+'" src="'+src+'" style="display:block;max-width:100%;max-height:90px;object-fit:contain;margin:5px auto">';return value(fallback)};
+ const cropHtml=(x,key,fallback,label)=>{const src=x.crops&&x.crops[key];if(src&&String(src).startsWith('data:image/'))return '<img alt="'+esc(label)+'" src="'+esc(src)+'" style="display:block;max-width:100%;max-height:90px;object-fit:contain;margin:5px auto">';return value(fallback)};
  const getImportOrigin=x=>{const direct=[x.originText,x.origin,x.originName,x.originCountry,x.originCity,x.originPlace,x.loadingOrigin,x.sourceOrigin,x.mabda,x.mabdaText];for(const v of direct){if(v!==undefined&&v!==null&&String(v).trim()!=='')return v}for(const [k,v] of Object.entries(x)){if(/origin|mabda|مبدأ|مبدا/i.test(k)&&v!==undefined&&v!==null&&typeof v!=='object'&&String(v).trim()!=='')return v}return ''};
  const field=(label,v,isHtml=false)=>'<div><b>'+esc(label)+'</b><div>'+(isHtml?(v||value('')):value(v))+'</div></div>';
  const count=data.length;
  summary.textContent='تعداد کامیون‌های '+(type==='weighed'?'صادراتی':'وارداتی')+': '+count.toLocaleString('fa-IR')+' دستگاه · نوع کالا: '+category+' · بازه: '+fromText+' تا '+toText;
  if(!count){results.innerHTML='<div class="hint">برای این نوع کالا و بازه زمانی، کامیونی پیدا نشد.</div>';return}
- results.innerHTML=data.map((x,i)=>{
+ const renderTruck=(x,i)=>{
   const created=new Date(x.created),createdText=Number.isFinite(created.getTime())?created.toLocaleString('fa-IR'):'ثبت نشده';
   const fields=[
    field('نوع عملیات',typeLabel(x.eventType||'weighed')),
@@ -1357,10 +1396,18 @@ async function runCategoryTruckSearch(){
    field('توضیحات',x.description||x.notes)
   ];
   return '<article class="record" style="margin:8px 0;padding:12px"><b>کامیون '+(i+1).toLocaleString('fa-IR')+' ـ ردیف ثبت '+value(Number(x.entryNo)||Number(x.id))+'</b><div class="history-record-grid" style="grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px">'+fields.join('')+'</div></article>';
- }).join('');
+ };
+ const pageSize=30;
+ async function showPage(page){
+  const first=page*pageSize,records=await fullRecordsFor(data.slice(first,first+pageSize));
+  if(request!==categoryTruckRevision)return;
+  results.innerHTML=records.map((record,index)=>renderTruck(record,first+index)).join('');
+  if(count>pageSize)addRecordsPager(results,page,pageSize,count,showPage);
+ }
+ await showPage(0);
 }
 async function prepareCategoryTruckSearch(){
- const all=await allRecords(),select=$('categoryTruckSearchCategory');
+ const all=await allRecordSummaries(),select=$('categoryTruckSearchCategory');
  if(!select)return;
  const known=sharedGoodsCategories;
  const editSelect=$('editCategory');if(editSelect){const selectedEdit=editSelect.value;const editValues=[...new Set([...known,...all.map(x=>String(x.category||'').trim()).filter(Boolean)])].sort((a,b)=>a.localeCompare(b,'fa'));editSelect.innerHTML='<option value="">انتخاب نوع کالا</option>'+editValues.map(v=>'<option value="'+v.replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'">'+v+'</option>').join('');if(editValues.includes(selectedEdit))editSelect.value=selectedEdit;}
@@ -1369,21 +1416,68 @@ async function prepareCategoryTruckSearch(){
  if(values.includes(selected))select.value=selected;
 }
 $('runCategoryTruckSearch').onclick=runCategoryTruckSearch;
-$('resetCategoryTruckSearch').onclick=()=>{$('categoryTruckSearchType').value='weighed';$('categoryTruckSearchCategory').value='';$('categoryTruckSearchFrom').value='';$('categoryTruckSearchTo').value='';$('categoryTruckSearchSummary').textContent='برای شروع، نوع کالا و بازه زمانی را مشخص کن.';$('categoryTruckSearchResults').innerHTML=''};
-$('categoryTruckSearchType').addEventListener('change',()=>{$('categoryTruckSearchResults').innerHTML='';$('categoryTruckSearchSummary').textContent='نوع ثبت تغییر کرد؛ برای مشاهده نتایج دوباره جست‌وجو کن.'});
-async function renderRecords(newRecord=null){const all=newRecord&&Array.isArray(lastChartRecords)?[...lastChartRecords.filter(record=>!record.isDeleted),newRecord]:await allRecords();await refreshHolidayCache();lastChartRecords=all;renderChart(all);renderRecentVehicles(all);await renderHistoryResults(all)}
+$('resetCategoryTruckSearch').onclick=()=>{categoryTruckRevision++;$('categoryTruckSearchType').value='weighed';$('categoryTruckSearchCategory').value='';$('categoryTruckSearchFrom').value='';$('categoryTruckSearchTo').value='';$('categoryTruckSearchSummary').textContent='برای شروع، نوع کالا و بازه زمانی را مشخص کن.';$('categoryTruckSearchResults').innerHTML=''};
+$('categoryTruckSearchType').addEventListener('change',()=>{categoryTruckRevision++;$('categoryTruckSearchResults').innerHTML='';$('categoryTruckSearchSummary').textContent='نوع ثبت تغییر کرد؛ برای مشاهده نتایج دوباره جست‌وجو کن.'});
+async function renderRecords(newRecord=null){const all=newRecord&&Array.isArray(lastChartRecords)?[...lastChartRecords.filter(record=>!record.isDeleted),recordSummary(newRecord)]:await allRecordSummaries();await refreshHolidayCache();lastChartRecords=all;renderChart(all);renderRecentVehicles(all);await renderHistoryResults(all)}
 
-function jalaliToGregorian(jy,jm,jd){jy=Number(jy);jm=Number(jm);jd=Number(jd);if(!Number.isInteger(jy)||!Number.isInteger(jm)||!Number.isInteger(jd)||jm<1||jm>12||jd<1||jd>(jm<=6?31:jm<=11?30:30))return null;const fmt=new Intl.DateTimeFormat('en-u-ca-persian',{year:'numeric',month:'numeric',day:'numeric',timeZone:'UTC'});const start=Date.UTC(jy+621,2,18),end=Date.UTC(jy+622,2,25);for(let t=start;t<=end;t+=86400000){const date=new Date(t),parts=fmt.formatToParts(date),v={};parts.forEach(p=>{if(p.type!=='literal')v[p.type]=Number(p.value)});if(v.year===jy&&v.month===jm&&v.day===jd)return {y:date.getUTCFullYear(),m:date.getUTCMonth()+1,d:date.getUTCDate()}}return null}
+function persianDateNumbers(format,date){
+  if(typeof format.formatToParts==='function'){
+    const numbers={};
+    format.formatToParts(date).forEach(part=>{if(part.type!=='literal')numbers[part.type]=Number(part.value)});
+    return numbers;
+  }
+  // Older WebViews still format the en-US Persian calendar as month/day/year.
+  const fields=format.format(date).match(/[0-9]+/g);
+  return {month:Number(fields[0]),day:Number(fields[1]),year:Number(fields[2])};
+}
+function nativePersianDate(year,month,day,toGregorian){
+  const bridge=window.AndroidBridge;
+  if(!bridge||typeof bridge.convertPersianDate!=='function')return null;
+  const result=bridge.convertPersianDate(year,month,day,toGregorian);
+  if(!result)return null;
+  const [y,m,d]=result.split(',').map(Number);
+  return {y,m,d};
+}
+function jalaliToGregorian(jy,jm,jd){
+  jy=Number(jy);jm=Number(jm);jd=Number(jd);
+  if(!Number.isInteger(jy)||!Number.isInteger(jm)||!Number.isInteger(jd)||jm<1||jm>12||jd<1||jd>(jm<=6?31:30))return null;
+  const format=new Intl.DateTimeFormat('en-US-u-ca-persian',{year:'numeric',month:'numeric',day:'numeric',timeZone:'UTC'});
+  if(format.resolvedOptions().calendar!=='persian')return nativePersianDate(jy,jm,jd,true);
+  const start=Date.UTC(jy+621,2,18),end=Date.UTC(jy+622,2,25);
+  for(let time=start;time<=end;time+=86400000){
+    const date=new Date(time),parts=persianDateNumbers(format,date);
+    if(parts.year===jy&&parts.month===jm&&parts.day===jd)return {y:date.getUTCFullYear(),m:date.getUTCMonth()+1,d:date.getUTCDate()};
+  }
+  return null;
+}
 function normalizeDigits(s){return String(s??'').replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c))).replace(/[٠-٩]/g,c=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))).replace(/[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069\ufeff]/g,'').trim()}
-function jalaliParts(date){let p=new Intl.DateTimeFormat('en-u-ca-persian',{year:'numeric',month:'numeric',day:'numeric'}).formatToParts(date),v={};p.forEach(x=>{if(x.type!=='literal')v[x.type]=Number(x.value)});return {y:v.year,m:v.month,d:v.day}}function jalaliDisplay(date){let p=jalaliParts(date);return [p.y,p.m,p.d].map((n,i)=>String(n).padStart(i===0?4:2,'0')).join('/').replace(/[0-9]/g,ch=>'۰۱۲۳۴۵۶۷۸۹'[Number(ch)])}
+function jalaliParts(date){
+  const format=new Intl.DateTimeFormat('en-US-u-ca-persian',{year:'numeric',month:'numeric',day:'numeric'});
+  if(format.resolvedOptions().calendar!=='persian'){
+    const converted=nativePersianDate(date.getFullYear(),date.getMonth()+1,date.getDate(),false);
+    if(converted)return converted;
+  }
+  const parts=persianDateNumbers(format,date);
+  return {y:parts.year,m:parts.month,d:parts.day};
+}
+function jalaliDisplay(date){let p=jalaliParts(date);return [p.y,p.m,p.d].map((n,i)=>String(n).padStart(i===0?4:2,'0')).join('/').replace(/[0-9]/g,ch=>'۰۱۲۳۴۵۶۷۸۹'[Number(ch)])}
 function parseJalaliDate(value){if(value==null||String(value).trim()==='')return null;let normalized=normalizeDigits(value).replace(/[／⁄]/g,'/').replace(/[.\-]/g,'/').replace(/\s*\/\s*/g,'/'),m=normalized.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);if(!m)return false;let jy=+m[1],jm=+m[2],jd=+m[3],g=jalaliToGregorian(jy,jm,jd);if(!g)return false;let d=new Date(g.y,g.m-1,g.d),v=jalaliParts(d);return d.getFullYear()===g.y&&d.getMonth()===g.m-1&&d.getDate()===g.d&&v.y===jy&&v.m===jm&&v.d===jd?d:false}
 const jpMonths=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'],jpWeek=['ش','ی','د','س','چ','پ','ج'];let jpTarget=null,jpYear=0,jpMonth=0;
 function positionJalaliPicker(){let picker=$('jalaliPicker'),field=$(jpTarget);if(!picker||!field||picker.classList.contains('hide'))return;let r=field.getBoundingClientRect(),w=picker.offsetWidth,h=picker.offsetHeight,gap=6,left=Math.max(12,Math.min(r.left,window.innerWidth-w-12)),top=r.bottom+gap;if(top+h>window.innerHeight-12&&r.top-h-gap>=12)top=r.top-h-gap;else top=Math.min(top,window.innerHeight-h-12);picker.style.left=left+'px';picker.style.top=Math.max(12,top)+'px'}function openJalaliPicker(target){jpTarget=target;let val=parseJalaliDate($(target).value),base=val||new Date(),parts=jalaliParts(base);jpYear=parts.y;jpMonth=parts.m;renderJalaliPicker();$('jalaliPicker').classList.remove('hide');requestAnimationFrame(positionJalaliPicker)}
 function renderJalaliPicker(){ $('jpTitle').textContent=jpMonths[jpMonth-1]+' '+jpYear.toLocaleString('fa-IR');$('jpWeek').innerHTML=jpWeek.map(x=>'<div class="jp-week">'+x+'</div>').join('');let first=jalaliToGregorian(jpYear,jpMonth,1),start=new Date(first.y,first.m-1,first.d),offset=(start.getDay()+1)%7,next=jpMonth===12?jalaliToGregorian(jpYear+1,1,1):jalaliToGregorian(jpYear,jpMonth+1,1),nextDate=new Date(next.y,next.m-1,next.d),days=Math.round((nextDate-start)/86400000),selected=parseJalaliDate($(jpTarget).value),selectedParts=selected?jalaliParts(selected):null,today=jalaliParts(new Date()),html='';for(let i=0;i<offset;i++)html+='<div></div>';for(let d=1;d<=days;d++){let isToday=today.y===jpYear&&today.m===jpMonth&&today.d===d,isSelected=selectedParts&&selectedParts.y===jpYear&&selectedParts.m===jpMonth&&selectedParts.d===d;html+='<button type="button" class="jp-day'+(isToday?' today':'')+(isSelected?' selected':'')+'" data-jpday="'+d+'">'+d.toLocaleString('fa-IR')+'</button>'}$('jpDays').innerHTML=html;$('jpDays').querySelectorAll('[data-jpday]').forEach(b=>b.onclick=()=>{let d=Number(b.dataset.jpday);$(jpTarget).value=[jpYear,jpMonth,d].map((n,i)=>String(n).padStart(i===0?4:2,'0')).join('/').replace(/[0-9]/g,ch=>'۰۱۲۳۴۵۶۷۸۹'[Number(ch)]);$(jpTarget).dispatchEvent(new Event('change',{bubbles:true}));$('jalaliPicker').classList.add('hide')})}
 ['reportFrom','reportTo','dailyDate','transferDate','backupFrom','backupTo','historyFrom','historyTo','categoryTruckSearchFrom','categoryTruckSearchTo','editRecordDate','recordDate','impInRecordDate','emptyRecordDate','exitRecordDate','holidayDate','topTruckFrom','topTruckTo','categoryShareFrom','categoryShareTo','chartFrom','chartTo','passengerFrom','passengerTo'].forEach(id=>{let el=$(id);if(!el)return;el?.addEventListener('click',()=>openJalaliPicker(id));el?.addEventListener('focus',()=>openJalaliPicker(id));let label=document.querySelector('label[for="'+id+'"]');if(label)label?.addEventListener('click',()=>openJalaliPicker(id))});document.addEventListener('pointerdown',e=>{let field=e.target.closest('#reportFrom,#reportTo,#dailyDate,#transferDate,#backupFrom,#backupTo,#historyFrom,#historyTo,#categoryTruckSearchFrom,#categoryTruckSearchTo,#recordDate,#impInRecordDate,#emptyRecordDate,#exitRecordDate,#topTruckFrom,#topTruckTo,#categoryShareFrom,#categoryShareTo,#chartFrom,#chartTo,#passengerFrom,#passengerTo');if(field)openJalaliPicker(field.id)});$('jpPrev').onclick=()=>{if(--jpMonth<1){jpMonth=12;jpYear--}renderJalaliPicker();positionJalaliPicker()};$('jpNext').onclick=()=>{if(++jpMonth>12){jpMonth=1;jpYear++}renderJalaliPicker();positionJalaliPicker()};$('jpToday').onclick=()=>{let p=jalaliParts(new Date());jpYear=p.y;jpMonth=p.m;renderJalaliPicker();positionJalaliPicker()};$('jpClose').onclick=()=>$('jalaliPicker').classList.add('hide');window.addEventListener('resize',positionJalaliPicker);window.addEventListener('scroll',positionJalaliPicker,true);document.addEventListener('click',e=>{let target=e.target,dateId=target.id||target.closest('label[for]')?.htmlFor;if(!$('jalaliPicker').contains(target)&&!['reportFrom','reportTo','dailyDate','transferDate','backupFrom','backupTo','historyFrom','historyTo','categoryTruckSearchFrom','categoryTruckSearchTo','editRecordDate','recordDate','impInRecordDate','emptyRecordDate','exitRecordDate','holidayDate','topTruckFrom','topTruckTo','categoryShareFrom','categoryShareTo','chartFrom','chartTo','passengerFrom','passengerTo'].includes(dateId))$('jalaliPicker').classList.add('hide')});
 
-async function buildReport(){let all=await allRecords();await refreshHolidayCache();const mode=$('reportMode').value,from=$('reportFrom').value.trim(),to=$('reportTo').value.trim(),fd=parseJalaliDate(from),td=parseJalaliDate(to);if(fd===false||td===false||(from&&!fd)||(to&&!td)){alert('تاریخ شمسی معتبر نیست. به شکل ۱۴۰۵/۰۸/۱۵ وارد کن.');return}let start=-Infinity,end=Infinity;if(fd){fd.setHours(0,0,0,0);start=fd.getTime()}if(td){td.setHours(23,59,59,999);end=td.getTime()}if(start>end){alert('تاریخ شروع نمی‌تواند بعد از تاریخ پایان گزارش باشد.');return}let data=all.filter(x=>{let t=new Date(x.created).getTime();return Number.isFinite(t)&&t>=start&&t<=end}).sort((a,b)=>(Number(a.entryNo)||Number(a.id)||0)-(Number(b.entryNo)||Number(b.id)||0));if(!data.length&&mode==='comprehensive'){alert('در بازه تاریخی انتخاب‌شده سابقه‌ای برای گزارش جامع وجود ندارد.');return}const toKg=v=>{let z=String(v??'').replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c))).replace(/[٠-٩]/g,c=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))).replace(/[٬،,]/g,'').replace(/٫/g,'.').replace(/[^\d.+-]/g,'');let n=Number(z);return Number.isFinite(n)?n:0};const exportRecords=data.filter(x=>(x.eventType||'weighed')==='weighed'),importRecords=data.filter(x=>x.eventType==='import_entry_manual'),exportCount=exportRecords.length,importCount=importRecords.length,exportKg=exportRecords.reduce((sum,x)=>sum+toKg(x.netWeight),0),importKg=importRecords.reduce((sum,x)=>sum+toKg(x.netWeight),0),exportTons=exportKg/1000,importTons=importKg/1000;const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const cropCell=(x,k,fallback)=>{let v=x.crops&&x.crops[k];if(v&&String(v).startsWith('data:image/'))return '<img class="cropimg" alt="" src="'+v+'">';return esc(fallback||'')};const rows=data.map((x,i)=>{let t=x.eventType||'weighed',num=(Number(x.entryNo)||Number(x.id)||i+1).toLocaleString('fa-IR'),plate=x.manualPlate||x.plateKey||'',goods=x.goodsText||'',permit=x.permitNo||'',first=x.firstWeight||'',second=x.secondWeight||'',net=x.netWeight||'',created=new Date(x.created).toLocaleString('fa-IR');return '<tr><td>'+num+'</td><td>'+esc(typeLabel(t))+'</td><td>'+esc(plate)+'</td><td>'+cropCell(x,'goods',goods)+'</td><td>'+cropCell(x,'permit',permit)+'</td><td>'+cropCell(x,'first',first)+'</td><td>'+cropCell(x,'second',second)+'</td><td>'+cropCell(x,'net',net)+'</td><td>'+esc(created)+'</td><td>'+esc(x.createdByName||x.createdBy||'نامشخص')+'</td><td>'+esc(x.notes||'')+'</td></tr>'}).join('');const statsHtml='<section class="stats"><div><strong>تعداد کامیون صادراتی</strong><b>'+exportCount.toLocaleString('fa-IR')+'</b><small>ورودی صادراتی با برگه باسکول</small></div><div><strong>جمع تناژ صادرات</strong><b>'+exportTons.toLocaleString('fa-IR',{maximumFractionDigits:3})+' تن</b><small>بر اساس وزن خالص دستی</small></div><div><strong>تعداد کامیون وارداتی</strong><b>'+importCount.toLocaleString('fa-IR')+'</b><small>ورودی وارداتی با باسکول دستی</small></div><div><strong>جمع تناژ واردات</strong><b>'+importTons.toLocaleString('fa-IR',{maximumFractionDigits:3})+' تن</b><small>بر اساس وزن خالص دستی</small></div></section>';const detailsHtml='<table><thead><tr><th>ردیف</th><th>نوع ثبت</th><th>شماره پلاک</th><th>نوع کالا</th><th>شماره مجوز بارگیری</th><th>توزین اول</th><th>توزین دوم</th><th>وزن خالص</th><th>تاریخ و ساعت</th><th>ثبت‌کننده</th><th>توضیحات</th></tr></thead><tbody>'+rows+'</tbody></table>';let reportTitle='',reportBody='';if(mode==='export_tonnage'){reportTitle='گزارش تناژ صادرات';reportBody='<section class="stats"><div><strong>جمع تناژ صادرات</strong><b>'+exportTons.toLocaleString('fa-IR',{maximumFractionDigits:3})+' تن</b><small>مجموع وزن خالص دستی '+exportCount.toLocaleString('fa-IR')+' کامیون صادراتی</small></div></section>'}else if(mode==='import_tonnage'){reportTitle='گزارش تناژ واردات';reportBody='<section class="stats"><div><strong>جمع تناژ واردات</strong><b>'+importTons.toLocaleString('fa-IR',{maximumFractionDigits:3})+' تن</b><small>مجموع وزن خالص دستی '+importCount.toLocaleString('fa-IR')+' کامیون وارداتی</small></div></section>'}else if(mode==='overview'){reportTitle='گزارش کلی آمار صادرات و واردات';reportBody=statsHtml}else{reportTitle='گزارش جامع مشخصات کامیون‌ها';reportBody=statsHtml+detailsHtml}const datedRecords=data.map(x=>new Date(x.created).getTime()).filter(Number.isFinite),holidayStart=Number.isFinite(start)?start:(datedRecords.length?Math.min(...datedRecords):Date.now()),holidayEnd=Number.isFinite(end)?end:(datedRecords.length?Math.max(...datedRecords):holidayStart),holidayRows=collectHolidayDays(holidayStart,holidayEnd),holidayHtml='<section class="stats"><div><strong>تعداد روزهای تعطیل در بازه</strong><b>'+holidayRows.length.toLocaleString('fa-IR')+'</b><small>جمعه‌ها و تعطیلی‌های موردی</small></div></section>'+(holidayRows.length?'<table><thead><tr><th>تاریخ</th><th>وضعیت</th></tr></thead><tbody>'+holidayRows.map(h=>'<tr><td>'+h.jalali+'</td><td>'+h.reason+'</td></tr>').join('')+'</tbody></table>':'<p>در این بازه روز تعطیلی ثبت نشده است.</p>');reportBody+=holidayHtml;let period=from||to?'بازه گزارش: '+(from||'ابتدای سوابق')+' تا '+(to||'انتهای سوابق'):'بازه گزارش: تمام سوابق';let html='<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(reportTitle)+'</title><style>body{font-family:Tahoma,Arial,sans-serif;margin:18px;color:#172b28}h2{text-align:center}table{width:100%;border-collapse:collapse}th,td{border:1px solid #777;text-align:center;padding:8px;font-size:12px}th{background:#e8efeb}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:16px 0}.stats div{border:1px solid #777;border-radius:8px;padding:12px;min-width:0;text-align:center}.stats strong,.stats b,.stats small{display:block}.stats b{font-size:22px;margin:8px 0}.stats small{font-size:11px;color:#555}.cropimg{max-width:110px;max-height:55px;object-fit:contain;display:block;margin:auto}</style></head><body><h2>'+esc(reportTitle)+'</h2><p>'+esc(period)+' ـ تعداد کل ثبت‌ها: '+data.length.toLocaleString('fa-IR')+' ـ تاریخ تهیه: '+new Date().toLocaleString('fa-IR')+'</p>'+reportBody+'</body></html>';return {html,reportTitle,reportBody,period,count:data.length,filename:'gomrokyar-'+mode+'-report'+(from?'-'+from.replaceAll('/','-'):'')+(to?'-'+to.replaceAll('/','-'):'')+'.html'};}
-async function refreshReportPreview(){const r=await buildReport();const box=$('reportPreview');if(!r){box.innerHTML='<div class="small">برای نمایش گزارش، تاریخ و ساعت انتخاب‌شده را بررسی کن.</div>';return}box.innerHTML='<h3>'+r.reportTitle+'</h3><div class="preview-meta">'+r.period+' · تعداد رکوردها: '+r.count.toLocaleString('fa-IR')+'</div><div class="preview-body">'+r.reportBody+'</div>';}
+async function buildReport(previewPage=null){let all=await allRecordSummaries();await refreshHolidayCache();const mode=$('reportMode').value,from=$('reportFrom').value.trim(),to=$('reportTo').value.trim(),fd=parseJalaliDate(from),td=parseJalaliDate(to);if(fd===false||td===false||(from&&!fd)||(to&&!td)){alert('تاریخ شمسی معتبر نیست. به شکل ۱۴۰۵/۰۸/۱۵ وارد کن.');return}let start=-Infinity,end=Infinity;if(fd){fd.setHours(0,0,0,0);start=fd.getTime()}if(td){td.setHours(23,59,59,999);end=td.getTime()}if(start>end){alert('تاریخ شروع نمی‌تواند بعد از تاریخ پایان گزارش باشد.');return}let data=all.filter(x=>{let t=new Date(x.created).getTime();return Number.isFinite(t)&&t>=start&&t<=end}).sort((a,b)=>(Number(a.entryNo)||Number(a.id)||0)-(Number(b.entryNo)||Number(b.id)||0));if(!data.length&&mode==='comprehensive'){alert('در بازه تاریخی انتخاب‌شده سابقه‌ای برای گزارش جامع وجود ندارد.');return}const toKg=v=>{let z=String(v??'').replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c))).replace(/[٠-٩]/g,c=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(c))).replace(/[٬،,]/g,'').replace(/٫/g,'.').replace(/[^\d.+-]/g,'');let n=Number(z);return Number.isFinite(n)?n:0};const exportRecords=data.filter(x=>(x.eventType||'weighed')==='weighed'),importRecords=data.filter(x=>x.eventType==='import_entry_manual'),exportCount=exportRecords.length,importCount=importRecords.length,exportKg=exportRecords.reduce((sum,x)=>sum+toKg(x.netWeight),0),importKg=importRecords.reduce((sum,x)=>sum+toKg(x.netWeight),0),exportTons=exportKg/1000,importTons=importKg/1000;const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const cropCell=(x,k,fallback)=>{let v=x.crops&&x.crops[k];if(v&&String(v).startsWith('data:image/'))return '<img class="cropimg" alt="" src="'+esc(v)+'">';return esc(fallback||'')};const pageSize=30,page=previewPage===null?0:Math.min(previewPage,Math.max(0,Math.ceil(data.length/pageSize)-1));const reportRecords=mode==='comprehensive'?await fullRecordsFor(previewPage===null?data:data.slice(page*pageSize,(page+1)*pageSize)):[];const rows=reportRecords.map((x,i)=>{let t=x.eventType||'weighed',num=(Number(x.entryNo)||Number(x.id)||i+1).toLocaleString('fa-IR'),plate=x.manualPlate||x.plateKey||'',goods=x.goodsText||'',permit=x.permitNo||'',first=x.firstWeight||'',second=x.secondWeight||'',net=x.netWeight||'',created=new Date(x.created).toLocaleString('fa-IR');return '<tr><td>'+num+'</td><td>'+esc(typeLabel(t))+'</td><td>'+esc(plate)+'</td><td>'+cropCell(x,'goods',goods)+'</td><td>'+cropCell(x,'permit',permit)+'</td><td>'+cropCell(x,'first',first)+'</td><td>'+cropCell(x,'second',second)+'</td><td>'+cropCell(x,'net',net)+'</td><td>'+esc(created)+'</td><td>'+esc(x.createdByName||x.createdBy||'نامشخص')+'</td><td>'+esc(x.notes||'')+'</td></tr>'}).join('');const statsHtml='<section class="stats"><div><strong>تعداد کامیون صادراتی</strong><b>'+exportCount.toLocaleString('fa-IR')+'</b><small>ورودی صادراتی با برگه باسکول</small></div><div><strong>جمع تناژ صادرات</strong><b>'+exportTons.toLocaleString('fa-IR',{maximumFractionDigits:3})+' تن</b><small>بر اساس وزن خالص دستی</small></div><div><strong>تعداد کامیون وارداتی</strong><b>'+importCount.toLocaleString('fa-IR')+'</b><small>ورودی وارداتی با باسکول دستی</small></div><div><strong>جمع تناژ واردات</strong><b>'+importTons.toLocaleString('fa-IR',{maximumFractionDigits:3})+' تن</b><small>بر اساس وزن خالص دستی</small></div></section>';const detailsHtml='<table><thead><tr><th>ردیف</th><th>نوع ثبت</th><th>شماره پلاک</th><th>نوع کالا</th><th>شماره مجوز بارگیری</th><th>توزین اول</th><th>توزین دوم</th><th>وزن خالص</th><th>تاریخ و ساعت</th><th>ثبت‌کننده</th><th>توضیحات</th></tr></thead><tbody>'+rows+'</tbody></table>';let reportTitle='',reportBody='';if(mode==='export_tonnage'){reportTitle='گزارش تناژ صادرات';reportBody='<section class="stats"><div><strong>جمع تناژ صادرات</strong><b>'+exportTons.toLocaleString('fa-IR',{maximumFractionDigits:3})+' تن</b><small>مجموع وزن خالص دستی '+exportCount.toLocaleString('fa-IR')+' کامیون صادراتی</small></div></section>'}else if(mode==='import_tonnage'){reportTitle='گزارش تناژ واردات';reportBody='<section class="stats"><div><strong>جمع تناژ واردات</strong><b>'+importTons.toLocaleString('fa-IR',{maximumFractionDigits:3})+' تن</b><small>مجموع وزن خالص دستی '+importCount.toLocaleString('fa-IR')+' کامیون وارداتی</small></div></section>'}else if(mode==='overview'){reportTitle='گزارش کلی آمار صادرات و واردات';reportBody=statsHtml}else{reportTitle='گزارش جامع مشخصات کامیون‌ها';reportBody=statsHtml+detailsHtml}const datedRecords=data.map(x=>new Date(x.created).getTime()).filter(Number.isFinite),holidayStart=Number.isFinite(start)?start:(datedRecords.length?datedRecords.reduce((min,time)=>Math.min(min,time),Infinity):Date.now()),holidayEnd=Number.isFinite(end)?end:(datedRecords.length?datedRecords.reduce((max,time)=>Math.max(max,time),-Infinity):holidayStart),holidayRows=collectHolidayDays(holidayStart,holidayEnd),holidayHtml='<section class="stats"><div><strong>تعداد روزهای تعطیل در بازه</strong><b>'+holidayRows.length.toLocaleString('fa-IR')+'</b><small>جمعه‌ها و تعطیلی‌های موردی</small></div></section>'+(holidayRows.length?'<table><thead><tr><th>تاریخ</th><th>وضعیت</th></tr></thead><tbody>'+holidayRows.map(h=>'<tr><td>'+h.jalali+'</td><td>'+h.reason+'</td></tr>').join('')+'</tbody></table>':'<p>در این بازه روز تعطیلی ثبت نشده است.</p>');reportBody+=holidayHtml;let period=from||to?'بازه گزارش: '+(from||'ابتدای سوابق')+' تا '+(to||'انتهای سوابق'):'بازه گزارش: تمام سوابق';let html='<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(reportTitle)+'</title><style>body{font-family:Tahoma,Arial,sans-serif;margin:18px;color:#172b28}h2{text-align:center}table{width:100%;border-collapse:collapse}th,td{border:1px solid #777;text-align:center;padding:8px;font-size:12px}th{background:#e8efeb}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:16px 0}.stats div{border:1px solid #777;border-radius:8px;padding:12px;min-width:0;text-align:center}.stats strong,.stats b,.stats small{display:block}.stats b{font-size:22px;margin:8px 0}.stats small{font-size:11px;color:#555}.cropimg{max-width:110px;max-height:55px;object-fit:contain;display:block;margin:auto}</style></head><body><h2>'+esc(reportTitle)+'</h2><p>'+esc(period)+' ـ تعداد کل ثبت‌ها: '+data.length.toLocaleString('fa-IR')+' ـ تاریخ تهیه: '+new Date().toLocaleString('fa-IR')+'</p>'+reportBody+'</body></html>';return {html,reportTitle,reportBody,period,count:data.length,page,paged:mode==='comprehensive'&&data.length>pageSize,filename:'gomrokyar-'+mode+'-report'+(from?'-'+from.replaceAll('/','-'):'')+(to?'-'+to.replaceAll('/','-'):'')+'.html'};}
+let reportPreviewRevision=0;
+async function refreshReportPreview(page=0){
+ const revision=++reportPreviewRevision;
+ const result=await buildReport(Number.isInteger(page)?page:0);
+ if(revision!==reportPreviewRevision)return;
+ const box=$('reportPreview');
+ if(!result){box.innerHTML='<div class="small">برای نمایش گزارش، تاریخ و ساعت انتخاب‌شده را بررسی کن.</div>';return}
+ box.innerHTML='<h3>'+result.reportTitle+'</h3><div class="preview-meta">'+result.period+' · تعداد رکوردها: '+result.count.toLocaleString('fa-IR')+'</div><div class="preview-body">'+result.reportBody+'</div>';
+ if(result.paged)addRecordsPager(box,result.page,30,result.count,refreshReportPreview);
+}
 $('report').onclick=async()=>{const r=await buildReport();if(!r)return;try{if(window.AndroidBridge&&typeof AndroidBridge.saveReport==='function'){AndroidBridge.saveReport(r.filename,btoa(unescape(encodeURIComponent(r.html))));$('recordCount').textContent='درخواست ذخیره گزارش '+r.count.toLocaleString('fa-IR')+' رکوردی ارسال شد.'}else{let blob=new Blob([r.html],{type:'text/html;charset=utf-8'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=r.filename;a.style.display='none';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(u);a.remove()},60000);$('recordCount').textContent='فایل گزارش '+r.count.toLocaleString('fa-IR')+' رکوردی آماده دریافت است.'}}catch(err){let w=window.open('','_blank');if(w){w.document.open();w.document.write(r.html);w.document.close();alert('گزارش باز شد؛ از منوی مرورگر گزینه ذخیره یا چاپ را انتخاب کن.')}else alert('ذخیره گزارش ناموفق بود. دوباره تلاش کن.')}};
 $('reportMode')?.addEventListener('change',refreshReportPreview);['reportFrom','reportTo'].forEach(id=>$(id).addEventListener('change',refreshReportPreview));
 function transferKey(x){
@@ -1393,111 +1487,130 @@ function transferKey(x){
   const plate=normalizeDigits(String(x?.plateKey||x?.manualPlate||'')).replace(/[^0-9A-Za-z\u0600-\u06FF]/g,'').toLocaleUpperCase('fa');
   return JSON.stringify([plate,day]);
 }
-async function downloadJson(data,name){
-  const bridge=window.AndroidBridge,mime='application/gzip',gzipName=name.replace(/\.json$/i,'.json.gz');
-  if(bridge&&typeof bridge.beginGzipFileSave==='function'&&typeof bridge.appendFileSaveChunk==='function'&&typeof bridge.finishFileSave==='function'){
-    let begun=false;
-    try{
-      if(!bridge.beginGzipFileSave(gzipName,mime))throw new Error('شروع ذخیره فشرده ناموفق بود');
-      begun=true;
-      let pending='';
-      const flush=()=>{
-        if(!pending)return;
-        const bytes=new TextEncoder().encode(pending);let binary='';
-        for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
-        if(!bridge.appendFileSaveChunk(btoa(binary)))throw new Error('ارسال بخش فشرده ناموفق بود');
-        pending='';
-      };
-      const write=value=>{pending+=value;if(pending.length>=12000)flush()};
-      write('{');let first=true;
-      for(const key of Object.keys(data)){
-        const value=data[key];if(value===undefined)continue;
-        if(!first)write(',');first=false;
-        write(JSON.stringify(key)+':');
-        if(key==='records'&&Array.isArray(value)){
-          write('[');
-          for(let i=0;i<value.length;i++){
-            if(i)write(',');
-            const record={...value[i]};delete record._syncKey;
-            write(JSON.stringify(record));
-          }
-          write(']');
-        }else write(JSON.stringify(value));
-      }
-      write('}');flush();
-      if(!bridge.finishFileSave())throw new Error('پایان ذخیره فشرده ناموفق بود');
-      return true;
-    }catch(err){
-      if(begun&&typeof bridge.cancelFileSave==='function')bridge.cancelFileSave();
-      console.error('Android GZIP backup save failed',err);
-      alert('آماده‌سازی خروجی فشرده ناموفق بود. اطلاعات ثبت‌شده حذف نشده‌اند؛ دوباره تلاش کن.');
-      return false;
-    }
-  }
-  const compact=JSON.stringify(data,(key,value)=>key==='_syncKey'?undefined:value);
-  let bytes=new TextEncoder().encode(compact),fileName=name,mimeType='application/json;charset=utf-8';
-  if(typeof CompressionStream!=='undefined'){
-    try{
-      const stream=new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
-      bytes=new Uint8Array(await new Response(stream).arrayBuffer());
-      fileName=gzipName;mimeType='application/gzip';
-    }catch(err){console.warn('Browser GZIP unavailable; saving compact JSON',err)}
-  }
-  const blob=new Blob([bytes],{type:mimeType}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download=fileName;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
-  return true;
-}
-
-
-async function saveAutomaticBackup(data,name){
-  const bridge=window.AndroidBridge;
-  if(!bridge||typeof bridge.beginGzipFileSave!=='function'||typeof bridge.appendFileSaveChunk!=='function'||typeof bridge.finishAutomaticBackup!=='function')return false;
-  let begun=false;
-  try{
-    if(!bridge.beginGzipFileSave(name.replace(/\.json$/i,'.json.gz'),'application/gzip'))throw new Error('شروع فایل پشتیبان خودکار ناموفق بود');
-    begun=true;
-    let pending='';
-    const flush=()=>{
-      if(!pending)return;
-      const bytes=new TextEncoder().encode(pending);let binary='';
-      for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
-      if(!bridge.appendFileSaveChunk(btoa(binary)))throw new Error('نوشتن بخش فایل پشتیبان خودکار ناموفق بود');
-      pending='';
+// Consume each IndexedDB value before going to the next one, including photo-heavy records.
+function scanBackupRecords(visit){
+  return new Promise((resolve,reject)=>{
+    const transaction=db.transaction('records','readonly');
+    const req=transaction.objectStore('records').openCursor();
+    let failure;
+    req.onsuccess=()=>{
+      const cursor=req.result;
+      if(!cursor)return;
+      try{visit(cursor.value);cursor.continue();}
+      catch(error){failure=error;transaction.abort();}
     };
-    const write=value=>{pending+=value;if(pending.length>=12000)flush()};
-    write('{');let first=true;
-    for(const key of Object.keys(data)){
-      const value=data[key];if(value===undefined)continue;
-      if(!first)write(',');first=false;
-      write(JSON.stringify(key)+':');
-      if(key==='records'&&Array.isArray(value)){
-        write('[');
-        for(let i=0;i<value.length;i++){if(i)write(',');write(JSON.stringify(value[i]));}
-        write(']');
-      }else write(JSON.stringify(value));
-    }
-    write('}');flush();
-    if(!bridge.finishAutomaticBackup())throw new Error('ذخیره نهایی فایل پشتیبان خودکار ناموفق بود');
-    return true;
-  }catch(err){
-    if(begun&&typeof bridge.cancelFileSave==='function')bridge.cancelFileSave();
-    console.error('Automatic backup failed',err);
-    return false;
-  }
+    transaction.oncomplete=resolve;
+    transaction.onabort=()=>reject(failure||transaction.error||new Error('Record scan aborted'));
+  });
 }
-async function buildAutomaticBackupPayload(records,exportType,range={}){
-  const maxNo=records.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);
-  const data={format:'gomrokyar-transfer',version:4,exportType,automatic:true,exportedAt:new Date().toISOString(),
-    records:records.map(x=>{const r={...x};delete r._syncKey;return r}),
-    nextEntryNo:Math.max(Number(await setting('nextEntryNo'))||1,maxNo+1)};
+// Keep image data in IndexedDB until a record is displayed or exported.
+function recordSummary(record){
+ const {crops,original,...summary}=record;
+ return summary;
+}
+async function allRecordSummaries(includeDeleted=false){
+ const records=[];
+ await scanBackupRecords(record=>{if(includeDeleted||!record.isDeleted)records.push(recordSummary(record))});
+ return records;
+}
+function getRecordById(id){
+ return new Promise((resolve,reject)=>{
+  const request=tx('records').get(Number(id));
+  request.onsuccess=()=>resolve(request.result);
+  request.onerror=()=>reject(request.error);
+ });
+}
+async function fullRecordsFor(summaries){
+ const records=[];
+ for(const summary of summaries){
+  const record=await getRecordById(summary.id);
+  if(record)records.push(record);
+ }
+ return records;
+}
+function backupYield(){return new Promise(resolve=>setTimeout(resolve,0))}
+let backupWriteQueue=Promise.resolve();
+function queueBackupWrite(work){
+  const task=backupWriteQueue.then(work);
+  backupWriteQueue=task.catch(()=>{});
+  return task;
+}
+async function streamBackupArchive(name,exportType,options={}){
+  const bridge=window.AndroidBridge,automatic=!!options.automatic;
+  const native=bridge&&typeof bridge.appendBackupText==='function';
+  if(automatic&&!native)throw new Error('Automatic backup storage unavailable');
+  const data={format:'gomrokyar-transfer',version:4,exportType,exportedAt:new Date().toISOString()};
+  if(automatic)data.automatic=true;
+  if(options.metadata)Object.assign(data,options.metadata);
+  if(options.start)data.periodStart=options.start;
+  if(options.end)data.periodEnd=options.end;
   if(exportType==='full_backup'){
-    data.holidays=holidayDatesCache;
+    data.holidays=await setting('customHolidayDates')||[];
     data.regions=await setting('regions');
     data.templateMode=await setting('templateMode');
   }
-  if(range.start)data.periodStart=range.start;
-  if(range.end)data.periodEnd=range.end;
-  return data;
+  let maxNo=Number(await setting('nextEntryNo'))||1;
+  let count=0,pending='',begun=false;
+  const parts=[];
+  function flush(){
+    if(!pending)return;
+    if(native){
+      if(!bridge.appendBackupText(pending))throw new Error('Could not write backup');
+    }else parts.push(new Blob([pending]));
+    pending='';
+  }
+  function write(value){
+    // Limit each JavaScript bridge call, including when a single record contains a large image.
+    const chunkSize=131072;
+    for(let start=0;start<value.length;){
+      let end=Math.min(start+chunkSize,value.length);
+      if(end<value.length&&/[\uD800-\uDBFF]/.test(value.charAt(end-1)))end--;
+      pending+=value.slice(start,end);
+      if(pending.length>=chunkSize)flush();
+      start=end;
+    }
+  }
+  function begin(){
+    if(native&&!bridge.beginGzipFileSave(name.replace(/\.json$/i,'.json.gz'),'application/gzip')){
+      throw new Error('Could not open backup destination');
+    }
+    begun=true;
+    write(JSON.stringify(data).slice(0,-1)+',"records":[');
+  }
+  try{
+    const range=options.startDate&&[options.startDate.getTime(),autoBackupAddDays(options.endDate,1).getTime()];
+    if(!range||data.holidays?.length)begin();
+    await scanBackupRecords(record=>{
+      if(options.excludeDeleted&&record.isDeleted)return;
+      if(range){
+        const timestamp=Date.parse(record.created);
+        if(!(timestamp>=range[0]&&timestamp<range[1]))return;
+      }
+      if(!begun)begin();
+      if(count)write(',');
+      delete record._syncKey;
+      write(JSON.stringify(record));
+      count++;
+      maxNo=Math.max(maxNo,(Number(record.entryNo)||Number(record.id)||0)+1);
+      if(!automatic&&count%100===0)$('backupStatus').textContent='در حال آماده‌سازی خروجی؛ '+count.toLocaleString('fa-IR')+' سابقه…';
+    });
+    if(!begun)return 0;
+    write('],"recordCount":'+count+',"nextEntryNo":'+maxNo+'}');
+    flush();
+    if(native){
+      const saved=automatic?bridge.finishAutomaticBackup():bridge.finishFileSave();
+      if(!saved)throw new Error('Could not finalize backup');
+    }else{
+      const url=URL.createObjectURL(new Blob(parts,{type:'application/json;charset=utf-8'}));
+      const link=document.createElement('a');
+      link.href=url;link.download=name;document.body.appendChild(link);link.click();link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),60000);
+    }
+    return count;
+  }catch(error){
+    if(native&&begun)bridge.cancelFileSave();
+    throw error;
+  }
 }
 function showAutomaticBackupNotice(message,done=false){
   const id='automaticBackupNotice';
@@ -1538,155 +1651,142 @@ function autoBackupWeeklyInfo(start){
     startDate:new Date(start.getFullYear(),start.getMonth(),start.getDate()),
     endDate:new Date(end.getFullYear(),end.getMonth(),end.getDate())};
 }
-function autoBackupRecordsInRange(records,start,end){
-  const from=new Date(start.getFullYear(),start.getMonth(),start.getDate()).getTime();
-  const until=autoBackupAddDays(end,1).getTime();
-  return records.filter(x=>{const t=Date.parse(x.created);return Number.isFinite(t)&&t>=from&&t<until});
-}
-async function saveAutomaticArchive(records,name,exportType,range){
-  if(!records.length)return true;
-  showAutomaticBackupNotice(exportType==='weekly_backup'?'در حال تهیه پشتیبان هفتگی...':'در حال تهیه پشتیبان روزانه...');
-  const data=await buildAutomaticBackupPayload(records,exportType,range);
-  const saved=await saveAutomaticBackup(data,name);
-  if(saved){
-    const message=(exportType==='weekly_backup'?'پشتیبان هفتگی':'پشتیبان روزانه')+' با موفقیت ذخیره شد؛ '+records.length.toLocaleString('fa-IR')+' سابقه.';
-    const status=$('backupStatus');if(status)status.textContent=message;
+async function saveAutomaticArchive(info,exportType){
+  const label=exportType==='weekly_backup'?'پشتیبان هفتگی':'پشتیبان روزانه';
+  showAutomaticBackupNotice('در حال تهیه '+label+'…');
+  const count=await streamBackupArchive(info.name,exportType,{...info,automatic:true});
+  if(count){
+    const message=label+' ذخیره شد؛ '+count.toLocaleString('fa-IR')+' سابقه.';
+    $('backupStatus').textContent=message;
     showAutomaticBackupNotice(message,true);
-  }else{
-    const message='ذخیره پشتیبان خودکار انجام نشد؛ فایل‌های قبلی حفظ شدند و برنامه در نوبت بعد دوباره تلاش می‌کند.';
-    const status=$('backupStatus');if(status)status.textContent=message;
-    showAutomaticBackupNotice(message,true);
-  }
-  return saved;
+  }else document.getElementById('automaticBackupNotice')?.remove();
+  return count;
 }
 async function createInitialAutomaticBackup(){
   if((await setting('autoBackupEnabled'))===false)return false;
   if(await setting('autoBackupBaselineCreated'))return true;
-  const records=await allRecords(true);
-  const maxNo=records.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);
-  const data=await buildAutomaticBackupPayload(records,'full_backup');
-  const name='gomrokyar-auto-base-'+localISODate()+'-'+Date.now()+'.json.gz';
-  showAutomaticBackupNotice('در حال تهیه پشتیبان اولیه کامل گمرکیار...');
-  const saved=await saveAutomaticBackup(data,name);
-  if(!saved){
-    const status=$('backupStatus');if(status)status.textContent='تهیه پشتیبان اولیه ناموفق بود؛ شمارنده ۵۰ ثبت حفظ شده و دوباره تلاش می‌شود.';
-    showAutomaticBackupNotice('تهیه پشتیبان اولیه ناموفق بود؛ اطلاعات قبلی حذف نشد.',true);
-    return false;
-  }
-  const todayKey=localISODate(new Date());
-  await setting('autoBackupBaselineCreated',true);
+  const todayKey=localISODate();
+  const name='gomrokyar-auto-base-'+todayKey+'-'+Date.now()+'.json.gz';
+  showAutomaticBackupNotice('در حال تهیه پشتیبان اولیه کامل گمرکیار…');
+  const count=await streamBackupArchive(name,'full_backup',{automatic:true});
   await setting('autoBackupStartDate',todayKey);
-  await setting('autoBackupDailyDone',[]);
-  await setting('autoBackupWeeklyArchives',[]);
   await setting('autoBackupPendingCount',0);
-  refreshReportBackupCounter();
-  const status=$('backupStatus');if(status)status.textContent='پشتیبان اولیه کامل با '+records.length.toLocaleString('fa-IR')+' سابقه ذخیره شد؛ از این پس پشتیبان‌گیری روزانه و هفتگی فعال است.';
-  showAutomaticBackupNotice('پشتیبان اولیه کامل ذخیره شد؛ پشتیبان‌گیری روزانه و هفتگی فعال شد.',true);
+  await setting('autoBackupBaselineCreated',true);
+  await refreshReportBackupCounter();
+  const message='پشتیبان اولیه کامل با '+count.toLocaleString('fa-IR')+' سابقه ذخیره شد.';
+  $('backupStatus').textContent=message;
+  showAutomaticBackupNotice(message,true);
   return true;
 }
-async function runAutomaticBackupMaintenance(changedRecord=null){
-  try{
-    if((await setting('autoBackupEnabled'))===false)return false;
-    if(!(await setting('autoBackupBaselineCreated'))){
-      const count=Number(await setting('autoBackupPendingCount'))||0;
-      if(count>=50)await createInitialAutomaticBackup();
-      return;
-    }
-    const today=new Date();today.setHours(0,0,0,0);
-    const startKey=await setting('autoBackupStartDate')||localISODate(today);
-    const startDate=autoBackupDateFromKey(startKey)||today;
-    let dailyDone=new Set((await setting('autoBackupDailyDone'))||[]);
-    let weeklyArchives=await setting('autoBackupWeeklyArchives')||[];
-    let records=null;const loadRecords=async()=>{if(!records)records=await allRecords(true);return records};
-    const bridge=window.AndroidBridge;
-    const changedDate=changedRecord&&changedRecord.created?new Date(changedRecord.created):null;
-    if(changedDate&&Number.isFinite(changedDate.getTime())){
-      changedDate.setHours(0,0,0,0);
-      if(changedDate<today&&(await setting('autoBackupRetroactiveEnabled'))!==false){
-        const key=autoBackupDateKey(changedDate);
-        const archivedWeek=weeklyArchives.find(w=>key>=w.start&&key<=w.end);
-        if(archivedWeek){
-          const info={start:archivedWeek.start,end:archivedWeek.end,name:archivedWeek.name};
-          const from=autoBackupDateFromKey(info.start),to=autoBackupDateFromKey(info.end);
-          const weekRecords=autoBackupRecordsInRange(await loadRecords(),from,to);
-          if(weekRecords.length){
-            const saved=await saveAutomaticArchive(weekRecords,info.name,'weekly_backup',info);
-            if(!saved)return false;
-          }
-        }else{
-          const dayRecords=(await loadRecords()).filter(x=>x.created&&autoBackupDateKey(new Date(x.created))===key);
-          if(dayRecords.length){
-            const saved=await saveAutomaticArchive(dayRecords,autoBackupDailyName(changedDate),'daily_backup',{start:key,end:key});
-            if(!saved)return false;
-          }
-          dailyDone.add(key);
+function dailyBackupInfo(date){
+  const key=autoBackupDateKey(date);
+  return {start:key,end:key,startDate:date,endDate:date,name:autoBackupDailyName(date)};
+}
+async function maintainAutomaticBackups(changedRecord=null){
+  const bridge=window.AndroidBridge;
+  if(!bridge||typeof bridge.appendBackupText!=='function'||(await setting('autoBackupEnabled'))===false)return;
+  if(!(await setting('autoBackupBaselineCreated'))){
+    if((Number(await setting('autoBackupPendingCount'))||0)>=50)await createInitialAutomaticBackup();
+    return;
+  }
+  const today=new Date();today.setHours(0,0,0,0);
+  if(today.getDay()===5)return;
+  const currentWeek=autoBackupWeekStart(today);
+  const startDate=autoBackupDateFromKey(await setting('autoBackupStartDate'))||today;
+  const startKey=autoBackupDateKey(startDate);
+  const dailyDone=new Set(await setting('autoBackupDailyDone')||[]);
+  const archives=await setting('autoBackupWeeklyArchives')||[];
+  const byWeek=new Map(archives.map(archive=>[archive.start,archive]));
+  const previousDate=changedRecord&&changedRecord.created?new Date(changedRecord.created):null;
+  if(previousDate)previousDate.setHours(0,0,0,0);
+  const retro=previousDate&&previousDate<today&&previousDate.getDay()!==5&&
+    (await setting('autoBackupRetroactiveEnabled'))!==false;
+  const retroWeek=retro?autoBackupDateKey(autoBackupWeekStart(previousDate)):null;
+  const rebuilt=new Set();
+  // Completed weeks are written first, so a Saturday never has to make Thursday's daily file just to delete it.
+  for(let week=autoBackupWeekStart(startDate);week<currentWeek;week=autoBackupAddDays(week,7)){
+    const weekKey=autoBackupDateKey(week);
+    let archive=byWeek.get(weekKey);
+    if(archive&&!archive.cleanupPending&&retroWeek!==weekKey)continue;
+    const info=autoBackupWeeklyInfo(week);
+    if(info.end<startKey)continue;
+    if(!archive||retroWeek===info.start){
+      const count=await saveAutomaticArchive(info,'weekly_backup');
+      rebuilt.add(info.start);
+      if(count||!archive){
+        if(!archive){
+          archive={start:info.start,end:info.end,name:info.name,createdAt:new Date().toISOString()};
+          archives.push(archive);byWeek.set(info.start,archive);
         }
+        // Empty weeks have no archive on disk, so their daily files must be retained.
+        archive.cleanupPending=!!count;
+        await setting('autoBackupWeeklyArchives',archives);
       }
     }
-    let cursor=new Date(startDate.getFullYear(),startDate.getMonth(),startDate.getDate());
-    while(cursor<today){
-      const key=autoBackupDateKey(cursor);
-      if(!dailyDone.has(key)){
-        const dayRecords=(await loadRecords()).filter(x=>x.created&&autoBackupDateKey(new Date(x.created))===key);
-        if(dayRecords.length){
-          const saved=await saveAutomaticArchive(dayRecords,autoBackupDailyName(cursor),'daily_backup',{start:key,end:key});
-          if(!saved){await setting('autoBackupDailyDone',[...dailyDone]);return false}
-        }
-        dailyDone.add(key);
-        await setting('autoBackupDailyDone',[...dailyDone]);
+    if(archive.cleanupPending){
+      let deleted=true;
+      for(let day=info.startDate;day<=info.endDate;day=autoBackupAddDays(day,1)){
+        const key=autoBackupDateKey(day);
+        const name=autoBackupDailyName(day);
+        if(bridge.deleteAutomaticBackup(name)){
+          dailyDone.delete(key);
+        }else deleted=false;
       }
-      cursor=autoBackupAddDays(cursor,1);
-    }
-    const currentWeekStart=autoBackupWeekStart(today);
-    let weekStart=autoBackupWeekStart(startDate);
-    while(weekStart<currentWeekStart){
-      const info=autoBackupWeeklyInfo(weekStart);
-      if(info.end>=startKey&&!weeklyArchives.some(w=>w.start===info.start)){
-        const weekRecords=autoBackupRecordsInRange(await loadRecords(),info.startDate,info.endDate);
-        if(weekRecords.length){
-          const saved=await saveAutomaticArchive(weekRecords,info.name,'weekly_backup',info);
-          if(!saved){await setting('autoBackupDailyDone',[...dailyDone]);return false}
-        }
-        if(bridge&&typeof bridge.deleteAutomaticBackup==='function'){
-          let day=info.startDate;
-          while(day<=info.endDate){
-            const dailyName=autoBackupDailyName(day);
-            try{bridge.deleteAutomaticBackup(dailyName)}catch(err){console.warn('Could not remove merged daily backup',dailyName,err)}
-            day=autoBackupAddDays(day,1);
-          }
-        }
-        weeklyArchives.push({start:info.start,end:info.end,name:info.name,createdAt:new Date().toISOString()});
-        await setting('autoBackupWeeklyArchives',weeklyArchives);
+      await setting('autoBackupDailyDone',[...dailyDone]);
+      if(deleted){
+        archive.cleanupPending=false;
+        await setting('autoBackupWeeklyArchives',archives);
+      }else{
+        const message='آرشیو هفتگی ذخیره شده است. پاک‌سازی بعضی پشتیبان‌های روزانه در نوبت بعد دوباره انجام می‌شود.';
+        $('backupStatus').textContent=message;showAutomaticBackupNotice(message,true);
       }
-      weekStart=autoBackupAddDays(weekStart,7);
     }
+  }
+  if(retro&&!rebuilt.has(retroWeek)){
+    const info=dailyBackupInfo(previousDate);
+    if(byWeek.has(retroWeek)){
+      const archive=autoBackupWeeklyInfo(autoBackupWeekStart(previousDate));
+      await saveAutomaticArchive(archive,'weekly_backup');
+    }else{
+      await saveAutomaticArchive(info,'daily_backup');
+      dailyDone.add(info.start);
+      await setting('autoBackupDailyDone',[...dailyDone]);
+    }
+  }
+  for(let day=startDate>currentWeek?startDate:currentWeek;day<today;day=autoBackupAddDays(day,1)){
+    if(day.getDay()===5)continue;
+    const info=dailyBackupInfo(day);
+    if(dailyDone.has(info.start))continue;
+    await saveAutomaticArchive(info,'daily_backup');
+    dailyDone.add(info.start);
     await setting('autoBackupDailyDone',[...dailyDone]);
-    await setting('autoBackupWeeklyArchives',weeklyArchives);
-    return true;
-  }catch(err){
-    console.error('Automatic backup maintenance failed',err);
-    const status=$('backupStatus');if(status)status.textContent='بررسی پشتیبان‌های روزانه و هفتگی با خطا روبه‌رو شد؛ فایل‌های قبلی حذف نشدند.';
-    showAutomaticBackupNotice('بررسی پشتیبان‌های خودکار با خطا روبه‌رو شد؛ نسخه‌های قبلی حفظ شدند.',true);
-    return false;
   }
 }
-async function afterSuccessfulRecordSave(record=null){
-  try{
-    if((await setting('autoBackupEnabled'))===false){refreshReportBackupCounter();return;}
-    if(!(await setting('autoBackupBaselineCreated'))){
-      let pendingCount=Number(await setting('autoBackupPendingCount'))||0;
-      pendingCount++;
-      await setting('autoBackupPendingCount',pendingCount);
-      refreshReportBackupCounter();
-      if(pendingCount>=50)await createInitialAutomaticBackup();
-      return;
+function scheduleAutomaticBackups(changedRecord=null,countSave=false){
+  return queueBackupWrite(async()=>{
+    try{
+      if(countSave&&(await setting('autoBackupEnabled'))!==false&&!(await setting('autoBackupBaselineCreated'))){
+        const count=Number(await setting('autoBackupPendingCount'))||0;
+        await setting('autoBackupPendingCount',count+1);
+        await refreshReportBackupCounter();
+      }
+      await maintainAutomaticBackups(changedRecord);
+    }catch(error){
+      console.error('Automatic backup maintenance failed',error);
+      const message='پشتیبان‌گیری خودکار کامل نشد؛ برنامه در نوبت بعد دوباره تلاش می‌کند.';
+      $('backupStatus').textContent=message;showAutomaticBackupNotice(message,true);
     }
-    await runAutomaticBackupMaintenance(record);
-  }catch(err){
-    console.error('Automatic backup preparation failed',err);
-    const status=$('backupStatus');if(status)status.textContent='آماده‌سازی پشتیبان خودکار با خطا روبه‌رو شد؛ شمارنده و فایل‌های قبلی حفظ شده‌اند.';
-  }
+  });
 }
+function runAutomaticBackupMaintenance(changedRecord=null){return scheduleAutomaticBackups(changedRecord)}
+function afterSuccessfulRecordSave(record=null){return scheduleAutomaticBackups(record,true)}
+// Observe the existing app gate so a successful login starts maintenance without changing authentication.
+new MutationObserver(()=>{
+  if($('authGate').style.display==='none'&&currentUser)runAutomaticBackupMaintenance();
+}).observe($('authGate'),{attributes:true,attributeFilter:['style']});
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&currentUser&&$('authGate').style.display==='none')runAutomaticBackupMaintenance();
+});
 
 function excelXmlText(value){return String(value??'').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;')}
 function excelCell(value,style){return '<c'+(style?' s="'+style+'"':'')+' t="inlineStr"><is><t xml:space="preserve">'+excelXmlText(value)+'</t></is></c>'}
@@ -1738,7 +1838,7 @@ async function downloadTopTruckColorExcel(trucks,color){
   addRow(['پرونده پلاک '+(truck.plate||truck.key),'تعداد تردد',sorted.length.toLocaleString('fa-IR'),'اختلاف وزن خالی',diff===null?'قابل محاسبه نیست':diff.toLocaleString('fa-IR')+' کیلوگرم'],28,4);
   addRow(headers,30,1);
   for(const record of sorted){
-   const crop=record.crops&&record.crops.permit,cropUrl=typeof crop==='string'?crop:(crop&&typeof crop==='object'?[crop.dataUrl,crop.src,crop.image].find(v=>typeof v==='string'&&v.startsWith('data:image/')):'');
+   const crop=(await getRecordById(record.id))?.crops?.permit,cropUrl=typeof crop==='string'?crop:(crop&&typeof crop==='object'?[crop.dataUrl,crop.src,crop.image].find(v=>typeof v==='string'&&v.startsWith('data:image/')):'');
    const values=[record.created?new Date(record.created).toLocaleString('fa-IR'):'نامشخص',typeLabel(record.eventType||'weighed'),record.manualPlate||record.plateKey||truck.plate||'',record.firstWeight??record.emptyWeight??record.first_weight??record.weight1??'ثبت نشده',record.category||record.goodsText||'ثبت نشده',record.permitNo||'ثبت نشده',cropUrl?'تصویر درج شده':'تصویر موجود نیست'];
    const sheetRow=rowNo;addRow(values,86,3);entryCount++;
    if(cropUrl&&/^data:image\/(jpeg|jpg|png);base64,/i.test(cropUrl)){
@@ -1791,7 +1891,7 @@ async function downloadHistoryExcel(rows,meta){
  rowsXml.push('<row r="5" ht="8" customHeight="1"></row>');
  rowsXml.push('<row r="6" ht="30" customHeight="1">'+headers.map(v=>excelCell(v,1)).join('')+'</row>');
  for(let i=0;i<rows.length;i++){
-  const x=rows[i],sheetRow=i+7,crops=x.crops||{},values=[Number(x.entryNo)||Number(x.id)||i+1,typeLabel(x.eventType||'weighed'),x.manualPlate||x.plateKey||meta.plate,x.goodsText||'',x.originText||'',x.permitNo||'',x.firstWeight||'',x.secondWeight||'',x.netWeight||'',new Date(x.created).toLocaleString('fa-IR'),x.createdByName||x.createdBy||'نامشخص',x.description||x.notes||''];
+  const x=rows[i],sheetRow=i+7,crops=(await getRecordById(x.id))?.crops||{},values=[Number(x.entryNo)||Number(x.id)||i+1,typeLabel(x.eventType||'weighed'),x.manualPlate||x.plateKey||meta.plate,x.goodsText||'',x.originText||'',x.permitNo||'',x.firstWeight||'',x.secondWeight||'',x.netWeight||'',new Date(x.created).toLocaleString('fa-IR'),x.createdByName||x.createdBy||'نامشخص',x.description||x.notes||''];
   rowsXml.push('<row r="'+sheetRow+'" ht="64" customHeight="1">'+values.map((v,j)=>excelCell(v,j>=3&&j<=8?3:0)).join('')+'</row>');
   for(const [key,col] of imageFields){
    const src=crops[key];if(!src||!/^data:image\/(jpeg|jpg|png);base64,/i.test(src))continue;
@@ -1829,7 +1929,7 @@ function localISODate(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth(
 $('transferDate').value=jalaliDisplay(new Date());['recordDate','impInRecordDate','emptyRecordDate','exitRecordDate'].forEach(id=>$(id).value=jalaliDisplay(new Date()));
 function renderDailyRecords(){
  const parsedDay=parseJalaliDate($('dailyDate').value),day=parsedDay?localISODate(parsedDay):'',q=onlyPlateDigits($('dailyPlateCity').value+$('dailyPlateMiddle').value+$('dailyPlateSuffix').value),selectedType=$('dailyTypeFilter').value||'all';
- allRecords().then(async all=>{
+ allRecordSummaries().then(async all=>{
   await refreshHolidayCache();const holiday=parsedDay?holidayInfo(parsedDay):{holiday:false,reason:''};
   const dayEntries=all.filter(x=>day&&localISODate(new Date(x.created))===day).sort((a,b)=>(Number(b.entryNo)||Number(b.id)||0)-(Number(a.entryNo)||Number(a.id)||0));
   const entries=dayEntries.filter(x=>selectedType==='all'||(x.eventType||'weighed')===selectedType);
@@ -1877,7 +1977,7 @@ function openDailyEdit(record){
 }
 async function saveDailyEdit(){
  const id=pendingDailyEditId;if(!id)return;
- const all=await allRecords(),record=all.find(x=>Number(x.id)===id);if(!record)return;
+ const record=await getRecordById(id);if(!record||record.isDeleted)return;
  const kind=record.eventType||'weighed';
  if(kind==='weighed'){
   const category=$('editCategory').value.trim(),first=$('editFirst').value.trim();
@@ -1902,11 +2002,11 @@ async function saveDailyEdit(){
   await renderRecords();await refreshReportPreview();renderDailyRecords();returnToPendingRegistrationAfterEdit();
  }catch(e){$('dailyEditStatus').textContent='ذخیره ویرایش انجام نشد؛ دوباره تلاش کن.'}
 }
-$('topTruckDetails')?.addEventListener('click',async event=>{const button=event.target.closest('[data-top-record-edit]');if(!button)return;const id=Number(button.dataset.topRecordEdit),records=await allRecords(),record=records.find(item=>Number(item.id)===id);if(record)openDailyEdit(record)});
+$('topTruckDetails')?.addEventListener('click',async event=>{const button=event.target.closest('[data-top-record-edit]');if(!button)return;const id=Number(button.dataset.topRecordEdit),record=await getRecordById(id);if(record&&!record.isDeleted)openDailyEdit(record)});
 async function confirmDailyDelete(){
  const id=pendingDailyDeleteId;if(!id)return;
  const reason=$('dailyDeleteReason').value.trim();if(!reason){$('dailyDeleteStatus').textContent='نوشتن علت حذف الزامی است.';return}
- const all=await allRecords(),record=all.find(x=>Number(x.id)===id);if(!record)return;
+ const record=await getRecordById(id);if(!record||record.isDeleted)return;
  const updated={...record,isDeleted:true,deletedAt:new Date().toISOString(),deletionReason:reason};
  try{
   await new Promise((resolve,reject)=>{const req=tx('records','readwrite').put(updated);req.onsuccess=resolve;req.onerror=()=>reject(req.error)});
@@ -1915,7 +2015,7 @@ async function confirmDailyDelete(){
  }catch(e){$('dailyDeleteStatus').textContent='حذف ثبت انجام نشد؛ دوباره تلاش کن.'}
 }
 async function renderDeletedRecords(){
- const all=await allRecords(true),deleted=all.filter(x=>x.isDeleted).sort((a,b)=>new Date(b.deletedAt||0)-new Date(a.deletedAt||0));
+ const all=await allRecordSummaries(true),deleted=all.filter(x=>x.isDeleted).sort((a,b)=>new Date(b.deletedAt||0)-new Date(a.deletedAt||0));
  $('deletedRecordCount').textContent='تعداد سوابق حذف‌شده: '+deleted.length.toLocaleString('fa-IR');
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  $('deletedRecordList').innerHTML=deleted.length?deleted.map(x=>'<div class="record"><b>ردیف '+(Number(x.entryNo)||Number(x.id)||0).toLocaleString('fa-IR')+' ـ '+esc(typeLabel(x.eventType||'weighed'))+'</b><div>پلاک: '+esc(x.manualPlate||x.plateKey||'ثبت نشده')+'</div><div class="small">زمان حذف: '+esc(x.deletedAt?new Date(x.deletedAt).toLocaleString('fa-IR'):'—')+'</div><div class="daily-record-actions"><button type="button" class="secondary" data-deleted-action="info" data-record-id="'+Number(x.id)+'">اطلاعات</button><button type="button" data-deleted-action="reason" data-record-id="'+Number(x.id)+'">علت حذف</button><button type="button" class="danger" data-deleted-action="delete" data-record-id="'+Number(x.id)+'">حذف</button></div></div>').join(''):'<div class="hint">هنوز موردی در سوابق حذف ثبت نشده است.</div>';
@@ -1936,7 +2036,7 @@ async function confirmPermanentDelete(){
 }
 async function handleDeletedRecordAction(event){
  const button=event.target.closest('[data-deleted-action]');if(!button)return;
- const id=Number(button.dataset.recordId),all=await allRecords(true),record=all.find(x=>Number(x.id)===id&&x.isDeleted);if(!record)return;
+ const id=Number(button.dataset.recordId),record=await getRecordById(id);if(!record?.isDeleted)return;
  if(button.dataset.deletedAction==='info'){showDailyRecordInfo(record);return}
  if(button.dataset.deletedAction==='delete'){openPermanentDelete(record);return}
  $('deletedReasonTitle').textContent='علت حذف ردیف '+(Number(record.entryNo)||record.id)+' ـ '+(record.manualPlate||record.plateKey||'بدون پلاک');
@@ -1947,7 +2047,7 @@ async function handleDeletedRecordAction(event){
 async function handleDailyRecordAction(event){
  const button=event.target.closest('[data-daily-action]');if(!button)return;
  const id=Number(button.dataset.recordId);if(!Number.isFinite(id)||id<=0)return;
- const all=await allRecords(),record=all.find(x=>Number(x.id)===id);if(!record)return;
+ const record=await getRecordById(id);if(!record||record.isDeleted)return;
  if(button.dataset.dailyAction==='info'){showDailyRecordInfo(record);return}
  if(button.dataset.dailyAction==='edit'){openDailyEdit(record);return}
  if(button.dataset.dailyAction==='delete'){openDailyDelete(record);return}
@@ -1989,24 +2089,61 @@ document.querySelectorAll('[data-daily-view]').forEach(b=>b.addEventListener('cl
 }));
 
 $('export').onclick=async()=>{
-  const records=await allRecords(true),maxNo=records.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0);
-  const data={format:'gomrokyar-transfer',version:4,exportType:'full_backup',exportedAt:new Date().toISOString(),records:records.map(x=>{const r={...x};delete r._syncKey;return r}),holidays:await setting('customHolidayDates')||[],regions:await setting('regions'),templateMode:await setting('templateMode'),nextEntryNo:Math.max(Number(await setting('nextEntryNo'))||1,maxNo+1)};
-  await downloadJson(data,'gomrokyar-full-backup-'+localISODate()+'.json');
+  const button=$('export'),status=$('backupStatus');
+  button.disabled=true;
+  status.textContent='در حال آماده‌سازی خروجی کامل…';
+  try{
+    const count=await queueBackupWrite(()=>streamBackupArchive('gomrokyar-full-backup-'+localISODate()+'.json','full_backup'));
+    status.textContent='خروجی کامل با '+count.toLocaleString('fa-IR')+' سابقه آماده ذخیره است.';
+  }catch(error){
+    console.error('Full backup export failed',error);
+    status.textContent='آماده‌سازی خروجی کامل ناموفق بود. دوباره تلاش کن.';
+  }finally{button.disabled=false}
 };
-$('exportDay').onclick=async()=>{
-  const selected=parseJalaliDate($('transferDate').value),day=selected?localISODate(selected):'';if(!day){alert('تاریخ شمسی معتبر را انتخاب کن.');return}
-  const all=await allRecords(true),records=all.filter(x=>!x.isDeleted&&localISODate(new Date(x.created))===day);
-  await refreshHolidayCache();const holidayDays=collectHolidayDays(selected.getTime(),selected.getTime());if(!records.length&&!holidayDays.length){alert('برای این تاریخ سابقه‌ای ثبت نشده و روز نیز تعطیل نیست.');return}
-  const data={format:'gomrokyar-transfer',version:4,exportType:'daily',date:day,exportedAt:new Date().toISOString(),records:records.map(x=>{const r={...x};delete r._syncKey;return r}),holidays:holidayDays};
-  await downloadJson(data,'gomrokyar-daily-'+day+'.json');
-  $('backupStatus').textContent='خروجی روز '+day+' شامل '+records.length.toLocaleString('fa-IR')+' سابقه آماده ارسال شد.';
+async function exportBackupPeriod(button,from,to,rangeExport){
+  const start=localISODate(from),end=localISODate(to);
+  const name=rangeExport?'gomrokyar-'+(start===end?'daily-':'range-')+start+'-'+end:'gomrokyar-daily-'+start;
+  const status=$('backupStatus');
+  button.disabled=true;
+  status.textContent='در حال آماده‌سازی خروجی…';
+  try{
+    await refreshHolidayCache();
+    const holidays=collectHolidayDays(from.getTime(),to.getTime());
+    const metadata={holidays};
+    if(start===end)metadata.date=start;
+    if(rangeExport){metadata.rangeStart=start;metadata.rangeEnd=end;}
+    const count=await queueBackupWrite(()=>streamBackupArchive(name+'.json',start===end?'daily':'date_range',{
+      startDate:from,endDate:to,excludeDeleted:true,metadata
+    }));
+    status.textContent=count||holidays.length?'خروجی با '+count.toLocaleString('fa-IR')+' سابقه آماده ذخیره است.':'در بازه انتخاب‌شده سابقه یا تعطیلی وجود ندارد.';
+  }catch(error){
+    console.error('Period backup export failed',error);
+    status.textContent='آماده‌سازی خروجی ناموفق بود. دوباره تلاش کن.';
+  }finally{button.disabled=false}
+}
+$('exportDay').onclick=()=>{
+  const selected=parseJalaliDate($('transferDate').value);
+  if(!selected){alert('تاریخ شمسی معتبر را انتخاب کن.');return}
+  return exportBackupPeriod($('exportDay'),selected,selected,false);
 };
-async function loadAutomaticBackupList(){
- const box=$('automaticBackupList');if(!box)return;
- const bridge=window.AndroidBridge;
- if(!bridge||typeof bridge.getAutomaticBackups!=='function'){box.textContent='نمایش فهرست فایل‌ها فقط در نسخه نصب‌شده اندروید در دسترس است.';return}
+let automaticBackupListRequest=0,automaticBackupListLoading=false;
+function loadAutomaticBackupList(){
+ const box=$('automaticBackupList'),bridge=window.AndroidBridge;
+ if(!bridge||typeof bridge.requestAutomaticBackups!=='function'){
+  box.textContent='نمایش فهرست فایل‌ها فقط در نسخه نصب‌شده اندروید در دسترس است.';
+  return;
+ }
+ if(automaticBackupListLoading)return;
+ automaticBackupListLoading=true;
+ box.textContent='در حال خواندن فهرست پشتیبان‌ها…';
+ bridge.requestAutomaticBackups(++automaticBackupListRequest);
+}
+window.showAutomaticBackupList=(request,result)=>{
+ if(request!==automaticBackupListRequest)return;
+ automaticBackupListLoading=false;
+ const box=$('automaticBackupList');
  try{
-  const items=JSON.parse(bridge.getAutomaticBackups()||'[]');
+  const items=JSON.parse(result);
   if(!Array.isArray(items)||!items.length){box.textContent='هنوز هیچ پشتیبان خودکاری در پوشه پیدا نشد.';return}
   box.innerHTML=items.map((item,index)=>{
    const date=new Date(Number(item.modified||0));
@@ -2029,101 +2166,278 @@ $('openAutomaticBackupFolder').onclick=()=>{
 };
 document.querySelectorAll('[data-tab="backupTab"]').forEach(el=>el?.addEventListener('click',()=>setTimeout(()=>{const section=$('automaticBackupList')?.closest('details');if(section?.open)loadAutomaticBackupList()},250)));
 $('automaticBackupList')?.closest('details')?.addEventListener('toggle',function(){if(this.open)loadAutomaticBackupList()});
-$('exportRange').onclick=async()=>{
-  const fromText=$('backupFrom').value.trim(),toText=$('backupTo').value.trim(),from=parseJalaliDate(fromText),to=parseJalaliDate(toText);
-  if(!fromText||!toText||!from||!to){alert('لطفاً هر دو تاریخ شمسی معتبر را انتخاب کن.');return}
-  const start=localISODate(from),end=localISODate(to);
-  if(start>end){alert('تاریخ شروع بازه نمی‌تواند بعد از تاریخ پایان باشد.');return}
-  const all=await allRecords(true),records=all.filter(x=>!x.isDeleted&&(()=>{const day=localISODate(new Date(x.created));return day>=start&&day<=end})());
-  await refreshHolidayCache();const holidayDays=collectHolidayDays(from.getTime(),to.getTime());if(!records.length&&!holidayDays.length){alert('در بازه انتخاب‌شده سابقه‌ای ثبت نشده و روز تعطیلی نیز وجود ندارد.');return}
-  const data={format:'gomrokyar-transfer',version:4,exportType:start===end?'daily':'date_range',date:start===end?start:undefined,rangeStart:start,rangeEnd:end,exportedAt:new Date().toISOString(),records:records.map(x=>{const r={...x};delete r._syncKey;return r}),holidays:holidayDays};
-  await downloadJson(data,'gomrokyar-'+(start===end?'daily-':'range-')+start+'-'+end+'.json');
-  $('backupStatus').textContent='خروجی بازه '+start+' تا '+end+' شامل '+records.length.toLocaleString('fa-IR')+' سابقه آماده ارسال شد.';
+$('exportRange').onclick=()=>{
+  const from=parseJalaliDate($('backupFrom').value.trim()),to=parseJalaliDate($('backupTo').value.trim());
+  if(!from||!to){alert('لطفاً هر دو تاریخ شمسی معتبر را انتخاب کن.');return}
+  if(from>to){alert('تاریخ شروع بازه نمی‌تواند بعد از تاریخ پایان باشد.');return}
+  return exportBackupPeriod($('exportRange'),from,to,true);
 };
-function readBackupBytes(file){
-  return new Promise((resolve,reject)=>{
-    if(file&&typeof file.arrayBuffer==='function'){
-      file.arrayBuffer().then(resolve,reject);
-      return;
-    }
-    const reader=new FileReader();
-    reader.onload=()=>resolve(reader.result);
-    reader.onerror=()=>reject(reader.error||new Error('file_read_failed'));
-    reader.onabort=()=>reject(new Error('file_read_aborted'));
-    reader.readAsArrayBuffer(file);
-  });
-}
-function decodeBackupUtf8(bytes){
-  if(typeof TextDecoder!=='undefined')return new TextDecoder('utf-8').decode(bytes);
-  let binary='';
-  for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
-  try{return decodeURIComponent(escape(binary));}catch(e){return binary;}
-}
-async function readBackupFile(file){
-  const buffer=await readBackupBytes(file);
-  const bytes=new Uint8Array(buffer);
-  if(bytes.length>=2&&bytes[0]===0x1f&&bytes[1]===0x8b){
-    if(typeof DecompressionStream!=='undefined'){
-      const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-      return await new Response(stream).text();
-    }
-    if(window.AndroidBridge&&typeof AndroidBridge.decompressGzip==='function'){
-      let binary='';
-      for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+0x8000,bytes.length)));
-      return AndroidBridge.decompressGzip(btoa(binary));
-    }
-    throw new Error('gzip_unsupported');
-  }
-  return decodeBackupUtf8(bytes);
-}
 function validBackupRecord(x){
   return !!x&&typeof x==='object'&&!Array.isArray(x)&&typeof x.created==='string'&&Number.isFinite(new Date(x.created).getTime())&&
     (typeof x.plateKey==='string'||typeof x.manualPlate==='string')&&typeof (x.eventType||'weighed')==='string';
 }
-$('importFile').onchange=async e=>{
-  const file=e.target.files&&e.target.files[0];if(!file)return;
-  try{
-    if(file.size>250*1024*1024)throw new Error('too_large');
-    const rawText=await readBackupFile(file),d=JSON.parse(rawText);
-    if(!d||!Array.isArray(d.records)||!(Number(d.version)>=1)||!['gomrokyar-transfer',undefined].includes(d.format))throw new Error('invalid_format');
-    const incoming=d.records.filter(validBackupRecord);
-    if(incoming.length!==d.records.length)throw new Error('invalid_records');
-    if(!incoming.length&&!Array.isArray(d.holidays)){alert('این فایل هیچ سابقه یا اطلاعات تعطیلی معتبری ندارد.');return}
-    const existing=await allRecords(false),known=new Set(existing.map(x=>transferKey(x)));
-    const fresh=[];
-    for(const raw of incoming){
-      const x={...raw},key=transferKey(x);
-      if(known.has(key))continue;
-      known.add(key);
-      x.sourceEntryNo=x.sourceEntryNo??x.entryNo??null;
-      delete x.id;
-      x._syncKey=key;
-      fresh.push(x);
-    }
-    const existingHolidays=await setting('customHolidayDates')||[],incomingHolidays=Array.isArray(d.holidays)?d.holidays.filter(x=>typeof x==='string'):[],mergedHolidays=[...new Set([...existingHolidays,...incomingHolidays])];if(!fresh.length&&mergedHolidays.length===existingHolidays.length){alert('همه سوابق و تعطیلی‌های این فایل قبلاً در برنامه وجود دارند؛ اطلاعاتی اضافه نشد.');return}
-    const nextStart=existing.reduce((m,x)=>Math.max(m,Number(x.entryNo)||Number(x.id)||0),0)+1;
-    fresh.forEach((x,i)=>{x.entryNo=nextStart+i});
-    await new Promise((resolve,reject)=>{
-      const transaction=db.transaction(['records','settings'],'readwrite'),store=transaction.objectStore('records'),settings=transaction.objectStore('settings');
-      fresh.forEach(x=>store.add(x));
-      const currentReq=settings.get('nextEntryNo');
-      currentReq.onsuccess=()=>settings.put(Math.max(Number(currentReq.result)||1,nextStart+fresh.length,Number(d.nextEntryNo)||1),'nextEntryNo');
-      if(d.exportType==='full_backup'){
-        if(Object.prototype.hasOwnProperty.call(d,'regions'))settings.put(d.regions,'regions');
-        if(typeof d.templateMode==='boolean')settings.put(d.templateMode,'templateMode');
+async function openBackupReader(file){
+  if(!file){
+    const bridge=window.AndroidBridge;
+    if(!bridge.openBackupInput())throw new Error('file_read_failed');
+    return {
+      read:async()=>{
+        await backupYield();
+        const text=bridge.readBackupInput();
+        if(text===null)throw new Error('file_read_failed');
+        return text;
+      },
+      close:()=>bridge.closeBackupInput()
+    };
+  }
+  const header=new Uint8Array(await file.slice(0,2).arrayBuffer());
+  let stream=file.stream();
+  if(header[0]===0x1f&&header[1]===0x8b){
+    if(typeof DecompressionStream==='undefined')throw new Error('gzip_unsupported');
+    stream=stream.pipeThrough(new DecompressionStream('gzip'));
+  }
+  const reader=stream.getReader(),decoder=new TextDecoder('utf-8',{fatal:true});
+  return {
+    read:async()=>{
+      for(;;){
+        const part=await reader.read();
+        if(part.done)return decoder.decode();
+        const text=decoder.decode(part.value,{stream:true});
+        if(text)return text;
       }
-      if(Array.isArray(d.holidays))settings.put(mergedHolidays,'customHolidayDates');
-      transaction.oncomplete=resolve;
-      transaction.onerror=()=>reject(transaction.error||new Error('Import transaction failed'));
-      transaction.onabort=()=>reject(transaction.error||new Error('Import transaction aborted'));
+    },
+    close:()=>reader.cancel().catch(()=>{})
+  };
+}
+class BackupJsonReader{
+  constructor(source){
+    this.source=source;this.text='';this.offset=0;this.eof=false;
+  }
+  async refill(){
+    if(this.eof)return false;
+    this.text=await this.source.read();this.offset=0;
+    if(!this.text)this.eof=true;
+    return !this.eof;
+  }
+  async peek(){
+    for(;;){
+      while(this.offset<this.text.length){
+        const c=this.text[this.offset];
+        if(c!==' '&&c!=='\t'&&c!=='\r'&&c!=='\n')return c;
+        this.offset++;
+      }
+      if(!await this.refill())return '';
+    }
+  }
+  async expect(value){
+    if(await this.peek()!==value)throw new Error('invalid_format');
+    this.offset++;
+  }
+  async value(first){
+    if(!first)throw new Error('invalid_format');
+    const pieces=[];
+    const structured=first==='{'||first==='[';
+    const stringValue=first==='"';
+    const stringTokens=/["\\]/g,structureTokens=/[{}\[\]"]/g;
+    let depth=0,quoted=false,escaped=false;
+    for(;;){
+      const start=this.offset;
+      if(!structured&&!stringValue){
+        const delimiter=/[,\]}\x20\t\r\n]/g;
+        delimiter.lastIndex=this.offset;
+        const found=delimiter.exec(this.text);
+        this.offset=found?found.index:this.text.length;
+        pieces.push(this.text.slice(start,this.offset));
+        if(found||!await this.refill())break;
+        continue;
+      }
+      let complete=false;
+      while(this.offset<this.text.length){
+        if(escaped){this.offset++;escaped=false;continue}
+        const tokens=quoted?stringTokens:structureTokens;
+        tokens.lastIndex=this.offset;
+        const token=tokens.exec(this.text);
+        if(!token){this.offset=this.text.length;break}
+        const c=token[0];
+        this.offset=tokens.lastIndex;
+        if(quoted){
+          if(c==='\\'){escaped=true;continue}
+          quoted=false;
+          if(stringValue){complete=true;break}
+        }else if(c==='"')quoted=true;
+        else if(c==='{'||c==='[')depth++;
+        else if(--depth===0){complete=true;break}
+      }
+      pieces.push(this.text.slice(start,this.offset));
+      if(complete)break;
+      if(!await this.refill())throw new Error('invalid_format');
+    }
+    const raw=pieces.join('');
+    return {value:JSON.parse(raw),length:raw.length};
+  }
+}
+async function readBackupArchive(file,onRecord){
+  const source=await openBackupReader(file),json=new BackupJsonReader(source);
+  const metadata=Object.create(null);
+  let sawRecords=false,count=0;
+  try{
+    await json.refill();
+    if(json.text.charAt(0)==='\uFEFF')json.offset++;
+    await json.expect('{');
+    if(await json.peek()!=='}'){
+      for(;;){
+        const first=await json.peek();
+        if(first!=='"')throw new Error('invalid_format');
+        const key=(await json.value(first)).value;
+        await json.expect(':');
+        if(key==='records'){
+          if(sawRecords)throw new Error('invalid_format');
+          sawRecords=true;
+          await json.expect('[');
+          let token=await json.peek();
+          if(token!==']'){
+            for(;;){
+              if(token!=='{')throw new Error('invalid_records');
+              const {value,length}=await json.value(token);
+              if(!validBackupRecord(value))throw new Error('invalid_records');
+              count++;
+              const update=onRecord(value,length,count);
+              if(update)await update;
+              token=await json.peek();
+              if(token!==',')break;
+              json.offset++;
+              token=await json.peek();
+            }
+          }
+          if(token!==']')throw new Error('invalid_format');
+          json.offset++;
+        }else metadata[key]=(await json.value(await json.peek())).value;
+        if(await json.peek()!==',')break;
+        json.offset++;
+      }
+    }
+    await json.expect('}');
+    if(await json.peek()!==''||!sawRecords||!(Number(metadata.version)>=1)||
+      (metadata.format!==undefined&&metadata.format!=='gomrokyar-transfer'))throw new Error('invalid_format');
+    return {metadata,count};
+  }finally{await source.close()}
+}
+function backupRestoreKey(record){
+  const key=transferKey(record);
+  return record.isDeleted?JSON.stringify([key,record.created,record.deletedAt||'']):key;
+}
+function writeRestoredRecords(records,minimumEntryNo,metadata){
+  return new Promise((resolve,reject)=>{
+    const transaction=db.transaction(['records','settings'],'readwrite');
+    const store=transaction.objectStore('records'),settings=transaction.objectStore('settings');
+    const next=settings.get('nextEntryNo');
+    next.onsuccess=()=>{
+      let number=Math.max(Number(next.result)||1,minimumEntryNo);
+      records.forEach(record=>{record.entryNo=number++;store.add(record)});
+      const importedNumber=Number(metadata?.nextEntryNo);
+      settings.put(Math.max(number,Number.isSafeInteger(importedNumber)?importedNumber:1),'nextEntryNo');
+      if(!metadata)return;
+      if(metadata.exportType==='full_backup'){
+        if(Object.prototype.hasOwnProperty.call(metadata,'regions'))settings.put(metadata.regions,'regions');
+        if(typeof metadata.templateMode==='boolean')settings.put(metadata.templateMode,'templateMode');
+      }
+      if(Array.isArray(metadata.holidays)){
+        const holidays=settings.get('customHolidayDates');
+        holidays.onsuccess=()=>{
+          const incoming=metadata.holidays.map(date=>typeof date==='string'?date:date?.reason==='تعطیلی ثبت‌شده'?date.jalali:null).filter(date=>typeof date==='string');
+          settings.put([...new Set([...(holidays.result||[]),...incoming])],'customHolidayDates');
+        };
+      }
+    };
+    transaction.oncomplete=resolve;
+    transaction.onabort=()=>reject(transaction.error||new Error('Import transaction aborted'));
+  });
+}
+let backupRestoreBusy=false;
+function setBackupRestoreBusy(busy){
+  backupRestoreBusy=busy;
+  $('importFile').disabled=busy;
+}
+async function restoreBackup(file){
+  const status=$('backupStatus');
+  let added=0;
+  setBackupRestoreBusy(true);
+  status.textContent='در حال بررسی فایل پشتیبان…';
+  try{
+    // Validate the complete file (including the gzip checksum) before committing any records.
+    const {count,metadata}=await readBackupArchive(file,(_record,_length,position)=>{
+      if(position%100!==0)return;
+      status.textContent='در حال بررسی پشتیبان؛ '+position.toLocaleString('fa-IR')+' سابقه…';
+      return backupYield();
     });
-    const removedAfterImport=await cleanupDuplicateRecords();await renderRecords();await refreshReportPreview();
-    alert('ورود اطلاعات با موفقیت انجام شد.\nسوابق بررسی‌شده: '+incoming.length.toLocaleString('fa-IR')+'\nسوابق جدید اضافه‌شده: '+fresh.length.toLocaleString('fa-IR')+'\nسوابق تکراری: '+(incoming.length-fresh.length).toLocaleString('fa-IR')+'\nموارد تکراری موجود نیز به‌صورت خودکار بررسی و حذف شدند ('+removedAfterImport.toLocaleString('fa-IR')+' مورد).');
-  }catch(err){
-    console.error('GomrokYar import error',err);
-    const message=err&&err.message==='too_large'?'حجم فایل پشتیبان بیشتر از سقف مجاز ۲۵۰ مگابایت است.':err&&err.message==='gzip_unsupported'?'امکان باز کردن فایل فشرده در این نسخه وجود ندارد؛ برنامه را به‌روزرسانی کن.':err&&err.message==='invalid_records'?'ساختار بعضی سوابق فایل معتبر نیست؛ هیچ تغییری اعمال نشد.':'فایل پشتیبان معتبر نیست یا خواندن آن انجام نشد؛ هیچ سابقه‌ای از برنامه حذف نشد.';
-    alert(message);
-  }finally{e.target.value=''}
+    if(!count&&!Array.isArray(metadata.holidays)&&metadata.exportType!=='full_backup'){
+      status.textContent='این فایل هیچ سابقه یا اطلاعات تعطیلی معتبری ندارد.';
+      return;
+    }
+    const known=new Set();
+    let maxNo=0;
+    await scanBackupRecords(record=>{
+      known.add(backupRestoreKey(record));
+      maxNo=Math.max(maxNo,Number(record.entryNo)||Number(record.id)||0);
+    });
+    let batch=[],batchSize=0;
+    async function flush(position){
+      if(batch.length){
+        await writeRestoredRecords(batch,maxNo+1);
+        added+=batch.length;
+        batch=[];batchSize=0;
+      }
+      status.textContent='در حال بازیابی '+position.toLocaleString('fa-IR')+' از '+count.toLocaleString('fa-IR')+' سابقه…';
+      await backupYield();
+    }
+    await readBackupArchive(file,(record,length,position)=>{
+      const key=backupRestoreKey(record);
+      if(!known.has(key)){
+        known.add(key);
+        record.sourceEntryNo=record.sourceEntryNo??record.entryNo??null;
+        delete record.id;
+        record._syncKey=key;
+        batch.push(record);batchSize+=length;
+      }
+      if(batch.length>=50||batchSize>=1048576||position%100===0)return flush(position);
+    });
+    await flush(count);
+    await writeRestoredRecords([],maxNo+1,metadata);
+    regions=await setting('regions')||{};
+    templateMode=(await setting('templateMode'))===true;
+    status.textContent='بازیابی کامل شد. '+added.toLocaleString('fa-IR')+' سابقه جدید و '+(count-added).toLocaleString('fa-IR')+' سابقه تکراری.';
+    try{await renderRecords()}catch(error){console.error('Refresh after restore failed',error)}
+  }catch(error){
+    console.error('Backup restore failed',error);
+    status.textContent=added
+      ? 'بازیابی متوقف شد. '+added.toLocaleString('fa-IR')+' سابقه ذخیره شد. برای ادامه همین فایل را دوباره انتخاب کن.'
+      : error.message==='gzip_unsupported'?'این مرورگر امکان بازکردن GZIP را ندارد.'
+      : error.message==='invalid_records'?'ساختار بعضی سوابق معتبر نیست. هیچ سابقه‌ای اضافه نشد.'
+      : 'خواندن یا بازیابی فایل انجام نشد. نوع فایل، سالم بودن آن و فضای آزاد دستگاه را بررسی کن.';
+  }finally{
+    if(!file)window.AndroidBridge.releaseBackupInput();
+    setBackupRestoreBusy(false);
+  }
+}
+window.nativeBackupSelected=(selected,unavailable)=>{
+  if(selected)restoreBackup(null);
+  else{
+    setBackupRestoreBusy(false);
+    if(unavailable)$('backupStatus').textContent='بازکردن فایل‌گزین اندروید ممکن نشد.';
+  }
+};
+document.querySelector('label[for="importFile"]').addEventListener('click',event=>{
+  if(backupRestoreBusy){event.preventDefault();return}
+  if(window.AndroidBridge&&typeof window.AndroidBridge.pickBackupFile==='function'){
+    event.preventDefault();
+    setBackupRestoreBusy(true);
+    window.AndroidBridge.pickBackupFile();
+  }
+});
+$('importFile').onchange=event=>{
+  const file=event.target.files&&event.target.files[0];
+  event.target.value='';
+  if(file&&!backupRestoreBusy)restoreBackup(file);
 };
 let currentUser=null;
 const AUTH_KEY='localUsers_v1';
