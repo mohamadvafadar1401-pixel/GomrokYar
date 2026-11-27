@@ -460,6 +460,26 @@ main.wrap{max-width:790px!important;padding:12px 14px 24px!important}
 #authError{color:#ffb7c1!important;font-size:12px!important}
 @media(max-width:380px){#authCard{padding:20px!important;border-radius:22px!important}#authCard h2{font-size:18px!important}}
 </style>
+<style id="gomrokyar-exact-reference-home-banner">
+/* Exact user-provided dashboard artwork: show its upper banner crop without duplicating HTML labels. */
+#homeTab .home-hero{
+  aspect-ratio:941 / 435;
+  width:100%;
+  height:auto;
+  min-height:0!important;
+  padding:0!important;
+  border-radius:24px;
+  background-image:url('https://uploadkon.ir/uploads/c5a527_26file-00000000063081f4a534a111c3adb242.png'),url('customs-banner.svg')!important;
+  background-position:center top,center 56%;
+  background-size:100% auto,cover;
+  background-repeat:no-repeat;
+  box-shadow:0 14px 32px #00152f88;
+}
+#homeTab .home-hero:before,#homeTab .home-hero:after,
+#homeTab .home-hero .hero-topline,#homeTab .home-hero .hero-footer,
+#homeTab .home-hero .hero-atmosphere{display:none!important}
+@media(max-width:380px){#homeTab .home-hero{min-height:0!important;padding:0!important}}
+</style>
 </head><body><div id="authGate"><div id="authCard"><div class="brand"><h2>ورود به سامانه گمرک شیخ صله</h2></div><div id="firstAdminSetup" class="hide"><p>برای راه‌اندازی، حساب مدیر اصلی را بسازید. این حساب امکان تعریف پنج کاربر دیگر را دارد.</p><label>نام کاربری مدیر</label><input id="setupUsername" autocomplete="username" maxlength="64" value="muhamadvafadar22@gmail.com"><label>نام نمایشی</label><input id="setupDisplayName" maxlength="50" placeholder="مثلاً مدیر سامانه"><label>رمز عبور (حداقل ۸ نویسه)</label><input id="setupPassword" type="password" autocomplete="new-password"><label>تکرار رمز عبور</label><input id="setupPassword2" type="password" autocomplete="new-password"><button id="createAdminBtn" class="btn" style="width:100%;margin-top:16px">ساخت حساب مدیر</button></div><div id="userLogin"><p>برای استفاده از برنامه، با حساب کاربری خود وارد شوید.</p><label>نام کاربری</label><input id="loginUsername" autocomplete="username"><label>رمز عبور</label><input id="loginPassword" type="password" autocomplete="current-password"><button id="loginBtn" class="btn" style="width:100%;margin-top:16px">ورود به برنامه</button></div><div id="authError" role="alert"></div><button id="recoverAuthBtn" type="button" class="btn secondary" style="width:100%;margin-top:12px">بازیابی ورود مدیر (بدون حذف سوابق)</button><p class="hint" style="margin-top:14px">حساب‌ها و رمزها روی همین گوشی نگهداری می‌شوند. در صورت حذف داده‌های برنامه، اطلاعات ورود محلی نیز پاک می‌شود.</p></div></div><script>
 (function(){
  const showError=(message)=>{const e=document.getElementById('authError');if(e)e.textContent=message;};
