@@ -124,7 +124,12 @@ jobs:
             adb install -r GomrokYar_Android/app/build/outputs/apk/release/app-release.apk
             adb shell am force-stop ir.gomrokhyar.app || true
             adb shell am start -n ir.gomrokhyar.app/.MainActivity
-            sleep 10
+            for delay in 2 5 10 20 30; do
+              sleep $((delay - ${previous_delay:-0}))
+              adb shell screencap -p "/sdcard/gomrokyar-login-${delay}s.png"
+              adb pull "/sdcard/gomrokyar-login-${delay}s.png" "gomrokyar-login-${delay}s.png"
+              previous_delay=$delay
+            done
             adb shell screencap -p /sdcard/gomrokyar-login.png
             adb pull /sdcard/gomrokyar-login.png gomrokyar-login-emulator.png
             adb logcat -d -v time > gomrokyar-logcat.txt
@@ -135,6 +140,11 @@ jobs:
           name: GomrokYar-login-emulator-build-${{ github.run_number }}
           path: |
             gomrokyar-login-emulator.png
+            gomrokyar-login-2s.png
+            gomrokyar-login-5s.png
+            gomrokyar-login-10s.png
+            gomrokyar-login-20s.png
+            gomrokyar-login-30s.png
             gomrokyar-logcat.txt
           if-no-files-found: error
           retention-days: 7
