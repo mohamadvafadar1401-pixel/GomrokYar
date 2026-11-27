@@ -119,11 +119,6 @@ jobs:
           emulator-boot-timeout: 600
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          pre-emulator-launch-script: |
-            echo "Android emulator binary:"
-            emulator -version
-            echo "KVM device permissions:"
-            ls -l /dev/kvm || true
           script: |
             set -e
             adb install -r GomrokYar_Android/app/build/outputs/apk/release/app-release.apk
