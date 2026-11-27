@@ -445,20 +445,88 @@ main.wrap{max-width:790px!important;padding:12px 14px 24px!important}
 </style>
 
 <style id="gomrokyar-login-blue-glass-theme">
-/* Keep the sign-in gate visually consistent with the current blue-glass app theme. */
-#authGate{background:radial-gradient(ellipse at 78% 5%,#07558a88 0,transparent 37%),radial-gradient(ellipse at 8% 40%,#0a3c6c88 0,transparent 42%),radial-gradient(ellipse at 88% 82%,#063e66aa 0,transparent 42%),linear-gradient(160deg,#06152d,#08284b 58%,#04152c)!important;color:#f2faff!important}
-#authCard{width:min(100%,460px)!important;padding:clamp(22px,5vw,30px)!important;background:linear-gradient(145deg,#0d3962f2,#082648f5)!important;border:1px solid #70ddff75!important;border-radius:26px!important;box-shadow:inset 0 1px #d8faff24,0 18px 44px #00152dcc!important;color:#effaff!important}
-#authCard .brand{margin-bottom:15px}
-#authCard h2{color:#f4fbff!important;font-size:20px!important;font-weight:800!important;line-height:1.9!important;text-shadow:0 0 18px #27cfff45}
-#authCard p,#authCard .hint{color:#bdd7e9!important;font-size:12px!important;line-height:2!important}
-#authCard label{color:#e2f5ff!important;font-size:12px!important;font-weight:700!important}
-#authCard input{background:#08294b!important;color:#f3fbff!important;border:1px solid #65cde977!important;border-radius:12px!important;padding:13px!important;min-height:46px!important;box-shadow:inset 0 1px #ffffff0a!important}
-#authCard input::placeholder{color:#9abbd0!important}
-#authCard input:focus{outline:0!important;border-color:#48e2ff!important;box-shadow:0 0 0 3px #12bde633!important}
-#authCard button.btn:not(.secondary){background:linear-gradient(135deg,#0aa9db,#0873b8)!important;color:#fff!important;border:1px solid #65eaff88!important;border-radius:13px!important;min-height:46px!important;font-weight:800!important;box-shadow:0 7px 18px #001d39aa!important}
-#authCard button.btn.secondary{background:linear-gradient(145deg,#17466e,#0a2b4c)!important;color:#e8f8ff!important;border:1px solid #67dfff55!important;border-radius:13px!important;min-height:43px!important}
-#authError{color:#ffb7c1!important;font-size:12px!important}
-@media(max-width:380px){#authCard{padding:20px!important;border-radius:22px!important}#authCard h2{font-size:18px!important}}
+/* Login-only glass redesign. Keep all app/home styles and authentication markup/logic untouched. */
+#authGate{
+ position:fixed!important;inset:0!important;z-index:9999!important;
+ display:flex;align-items:center;justify-content:center;
+ padding:20px!important;overflow:auto;
+ background:
+  radial-gradient(ellipse at 16% 14%,rgba(0,196,225,.25),transparent 34%),
+  radial-gradient(ellipse at 88% 82%,rgba(22,105,177,.34),transparent 38%),
+  linear-gradient(145deg,#061326 0%,#0a2542 48%,#07172d 100%)!important;
+ color:#effaff!important;
+}
+#authGate:before,#authGate:after{content:"";position:fixed;pointer-events:none;border:1px solid rgba(94,224,244,.13);border-radius:50%;filter:blur(.2px)}
+#authGate:before{width:340px;height:340px;top:-190px;right:-95px;box-shadow:0 0 90px rgba(20,193,225,.12)}
+#authGate:after{width:430px;height:430px;bottom:-280px;left:-160px;box-shadow:0 0 100px rgba(41,130,210,.14)}
+#authCard{
+ position:relative;isolation:isolate;width:min(100%,430px)!important;
+ max-height:calc(100dvh - 34px);overflow:auto;
+ padding:0 27px 24px!important;
+ border:1px solid rgba(133,231,245,.35)!important;border-radius:27px!important;
+ background:linear-gradient(145deg,rgba(18,57,86,.76),rgba(7,29,53,.83))!important;
+ -webkit-backdrop-filter:blur(24px) saturate(145%);backdrop-filter:blur(24px) saturate(145%);
+ box-shadow:0 26px 70px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.16),inset 0 0 34px rgba(54,191,218,.055)!important;
+ color:#effaff!important;
+}
+#authCard:before{
+ content:"";display:block;height:154px;margin:0 -27px 20px;
+ border-radius:26px 26px 0 0;
+ background:
+  radial-gradient(circle at 50% 48%,rgba(40,211,231,.2),transparent 31%),
+  linear-gradient(180deg,rgba(4,24,46,.12),rgba(8,35,60,.35));
+ border-bottom:1px solid rgba(106,222,241,.22);
+}
+#authCard:after{
+ content:"";position:absolute;top:34px;left:50%;transform:translateX(-50%);
+ width:74px;height:74px;border-radius:22px;
+ border:1px solid rgba(120,232,245,.62);
+ background:
+  radial-gradient(circle at 50% 40%,rgba(81,225,236,.28),transparent 57%),
+  linear-gradient(145deg,rgba(28,119,151,.52),rgba(7,42,72,.8));
+ box-shadow:0 0 0 7px rgba(81,209,228,.055),0 0 32px rgba(37,201,226,.2),inset 0 1px rgba(255,255,255,.25);
+}
+#authCard .brand{position:relative;margin:-5px 0 15px;gap:0}
+#authCard .brand:before{
+ content:"✥";position:absolute;top:-135px;left:50%;transform:translateX(-50%);
+ z-index:2;color:#c5fbff;font-size:43px;line-height:1;
+ text-shadow:0 0 12px #4de2f4,0 0 27px rgba(56,213,237,.8);
+}
+#authCard h2{
+ color:#f5fdff!important;text-align:center;font-size:20px!important;
+ font-weight:800!important;line-height:1.9!important;margin:0 0 7px!important;
+ text-shadow:0 2px 18px rgba(58,210,231,.25);
+}
+#authCard p,#authCard .hint{color:#b8d4e3!important;font-size:12px!important;line-height:2!important;text-align:center}
+#authCard label{color:#d9f2f7!important;font-size:12px!important;font-weight:700!important;margin:13px 0 6px!important}
+#authCard input{
+ width:100%;min-height:48px!important;padding:13px 14px!important;
+ border:1px solid rgba(113,203,222,.34)!important;border-radius:13px!important;
+ background:rgba(3,24,45,.62)!important;color:#f4fcff!important;
+ box-shadow:inset 0 1px 5px rgba(0,0,0,.18),0 1px rgba(255,255,255,.035)!important;
+}
+#authCard input::placeholder{color:#8eafc0!important}
+#authCard input:focus{outline:0!important;border-color:#55e1ef!important;box-shadow:0 0 0 3px rgba(37,194,218,.16),0 0 18px rgba(37,194,218,.12)!important}
+#authCard button.btn:not(.secondary){
+ min-height:49px!important;border:1px solid rgba(115,238,246,.55)!important;border-radius:14px!important;
+ background:linear-gradient(110deg,#0a9dbd,#0875ae 58%,#155d9b)!important;
+ color:white!important;font-size:14px!important;font-weight:800!important;
+ box-shadow:0 9px 24px rgba(0,116,163,.28),inset 0 1px rgba(255,255,255,.24)!important;
+}
+#authCard button.btn.secondary{
+ min-height:44px!important;border:1px solid rgba(121,203,222,.3)!important;border-radius:13px!important;
+ background:rgba(13,51,78,.62)!important;color:#d5f2f7!important;box-shadow:inset 0 1px rgba(255,255,255,.08)!important;
+}
+#authError{color:#ffb9c3!important;font-size:12px!important;line-height:1.8}
+@supports not ((backdrop-filter:blur(2px))){#authCard{background:#102f4b!important}}
+@media(max-width:380px){
+ #authGate{padding:10px!important}
+ #authCard{padding:0 18px 19px!important;border-radius:23px!important;max-height:calc(100dvh - 20px)}
+ #authCard:before{height:137px;margin-left:-18px;margin-right:-18px}
+ #authCard:after{top:29px;width:68px;height:68px}
+ #authCard .brand:before{top:-120px;font-size:39px}
+ #authCard h2{font-size:18px!important}
+}
 </style>
 <style id="gomrokyar-exact-reference-home-banner">
 /* Exact user-provided dashboard artwork: show its upper banner crop without duplicating HTML labels. */
