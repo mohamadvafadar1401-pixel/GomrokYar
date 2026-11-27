@@ -430,6 +430,7 @@ main.wrap{max-width:790px!important;padding:12px 14px 24px!important}
 .home-more-link{background:transparent!important;border:0!important;box-shadow:none!important;color:#61e4ff!important;padding:5px 8px!important;min-height:0!important;font-size:11px!important}
 .home-recent-list{display:flex;flex-direction:column;gap:7px}
 .home-operation-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;padding:10px 11px;border:1px solid #66dfff45;border-radius:15px;background:linear-gradient(135deg,#174b73aa,#09294bdd)}
+.home-operation-plate{display:flex;align-items:center;gap:8px;min-width:0}.home-operation-flag{display:inline-grid;place-items:center;flex:0 0 25px;width:25px;height:19px;border:1px solid #a8eaff88;border-radius:5px;background:#ffffff18;font-size:17px;line-height:1;box-shadow:0 0 10px #16cfff35}.home-operation-plate>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .home-operation-main{min-width:0}
 .home-operation-main b{display:block;color:#f5fbff;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .home-operation-main small{display:block;color:#b6d8eb;font-size:10px;margin-top:5px}
@@ -1840,7 +1841,7 @@ function renderHomeDashboard(records){
  if(recent){
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const rows=[...records].filter(r=>!r.isDeleted&&Number.isFinite(Date.parse(r.created))).sort((a,b)=>Date.parse(b.created)-Date.parse(a.created)).slice(0,3);
-  recent.innerHTML=rows.length?rows.map(r=>'<div class="home-operation-row"><div class="home-operation-main"><b>'+esc(r.manualPlate||r.plateKey||'پلاک ثبت نشده')+'</b><small>'+esc(typeLabel(r.eventType||'weighed'))+' · '+esc(r.goodsText||'')+'</small></div><div class="home-operation-meta"><strong>'+esc((Number(r.netWeight)||0).toLocaleString('fa-IR'))+' kg</strong>'+esc(new Date(r.created).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'}))+'</div></div>').join(''):'<div class="hint">هنوز عملیاتی ثبت نشده است.</div>';
+  recent.innerHTML=rows.length?rows.map(r=>{const iraqi=historyIsIraqi(r),flag=iraqi?'🇮🇶':'🇮🇷',country=iraqi?'عراق':'ایران';return '<div class="home-operation-row"><div class="home-operation-main"><b class="home-operation-plate"><span class="home-operation-flag" role="img" aria-label="پلاک '+country+'" title="پلاک '+country+'">'+flag+'</span><span>'+esc(r.manualPlate||r.plateKey||'پلاک ثبت نشده')+'</span></b><small>'+esc(typeLabel(r.eventType||'weighed'))+' · '+esc(r.goodsText||'')+'</small></div><div class="home-operation-meta"><strong>'+esc((Number(r.netWeight)||0).toLocaleString('fa-IR'))+' kg</strong>'+esc(new Date(r.created).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'}))+'</div></div>'}).join(''):'<div class="hint">هنوز عملیاتی ثبت نشده است.</div>';
  }
 }
 async function renderRecords(newRecord=null){
