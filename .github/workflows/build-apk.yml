@@ -90,6 +90,31 @@ jobs:
           test -n "$GOMROKYAR_KEY_ALIAS" || (echo "Missing GOMROKYAR_KEY_ALIAS repository secret" && exit 1)
           gradle --no-daemon -p GomrokYar_Android assembleRelease
 
+      - name: Launch GomrokYar on Android emulator and capture login screen
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: Pixel_2
+          disable-animations: true
+          script: |
+            set -e
+            adb install -r GomrokYar_Android/app/build/outputs/apk/release/app-release.apk
+            adb shell am force-stop ir.gomrokhyar.app || true
+            adb shell am start -n ir.gomrokhyar.app/.MainActivity
+            sleep 10
+            adb shell screencap -p /sdcard/gomrokyar-login.png
+            adb pull /sdcard/gomrokyar-login.png gomrokyar-login-emulator.png
+
+      - name: Upload Android emulator login screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: GomrokYar-login-emulator-build-${{ github.run_number }}
+          path: gomrokyar-login-emulator.png
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Publish signed APK as GitHub Release
         uses: softprops/action-gh-release@v2
         with:
