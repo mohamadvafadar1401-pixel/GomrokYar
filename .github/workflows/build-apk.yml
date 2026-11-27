@@ -127,12 +127,21 @@ jobs:
             adb install -r GomrokYar_Android/app/build/outputs/apk/release/app-release.apk
             adb shell am force-stop ir.gomrokhyar.app || true
             adb shell am start -n ir.gomrokhyar.app/.MainActivity
-            for delay in 2 5 10 20 30; do
-              sleep $((delay - ${previous_delay:-0}))
-              adb shell screencap -p "/sdcard/gomrokyar-login-${delay}s.png"
-              adb pull "/sdcard/gomrokyar-login-${delay}s.png" "gomrokyar-login-${delay}s.png"
-              previous_delay=$delay
-            done
+            sleep 2
+            adb shell screencap -p /sdcard/gomrokyar-login-2s.png
+            adb pull /sdcard/gomrokyar-login-2s.png gomrokyar-login-2s.png
+            sleep 3
+            adb shell screencap -p /sdcard/gomrokyar-login-5s.png
+            adb pull /sdcard/gomrokyar-login-5s.png gomrokyar-login-5s.png
+            sleep 5
+            adb shell screencap -p /sdcard/gomrokyar-login-10s.png
+            adb pull /sdcard/gomrokyar-login-10s.png gomrokyar-login-10s.png
+            sleep 10
+            adb shell screencap -p /sdcard/gomrokyar-login-20s.png
+            adb pull /sdcard/gomrokyar-login-20s.png gomrokyar-login-20s.png
+            sleep 10
+            adb shell screencap -p /sdcard/gomrokyar-login-30s.png
+            adb pull /sdcard/gomrokyar-login-30s.png gomrokyar-login-30s.png
             adb shell screencap -p /sdcard/gomrokyar-login.png
             adb pull /sdcard/gomrokyar-login.png gomrokyar-login-emulator.png
             adb logcat -d -v time > gomrokyar-logcat.txt
