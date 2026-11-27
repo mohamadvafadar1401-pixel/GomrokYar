@@ -469,7 +469,7 @@ main.wrap{max-width:790px!important;padding:12px 14px 24px!important}
   min-height:0!important;
   padding:0!important;
   border-radius:24px;
-  background-image:url('https://uploadkon.ir/uploads/c5a527_26file-00000000063081f4a534a111c3adb242.png'),url('customs-banner.svg')!important;
+  background-image:url('https://cdn.imgurl.ir/uploads/w7088_.png'),url('customs-banner.svg')!important;
   background-position:center top,center 56%;
   background-size:100% auto,cover;
   background-repeat:no-repeat;
@@ -482,68 +482,71 @@ main.wrap{max-width:790px!important;padding:12px 14px 24px!important}
 </style>
 
 <style id="gomrokyar-login-customs-photo-glass">
-/* Login visual layer only. Existing local-account markup and authentication logic stay intact. */
+/* Faithful glass-style login visual layer; auth markup, local credentials and handlers are unchanged. */
 #authGate{
-  align-items:flex-start!important;justify-content:center!important;
-  padding:14px 14px max(14px,env(safe-area-inset-bottom))!important;
+  align-items:center!important;justify-content:center!important;
+  padding:clamp(12px,3.5vh,30px) 14px max(14px,env(safe-area-inset-bottom))!important;
   overflow-y:auto!important;
   background:
-    radial-gradient(ellipse at 78% 5%,#07558a88 0,transparent 37%),
-    radial-gradient(ellipse at 8% 40%,#0a3c6c88 0,transparent 42%),
-    linear-gradient(160deg,#06152d,#08284b 58%,#04152c)!important;
+    radial-gradient(ellipse at 50% 0%,rgba(19,154,222,.34) 0,transparent 42%),
+    radial-gradient(circle at 12% 82%,rgba(0,107,190,.25) 0,transparent 35%),
+    linear-gradient(145deg,#040d20 0%,#071d39 46%,#04142b 100%)!important;
 }
 #authCard{
   position:relative!important;isolation:isolate!important;overflow:hidden!important;
-  width:min(100%,460px)!important;max-height:calc(100vh - 28px)!important;
-  overflow-y:auto!important;margin:auto!important;
-  padding:0 20px 20px!important;
-  background:linear-gradient(145deg,rgba(13,57,98,.96),rgba(8,38,72,.98))!important;
-  border:1px solid #70ddff88!important;border-radius:25px!important;
-  box-shadow:inset 0 1px #d8faff35,0 18px 44px #00152dcc!important;
-  color:#effaff!important;
+  width:min(100%,430px)!important;max-height:calc(100dvh - 26px)!important;
+  overflow-y:auto!important;margin:auto!important;padding:0 22px 22px!important;
+  background:linear-gradient(145deg,rgba(20,57,91,.72),rgba(7,28,54,.82))!important;
+  -webkit-backdrop-filter:blur(24px) saturate(145%)!important;backdrop-filter:blur(24px) saturate(145%)!important;
+  border:1px solid rgba(117,226,255,.46)!important;border-radius:28px!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.16),inset 0 0 28px rgba(81,201,255,.05),0 24px 60px rgba(0,4,20,.62)!important;
+  color:#f2fbff!important;
 }
 #authCard:before{
-  content:"";display:block;height:clamp(132px,25vh,190px);margin:0 -20px 17px;
+  content:"";display:block;height:clamp(150px,27vh,205px);margin:0 -22px 20px;
   background:
-    linear-gradient(180deg,#061a3520 0%,#061a3580 100%),
-    url('https://uploadkon.ir/uploads/c5a527_26file-00000000063081f4a534a111c3adb242.png') center 43%/cover no-repeat;
-  border-bottom:1px solid #70ddff70;
-  box-shadow:inset 0 -18px 28px #061a3555;
+    linear-gradient(180deg,rgba(3,17,38,.02) 35%,rgba(3,17,38,.62) 100%),
+    url('https://cdn.imgurl.ir/uploads/w7088_.png') center 46%/cover no-repeat;
+  border-bottom:1px solid rgba(105,224,255,.52);
+  box-shadow:inset 0 -20px 34px rgba(1,15,35,.28);
 }
-#authCard .brand{margin:0 0 13px!important;gap:2px!important}
+#authCard .brand{margin:0 0 14px!important;gap:2px!important}
 #authCard .brand h2{
-  font-size:25px!important;line-height:1.45!important;font-weight:900!important;
-  color:#f7fcff!important;text-shadow:0 0 18px #27cfff66!important;
-  margin:0!important;
+  font-size:clamp(20px,5.5vw,25px)!important;line-height:1.5!important;font-weight:900!important;
+  color:#f7fdff!important;text-align:center!important;
+  text-shadow:0 0 22px rgba(39,207,255,.3)!important;margin:0!important;
 }
 #authCard .brand h2:after{
-  content:"داشبورد هوشمند مرزی";display:block;margin-top:4px;
-  font-size:12px;font-weight:500;letter-spacing:.2px;color:#bfeaff;
+  content:"سامانه هوشمند گمرک شیخ صله";display:block;margin-top:5px;
+  font-size:12px;font-weight:500;letter-spacing:.15px;color:#b9e9ff;
 }
-#authCard p,#authCard .hint{color:#bdd7e9!important;font-size:11px!important;line-height:1.9!important}
-#authCard label{color:#e2f5ff!important;font-size:12px!important;font-weight:800!important;margin:11px 0 6px!important}
+#authCard p,#authCard .hint{color:#c2d9ed!important;font-size:11px!important;line-height:1.9!important}
+#authCard label{color:#e7f7ff!important;font-size:12px!important;font-weight:800!important;margin:12px 0 6px!important}
 #authCard input{
-  background:linear-gradient(145deg,#08294b,#0b345a)!important;color:#f3fbff!important;
-  border:1px solid #65cde977!important;border-radius:15px!important;
-  padding:13px!important;min-height:48px!important;box-shadow:inset 0 1px #ffffff0c!important;
+  background:linear-gradient(145deg,rgba(3,27,53,.72),rgba(13,49,82,.72))!important;
+  color:#f4fbff!important;border:1px solid rgba(104,208,241,.48)!important;
+  border-radius:15px!important;padding:13px!important;min-height:48px!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.07)!important;
 }
-#authCard input::placeholder{color:#9abbd0!important}
-#authCard input:focus{outline:0!important;border-color:#48e2ff!important;box-shadow:0 0 0 3px #12bde633!important}
+#authCard input::placeholder{color:#9ebed4!important}
+#authCard input:focus{outline:0!important;border-color:#48e2ff!important;box-shadow:0 0 0 3px rgba(18,189,230,.19),0 0 18px rgba(20,192,255,.08)!important}
 #authCard button.btn:not(.secondary){
-  background:linear-gradient(110deg,#13c9f5,#0873c7)!important;color:#fff!important;
-  border:1px solid #65eaffaa!important;border-radius:15px!important;min-height:49px!important;
-  font-weight:900!important;box-shadow:0 7px 18px #001d39aa, inset 0 1px #fff5!important;
+  background:linear-gradient(105deg,#11c8ed 0%,#0879d0 58%,#1558b2 100%)!important;
+  color:#fff!important;border:1px solid rgba(119,238,255,.7)!important;border-radius:15px!important;
+  min-height:49px!important;font-weight:900!important;
+  box-shadow:0 8px 22px rgba(0,23,52,.5),inset 0 1px rgba(255,255,255,.35)!important;
 }
 #authCard button.btn.secondary{
-  background:linear-gradient(145deg,#17466e,#0a2b4c)!important;color:#e8f8ff!important;
-  border:1px solid #67dfff66!important;border-radius:14px!important;min-height:44px!important;
+  background:linear-gradient(145deg,rgba(35,82,119,.76),rgba(8,37,68,.78))!important;
+  color:#e8f8ff!important;border:1px solid rgba(103,223,255,.38)!important;
+  border-radius:14px!important;min-height:44px!important;
 }
 #authError{color:#ffb7c1!important;font-size:12px!important}
 @media(max-width:380px){
  #authGate{padding:9px!important}
- #authCard{padding:0 15px 16px!important;border-radius:21px!important;max-height:calc(100vh - 18px)!important}
- #authCard:before{margin-left:-15px;margin-right:-15px;height:125px}
- #authCard .brand h2{font-size:22px!important}
+ #authCard{padding:0 16px 17px!important;border-radius:23px!important;max-height:calc(100dvh - 18px)!important}
+ #authCard:before{margin-left:-16px;margin-right:-16px;height:132px}
+ #authCard .brand h2{font-size:21px!important}
 }
 </style>
 </head><body><div id="authGate"><div id="authCard"><div class="brand"><h2>ورود به سامانه گمرک شیخ صله</h2></div><div id="firstAdminSetup" class="hide"><p>برای راه‌اندازی، حساب مدیر اصلی را بسازید. این حساب امکان تعریف پنج کاربر دیگر را دارد.</p><label>نام کاربری مدیر</label><input id="setupUsername" autocomplete="username" maxlength="64" value="muhamadvafadar22@gmail.com"><label>نام نمایشی</label><input id="setupDisplayName" maxlength="50" placeholder="مثلاً مدیر سامانه"><label>رمز عبور (حداقل ۸ نویسه)</label><input id="setupPassword" type="password" autocomplete="new-password"><label>تکرار رمز عبور</label><input id="setupPassword2" type="password" autocomplete="new-password"><button id="createAdminBtn" class="btn" style="width:100%;margin-top:16px">ساخت حساب مدیر</button></div><div id="userLogin"><p>برای استفاده از برنامه، با حساب کاربری خود وارد شوید.</p><label>نام کاربری</label><input id="loginUsername" autocomplete="username"><label>رمز عبور</label><input id="loginPassword" type="password" autocomplete="current-password"><button id="loginBtn" class="btn" style="width:100%;margin-top:16px">ورود به برنامه</button></div><div id="authError" role="alert"></div><button id="recoverAuthBtn" type="button" class="btn secondary" style="width:100%;margin-top:12px">بازیابی ورود مدیر (بدون حذف سوابق)</button><p class="hint" style="margin-top:14px">حساب‌ها و رمزها روی همین گوشی نگهداری می‌شوند. در صورت حذف داده‌های برنامه، اطلاعات ورود محلی نیز پاک می‌شود.</p></div></div><script>
