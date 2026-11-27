@@ -152,29 +152,14 @@ public class MainActivity extends Activity {
 
     private void launchRearCamera() {
         try {
-            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            if (intent.resolveActivity(getPackageManager()) == null) {
-                clearPendingCallback();
-                Toast.makeText(this, "برنامه دوربین روی گوشی پیدا نشد.", Toast.LENGTH_LONG).show();
-                return;
-            }
             cameraOutputFile = File.createTempFile("gomrokyar_scan_", ".jpg", getCacheDir());
             cameraOutputUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", cameraOutputFile);
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, cameraOutputUri);
-            intent.putExtra("android.intent.extras.CAMERA_FACING", 0);
-            intent.putExtra("android.intent.extras.LENS_FACING_FRONT", false);
-            intent.putExtra("android.intent.extra.USE_FRONT_CAMERA", false);
-            intent.setClipData(ClipData.newRawUri("GomrokYar scan", cameraOutputUri));
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            List<ResolveInfo> handlers = getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
-            for (ResolveInfo handler : handlers) {
-                grantUriPermission(handler.activityInfo.packageName, cameraOutputUri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            }
+            Intent intent = new Intent(this, CameraCaptureActivity.class);
+            intent.putExtra(CameraCaptureActivity.EXTRA_OUTPUT_PATH, cameraOutputFile.getAbsolutePath());
             startActivityForResult(intent, CAMERA_REQUEST);
         } catch (Exception e) {
             clearPendingCallback();
-            Toast.makeText(this, "باز کردن دوربین ناموفق بود؛ دوباره تلاش کن.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "باز کردن دوربین اختصاصی ناموفق بود؛ دوباره تلاش کن.", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -718,21 +703,13 @@ public class MainActivity extends Activity {
             return;
         }
         if (requestCode == CAMERA_REQUEST) {
-            Uri result = null;
-            if (resultCode == Activity.RESULT_OK && cameraOutputFile != null
-                    && cameraOutputFile.exists() && cameraOutputFile.length() > 0) {
-                result = cameraOutputUri;
-            } else if (cameraOutputFile != null) {
-                cameraOutputFile.delete();
-            }
+            boolean captured = resultCode == Activity.RESULT_OK && cameraOutputFile != null
+                    && cameraOutputFile.exists() && cameraOutputFile.length() > 0;
             if (fileCallback != null) {
-                fileCallback.onReceiveValue(result == null ? null : new Uri[]{result});
+                fileCallback.onReceiveValue(captured ? new Uri[]{cameraOutputUri} : null);
                 fileCallback = null;
             }
-            if (cameraOutputUri != null) {
-                revokeUriPermission(cameraOutputUri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            }
+            if (!captured && cameraOutputFile != null) cameraOutputFile.delete();
             cameraOutputUri = null;
             cameraOutputFile = null;
             return;
