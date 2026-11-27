@@ -849,7 +849,10 @@ async function notifyPreviousPlateRecords(plateKey,previousRecords){
  if(missingWeight)reasons.push(missingWeight.toLocaleString('fa-IR')+' سابقه بدون وزن کامل');
  if(redDifference)reasons.push('اختلاف وزن خالی قرمز ('+weightDifference.toLocaleString('fa-IR')+' کیلوگرم)');
  const message='برای این پلاک '+previousRecords.length.toLocaleString('fa-IR')+' تردد قبلی ثبت شده و نیاز به بررسی دارد:\n'+reasons.join('\n')+'\nمی‌خواهی سوابق را ببینی و موارد ناقص یا اختلاف وزن قرمز را اصلاح کنی؟';
- if(!confirm(message))return;
+ const openHistory=confirm(message);
+ if(redDifference)showAppToast('هشدار اختلاف وزن خالی برای این پلاک: '+weightDifference.toLocaleString('fa-IR')+' کیلوگرم. سوابق را بررسی کن.','warning');
+ else if(missingWeight||missingCategory)showAppToast('سوابق قبلی این پلاک ناقص است؛ وزن یا نوع کالا را بررسی کن.','warning');
+ if(!openHistory)return;
  const activeRegistrationView=['weighTab','importEntryTab','emptyTab','exitTab'].find(id=>$(id)&&!$(id).classList.contains('hide'));
  pendingPreviousRecordsReturnTab=activeRegistrationView==='weighTab'||activeRegistrationView==='importEntryTab'?activeRegistrationView:null;
  $('topTrucksMinVisits').value='1';$('topTrucksSearch').value='';switchTab('topTrucksTab');await renderTopTrucks();await renderTopTruckDetailsByKey(plateKey);
@@ -2059,15 +2062,20 @@ async function streamBackupArchive(name,exportType,options={}){
     throw error;
   }
 }
-function showAutomaticBackupNotice(message,done=false){
-  const id='automaticBackupNotice';
+function showAppToast(message,type='info',duration=4200,id='gomrokToast'){
+  const palette={success:{bg:'#e8f6ed',fg:'#155b35',border:'#56a875',icon:'✓'},warning:{bg:'#fff4dc',fg:'#76500a',border:'#e0aa39',icon:'⚠'},error:{bg:'#fdebea',fg:'#8d2925',border:'#d45b54',icon:'✕'},info:{bg:'#173f36',fg:'#fff',border:'#4b8c77',icon:'ℹ'}};
+  const colors=palette[type]||palette.info;
   let box=document.getElementById(id);
   if(!box){box=document.createElement('div');box.id=id;document.body.appendChild(box)}
-  box.textContent=message;
-  box.style.cssText='position:fixed;z-index:999999;top:12px;left:12px;right:12px;max-width:620px;margin:0 auto;padding:13px 16px;border-radius:12px;background:'+(done?'#e7f5ec':'#173f36')+';color:'+(done?'#155b35':'#fff')+';box-shadow:0 5px 22px rgba(0,0,0,.22);font-size:13px;font-weight:700;text-align:center;direction:rtl';
-  clearTimeout(window.__automaticBackupNoticeTimer);
-  if(done)window.__automaticBackupNoticeTimer=setTimeout(()=>box.remove(),4500);
+  box.setAttribute('role','status');box.setAttribute('aria-live','polite');box.replaceChildren();
+  const icon=document.createElement('span');icon.textContent=colors.icon;icon.style.cssText='display:grid;place-items:center;flex:0 0 25px;width:25px;height:25px;border-radius:50%;background:'+colors.fg+'18;color:'+colors.fg+';font-size:15px;font-weight:900';
+  const text=document.createElement('span');text.textContent=String(message||'');text.style.cssText='flex:1;line-height:1.65;overflow-wrap:anywhere';
+  box.append(icon,text);
+  box.style.cssText='position:fixed;z-index:999999;top:14px;left:14px;right:auto;width:min(350px,calc(100vw - 28px));box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid '+colors.border+';border-radius:14px;background:'+colors.bg+';color:'+colors.fg+';box-shadow:0 8px 28px rgba(0,0,0,.2);font-size:12px;font-weight:800;text-align:right;direction:rtl;animation:gomrokToastIn .22s ease-out';
+  clearTimeout(box.__toastTimer);
+  if(duration>0)box.__toastTimer=setTimeout(()=>{box.style.opacity='0';box.style.transform='translateX(-12px)';setTimeout(()=>box.remove(),220)},duration);
 }
+function showAutomaticBackupNotice(message,done=false){showAppToast(message,done?'success':'info',done?4500:0,'automaticBackupNotice')}
 function autoBackupDateKey(date){return localISODate(new Date(date.getFullYear(),date.getMonth(),date.getDate()))}
 function autoBackupDateFromKey(key){
   const m=String(key||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -2221,7 +2229,7 @@ function scheduleAutomaticBackups(changedRecord=null,countSave=false){
     }catch(error){
       console.error('Automatic backup maintenance failed',error);
       const message='پشتیبان‌گیری خودکار کامل نشد؛ برنامه در نوبت بعد دوباره تلاش می‌کند.';
-      $('backupStatus').textContent=message;showAutomaticBackupNotice(message,true);
+      $('backupStatus').textContent=message;showAppToast(message,'error',6000);
     }
   });
 }
