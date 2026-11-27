@@ -79,6 +79,9 @@ jobs:
         run: |
           node scripts/prepare-android7-webview.cjs
 
+      - name: Validate login JavaScript and required login elements
+        run: node scripts/check-login-code.cjs
+
       - name: Build signed release APK
         env:
           GOMROKYAR_KEYSTORE_FILE: ${{ github.workspace }}/GomrokYar_Android/gomrokyar-release.jks
