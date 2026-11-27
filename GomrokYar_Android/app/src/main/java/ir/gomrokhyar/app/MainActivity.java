@@ -21,6 +21,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
+import android.util.Log;
 
 import android.util.Base64;
 import java.io.OutputStream;
@@ -79,9 +80,26 @@ public class MainActivity extends Activity {
         settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
-        webView.setWebViewClient(new WebViewClient());
+        webView.setWebViewClient(new WebViewClient() {
+            @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                Log.i("GomrokYarWeb", "PAGE_STARTED " + url);
+            }
+            @Override public void onPageFinished(WebView view, String url) {
+                Log.i("GomrokYarWeb", "PAGE_FINISHED " + url);
+                view.evaluateJavascript("(function(){return JSON.stringify({ready:document.readyState,title:document.title,bodyText:(document.body&&document.body.innerText||'').slice(0,1200),bodyHtmlLength:document.body?document.body.innerHTML.length:0,gate:!!document.getElementById('authGate'),gateDisplay:document.getElementById('authGate')?getComputedStyle(document.getElementById('authGate')).display:'missing',scene:!!document.getElementById('authScene')});})()", value ->
+                        Log.i("GomrokYarWeb", "DOM_STATE " + value));
+            }
+            @Override public void onReceivedError(WebView view, android.webkit.WebResourceRequest request, android.webkit.WebResourceError error) {
+                if (request.isForMainFrame()) Log.e("GomrokYarWeb", "MAIN_FRAME_ERROR " + error.getErrorCode() + " " + error.getDescription());
+            }
+        });
         webView.addJavascriptInterface(reportBridge, "AndroidBridge");
         webView.setWebChromeClient(new WebChromeClient() {
+            @Override public boolean onConsoleMessage(android.webkit.ConsoleMessage message) {
+                Log.e("GomrokYarWeb", "JS_CONSOLE " + message.message() + " -- "
+                        + message.sourceId() + ":" + message.lineNumber());
+                return true;
+            }
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 clearPendingCallback();
                 fileCallback = callback;
