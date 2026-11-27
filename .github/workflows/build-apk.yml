@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   build:
@@ -96,6 +97,14 @@ jobs:
           name: GomrokYar APK - Build ${{ github.run_number }}
           files: GomrokYar_Android/app/build/outputs/apk/release/app-release.apk
           fail_on_unmatched_files: true
+
+      - name: Upload signed APK for direct download
+        uses: actions/upload-artifact@v4
+        with:
+          name: GomrokYar-APK-build-${{ github.run_number }}
+          path: GomrokYar_Android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
 
 # All future updates must use this same permanent signing key and keep applicationId unchanged.
 
