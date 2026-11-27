@@ -370,7 +370,80 @@ main.wrap{max-width:790px!important;padding:12px 16px 16px!important}
 @font-face{font-family:Vazirmatn;src:url('fonts/Vazirmatn-ExtraBold.woff2') format('woff2');font-style:normal;font-weight:800;font-display:swap}
 :root{--app-font:Vazirmatn,Tahoma,Arial,sans-serif}
 html,body,button,input,select,textarea,.drawer-account>summary.drawer-item,.preview-label{font-family:var(--app-font)!important}
-</style></head><body><div id="authGate"><div id="authCard"><div class="brand"><h2>ورود به سامانه گمرک شیخ صله</h2></div><div id="firstAdminSetup" class="hide"><p>برای راه‌اندازی، حساب مدیر اصلی را بسازید. این حساب امکان تعریف پنج کاربر دیگر را دارد.</p><label>نام کاربری مدیر</label><input id="setupUsername" autocomplete="username" maxlength="64" value="muhamadvafadar22@gmail.com"><label>نام نمایشی</label><input id="setupDisplayName" maxlength="50" placeholder="مثلاً مدیر سامانه"><label>رمز عبور (حداقل ۸ نویسه)</label><input id="setupPassword" type="password" autocomplete="new-password"><label>تکرار رمز عبور</label><input id="setupPassword2" type="password" autocomplete="new-password"><button id="createAdminBtn" class="btn" style="width:100%;margin-top:16px">ساخت حساب مدیر</button></div><div id="userLogin"><p>برای استفاده از برنامه، با حساب کاربری خود وارد شوید.</p><label>نام کاربری</label><input id="loginUsername" autocomplete="username"><label>رمز عبور</label><input id="loginPassword" type="password" autocomplete="current-password"><button id="loginBtn" class="btn" style="width:100%;margin-top:16px">ورود به برنامه</button></div><div id="authError" role="alert"></div><button id="recoverAuthBtn" type="button" class="btn secondary" style="width:100%;margin-top:12px">بازیابی ورود مدیر (بدون حذف سوابق)</button><p class="hint" style="margin-top:14px">حساب‌ها و رمزها روی همین گوشی نگهداری می‌شوند. در صورت حذف داده‌های برنامه، اطلاعات ورود محلی نیز پاک می‌شود.</p></div></div><script>
+</style>
+<style id="gomrokyar-blue-glass-theme">
+:root{color-scheme:dark;--on-night:#f2faff;--muted-night:#bad0e5;--rim:rgba(94,220,255,.42);--gy-blue:#13c9f5;--gy-cyan:#54e7ff;--gy-navy:#061a35}
+html{background:#061a35!important}
+body{background:radial-gradient(ellipse at 78% 5%,#07558a88 0,transparent 37%),radial-gradient(ellipse at 8% 40%,#0a3c6c88 0,transparent 42%),radial-gradient(ellipse at 88% 82%,#063e66aa 0,transparent 42%),linear-gradient(160deg,#06152d,#08284b 58%,#04152c)!important;color:#f2faff!important;padding-bottom:96px!important}
+body>header{background:linear-gradient(110deg,#061b35eF,#0a3c68eF)!important;border-bottom:1px solid #53ddff55!important;box-shadow:0 8px 26px #00142c88!important}
+.header-titles h1{color:#f4fbff!important;text-shadow:0 0 18px #27cfff66}
+.menu-toggle,.header-home-btn{background:linear-gradient(145deg,#ffffff25,#ffffff09)!important;color:#eafaff!important;border:1px solid #8ceaff70!important;box-shadow:inset 0 1px #ffffff35,0 4px 14px #00172b88!important}
+main.wrap{max-width:790px!important;padding:12px 14px 24px!important}
+.wrap .panel,.wrap #statsChartPanel,.wrap #historyTab>.panel,.wrap #homeTopTrucksPanel{background:linear-gradient(145deg,#0d3962df,#082648e8)!important;border:1px solid #70ddff65!important;border-radius:23px!important;box-shadow:inset 0 1px #d8faff24,0 12px 30px #00152d66!important;color:#effaff!important}
+.wrap .panel h2,.wrap #statsChartPanel .chart-head h2,.wrap #historyTab .panel h2,.wrap #homeTopTrucksPanel h2{color:#f4fbff!important}
+.wrap .hint,.wrap .small,.wrap .tabnote{color:#bdd7e9!important}
+.wrap .record,.wrap .crop,.wrap .report-preview,.wrap .date-filter,.wrap .backup-accordion,.wrap .passenger-card,.wrap .history-record-grid>div{background:linear-gradient(145deg,#17466eaa,#0a2b4bd9)!important;border:1px solid #67d9fa55!important;color:#effaff!important;border-radius:15px!important}
+.wrap input:not([type=file]),.wrap select,.wrap textarea{background:#08294b!important;color:#f3fbff!important;border:1px solid #65cde955!important;border-radius:12px!important}
+.wrap input::placeholder,.wrap textarea::placeholder{color:#9abbd0!important}
+.wrap input:focus,.wrap select:focus,.wrap textarea:focus{border-color:#48e2ff!important;box-shadow:0 0 0 3px #12bde633!important}
+.wrap .btn:not(.secondary):not(.danger),.wrap button:not(.secondary):not(.danger):not(.tabbtn):not(.text-button){background:linear-gradient(135deg,#0aa9db,#0873b8)!important;color:#fff!important;border:1px solid #7beaff88!important;box-shadow:0 4px 13px #0089c455!important}
+.wrap .btn.secondary,.wrap button.secondary{background:linear-gradient(145deg,#16466c,#0b2d50)!important;color:#dff8ff!important;border:1px solid #6bdcff55!important}
+.wrap .tabbtn{background:#12395c!important;color:#cce8f7!important;border:1px solid #63c9ed55!important}
+.wrap .tabbtn.active{background:linear-gradient(135deg,#0aa9db,#075e9c)!important;color:#fff!important;border-color:#77eaff!important;box-shadow:0 0 16px #10bfe955!important}
+.home-hero{position:relative;isolation:isolate;overflow:hidden;margin:2px 0 14px;padding:20px 18px 17px;min-height:205px;border-radius:28px;border:1px solid #66dfff88;background:radial-gradient(ellipse at 86% 12%,#1aa9e866,transparent 36%),radial-gradient(ellipse at 10% 100%,#00b9ed55,transparent 43%),linear-gradient(135deg,#0c4777ed,#061c3beF 70%);box-shadow:inset 0 1px #e5fbff55,0 14px 32px #00152f88}
+.home-hero:before{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(155deg,transparent 38%,#1fcaff12 39%,transparent 40%),repeating-linear-gradient(145deg,transparent 0 28px,#a6edff08 29px 30px);mask-image:linear-gradient(90deg,transparent,#000)}
+.home-hero:after{content:"";position:absolute;z-index:-1;width:230px;height:230px;border:1px solid #6de8ff35;border-radius:50%;right:-72px;top:-115px;box-shadow:0 0 0 18px #7deaff0b,0 0 0 40px #7deaff08,0 0 45px #16cfff33}
+.hero-topline{display:flex;align-items:center;gap:13px;min-height:90px}
+.hero-brand-mark{width:76px;height:82px;flex:0 0 76px;display:grid;place-items:center;border:1px solid #d7f7ffb0;border-radius:22px 22px 28px 28px;background:linear-gradient(145deg,#1c74a7aa,#062448cc);color:#dffaff;font-size:39px;text-shadow:0 0 16px #31d8ff;box-shadow:inset 0 1px #fff7,0 0 24px #16bfe955}
+.hero-brand-copy{flex:1;min-width:0;text-align:center}
+.hero-brand-copy h2{font-size:32px!important;letter-spacing:-1px;margin:0!important;color:#fff!important;text-shadow:0 3px 15px #00152c,0 0 18px #36d8ff77}
+.hero-brand-copy p{margin:4px 0 0;font-size:12px;color:#c9efff}
+.hero-bell{position:relative;width:42px;height:42px;display:grid;place-items:center;border:1px solid #8ceaff77;border-radius:14px;background:#ffffff16;color:#a8f1ff;font-size:24px}
+.hero-bell i{position:absolute;right:-5px;top:-7px;background:#e23d56;color:#fff;font-size:10px;font-style:normal;border-radius:50%;padding:4px 6px}
+.hero-footer{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin-top:19px;padding-top:12px;border-top:1px solid #8fe9ff30}
+.hero-footer strong,.hero-footer small{display:block}
+.hero-footer strong{font-size:14px;color:#fff}
+.hero-footer small{font-size:11px;color:#b9def2;margin-top:6px}
+.hero-location{font-size:10px;color:#bdefff;border:1px solid #78ddff55;background:#ffffff0e;border-radius:30px;padding:7px 10px;white-space:nowrap}
+.home-stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 18px}
+.home-stat-card{min-width:0;min-height:116px;padding:13px 14px 12px;border:1px solid #73dfff77;border-radius:25px;background:radial-gradient(ellipse at 50% 112%,#00d5ff44,transparent 58%),linear-gradient(145deg,#155080dd,#09294deF 75%);box-shadow:inset 0 1px #e5fbff40,inset 0 -2px 0 #2fdfff20,0 8px 20px #00152d88;position:relative;overflow:hidden}
+.home-stat-card:after{content:"";position:absolute;left:12%;right:12%;bottom:-17px;height:30px;border-radius:50%;border-top:2px solid #28dcff99;filter:blur(2px);box-shadow:0 -5px 18px #10cfff44}
+.stat-card-head{display:flex;justify-content:space-between;align-items:center;gap:6px;color:#d5f1ff;font-size:12px}
+.stat-card-head b{font-size:23px;color:#24d9ff;text-shadow:0 0 14px #13cfff99}
+.home-stat-card strong{display:block;font-size:29px;line-height:1.3;color:#fff;margin-top:9px;text-shadow:0 2px 14px #00152c}
+.home-stat-card small{display:block;color:#a9d8ed;font-size:10px;margin-top:2px}
+.stat-weight{background:radial-gradient(ellipse at 50% 112%,#20e7ff55,transparent 58%),linear-gradient(145deg,#0b5a7b,#09294deF 75%)}
+.stat-unique{background:radial-gradient(ellipse at 50% 112%,#1bceff44,transparent 58%),linear-gradient(145deg,#104b75,#09294deF 75%)}
+.stat-total{background:radial-gradient(ellipse at 50% 112%,#15b8ed44,transparent 58%),linear-gradient(145deg,#12436e,#09294deF 75%)}
+.home-actions-section{margin:0 0 15px}
+.home-section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 2px 10px}
+.home-section-head h2{font-size:16px!important;margin:0!important;color:#f3fbff!important}
+.home-section-head>span{font-size:10px;color:#9dcde4}
+.home-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.wrap #homeTab .home-shortcuts .glass-tile{min-height:108px!important;padding:13px!important;border-radius:22px!important;background:linear-gradient(145deg,#125080e8,#082749f2)!important;border:1px solid #69dfff70!important;box-shadow:inset 0 1px #fff4,0 9px 21px #00152d88,0 0 14px #18bfff17!important}
+.glass-export,.glass-import,.glass-history,.glass-daily{--glass-base:#10446c;--glass-glow:#27dfff88;--glass-mist:#ffffff30;--light-x:85%}
+.glass-tile .tile-icon{width:40px;height:40px;border-radius:14px;border:1px solid #6ce7ff99;background:linear-gradient(145deg,#12c8f044,#ffffff0c);color:#45e4ff;font-size:23px;box-shadow:0 0 17px #08caff44,inset 0 1px #fff5}
+.glass-tile .tile-arrow{color:#9feeff}
+.glass-tile b{font-size:13px;color:#fff}
+.glass-tile small{font-size:10px;color:#b9e4f5}
+.home-recent-panel{margin:0 0 15px!important;padding:15px!important}
+.home-more-link{background:transparent!important;border:0!important;box-shadow:none!important;color:#61e4ff!important;padding:5px 8px!important;min-height:0!important;font-size:11px!important}
+.home-recent-list{display:flex;flex-direction:column;gap:7px}
+.home-operation-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;padding:10px 11px;border:1px solid #66dfff45;border-radius:15px;background:linear-gradient(135deg,#174b73aa,#09294bdd)}
+.home-operation-main{min-width:0}
+.home-operation-main b{display:block;color:#f5fbff;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-operation-main small{display:block;color:#b6d8eb;font-size:10px;margin-top:5px}
+.home-operation-meta{text-align:left;color:#bdeeff;font-size:10px;white-space:nowrap}
+.home-operation-meta strong{display:block;color:#fff;font-size:12px;margin-bottom:5px}
+.app-nav{background:linear-gradient(160deg,#0d3c65ed,#061d38f2)!important;border:1px solid #6bdfff77!important;box-shadow:0 10px 32px #00152dcc,inset 0 1px #ffffff2c!important;backdrop-filter:blur(20px)!important}
+.app-nav button{color:#b6d7e9!important}
+.app-nav button.active{background:linear-gradient(150deg,#0bbde8aa,#0875b8bb)!important;color:#fff!important;box-shadow:inset 0 0 0 1px #8df0ff99,0 0 18px #00cfff55!important}
+.side-drawer{background:linear-gradient(155deg,#0b3a62f7,#061a33f7)!important;border:1px solid #67dfff66!important;color:#f2faff!important}
+.side-drawer .drawer-item{background:linear-gradient(145deg,#16466c,#0a2b4c)!important;color:#e8f8ff!important;border:1px solid #67dfff44!important}
+@supports (backdrop-filter:blur(1px)){.home-hero,.home-stat-card,.glass-tile,.home-operation-row,.app-nav,.side-drawer{backdrop-filter:blur(18px)}}
+@media(max-width:380px){.home-hero{padding:16px 13px;min-height:190px}.hero-brand-mark{width:60px;height:68px;flex-basis:60px}.hero-brand-copy h2{font-size:27px!important}.home-stat-card{min-height:108px;padding:11px}.home-stat-card strong{font-size:25px}.home-shortcuts{gap:7px}.wrap #homeTab .home-shortcuts .glass-tile{min-height:98px!important;padding:10px!important}.home-operation-row{padding:9px}}
+</style>
+</head><body><div id="authGate"><div id="authCard"><div class="brand"><h2>ورود به سامانه گمرک شیخ صله</h2></div><div id="firstAdminSetup" class="hide"><p>برای راه‌اندازی، حساب مدیر اصلی را بسازید. این حساب امکان تعریف پنج کاربر دیگر را دارد.</p><label>نام کاربری مدیر</label><input id="setupUsername" autocomplete="username" maxlength="64" value="muhamadvafadar22@gmail.com"><label>نام نمایشی</label><input id="setupDisplayName" maxlength="50" placeholder="مثلاً مدیر سامانه"><label>رمز عبور (حداقل ۸ نویسه)</label><input id="setupPassword" type="password" autocomplete="new-password"><label>تکرار رمز عبور</label><input id="setupPassword2" type="password" autocomplete="new-password"><button id="createAdminBtn" class="btn" style="width:100%;margin-top:16px">ساخت حساب مدیر</button></div><div id="userLogin"><p>برای استفاده از برنامه، با حساب کاربری خود وارد شوید.</p><label>نام کاربری</label><input id="loginUsername" autocomplete="username"><label>رمز عبور</label><input id="loginPassword" type="password" autocomplete="current-password"><button id="loginBtn" class="btn" style="width:100%;margin-top:16px">ورود به برنامه</button></div><div id="authError" role="alert"></div><button id="recoverAuthBtn" type="button" class="btn secondary" style="width:100%;margin-top:12px">بازیابی ورود مدیر (بدون حذف سوابق)</button><p class="hint" style="margin-top:14px">حساب‌ها و رمزها روی همین گوشی نگهداری می‌شوند. در صورت حذف داده‌های برنامه، اطلاعات ورود محلی نیز پاک می‌شود.</p></div></div><script>
 (function(){
  const showError=(message)=>{const e=document.getElementById('authError');if(e)e.textContent=message;};
  window.addEventListener('error',e=>{if(document.getElementById('authGate')?.style.display!=='none')showError('خطای اجرای برنامه: '+(e.message||'خطای ناشناخته')+(e.filename?' · '+e.filename.split('/').pop()+':'+e.lineno+':'+e.colno:'')+'؛ برای بررسی، متن خطا را یادداشت کن.');});
@@ -399,15 +472,32 @@ html,body,button,input,select,textarea,.drawer-account>summary.drawer-item,.prev
 })();
 </script><div id="userManager"><div class="modal"><h2>مدیریت کاربران</h2><p class="hint">یک حساب مدیر و حداکثر پنج حساب کاربری قابل تعریف است.</p><div id="userList"></div><hr><h3>تعریف کاربر جدید</h3><label>نام کاربری</label><input id="newUsername" maxlength="32"><label>نام و نام خانوادگی / عنوان</label><input id="newDisplayName" maxlength="50"><label>رمز عبور (حداقل ۸ نویسه)</label><input id="newUserPassword" type="password"><div class="auth-toolbar"><button id="addUserBtn" class="btn">افزودن کاربر</button><button id="closeUserManager" class="btn secondary">بستن</button></div><div id="userManagerError" class="hint"></div></div></div><header><div class="header-row"><button id="openDrawerBtn" class="menu-toggle" type="button" aria-label="بازکردن منو">☰</button><div class="header-titles"><h1>گمرکیار</h1></div><button id="headerHomeBtn" class="header-home-btn" type="button" data-tab="homeTab" aria-label="بازگشت به صفحه خانه">⌂ خانه</button><button id="headerPassengerBtn" class="header-home-btn" type="button" data-tab="passengerTab" aria-label="ورود و خروج خودرو سواری">🚗 سواری</button></div></header><div id="drawerBackdrop" class="drawer-backdrop"></div><aside id="appDrawer" class="side-drawer" aria-label="منوی برنامه"><div class="drawer-head"><strong>منوی گمرک شیخ صله</strong><button id="closeDrawerBtn" class="drawer-close" type="button">✕</button></div><button class="drawer-item drawer-home-item" type="button" data-tab="homeTab">⌂ خانه</button><button id="passengerRegisterDrawerBtn" class="drawer-item" type="button">🚗 ثبت‌نام خودرو سواری 🔐</button><div id="activeUserLabel" class="drawer-user">کاربر فعال</div><details class="drawer-account"><summary class="drawer-item">حساب کاربری من</summary><button id="manageUsersBtn" class="drawer-item secondary" type="button">مدیریت کاربران</button><button id="changeMyProfileBtn" class="drawer-item secondary" type="button">تغییر مشخصات</button><button id="changeMyPasswordBtn" class="drawer-item secondary" type="button">تغییر رمز عبور</button></details><button class="drawer-item" type="button" data-tab="registrationTab">ثبت اطلاعات</button><button id="goSearchBtn" class="drawer-item" type="button" data-tab="searchTab">آمار روزانه</button><button class="drawer-item" type="button" data-tab="holidayTab">مدیریت تعطیلات</button><button class="drawer-item" type="button" data-tab="deletedTab">سوابق حذف</button><button class="drawer-item" type="button" data-tab="reportTab">گزارش‌گیری</button><button class="drawer-item" type="button" data-tab="backupTab">پشتیبان</button><button class="drawer-item" type="button" data-tab="historyTab">جستجوی سوابق</button><button class="drawer-item" type="button" data-tab="topTrucksTab">پرترددترین کامیون‌ها</button><button id="lockAppBtn" class="drawer-item" type="button">قفل برنامه / خروج</button></aside><main class="wrap">
 <div id="homeTab">
-<section class="panel home-panel">
- <div class="home-overview"><div><small>گمرک شیخ صله</small><h2>مدیریت تردد</h2></div></div>
- <div class="home-live-stat"><div><small>ثبت‌های امروز</small><strong id="homeTodayCount">۰ خودرو</strong></div><span class="home-stat-mark" aria-hidden="true">▥</span></div>
- <div class="home-shortcuts">
-  <button class="glass-tile glass-export" type="button" data-tab="weighTab"><span class="tile-top"><span class="tile-icon" aria-hidden="true">↑</span><span class="tile-arrow" aria-hidden="true">←</span></span><span class="tile-copy"><b>ثبت صادرات</b><small>با تصویر برگهٔ باسکول</small></span></button>
-  <button class="glass-tile glass-import" type="button" data-tab="importEntryTab"><span class="tile-top"><span class="tile-icon" aria-hidden="true">↓</span><span class="tile-arrow" aria-hidden="true">←</span></span><span class="tile-copy"><b>ثبت واردات</b><small>با باسکول دستی</small></span></button>
-  <button class="glass-tile glass-history" type="button" data-tab="historyTab"><span class="tile-top"><span class="tile-icon" aria-hidden="true">≡</span><span class="tile-arrow" aria-hidden="true">←</span></span><span class="tile-copy"><b>فیلتر سوابق</b><small>جست‌وجوی ترددهای ثبت‌شده</small></span></button>
-  <button class="glass-tile glass-daily" type="button" data-tab="searchTab"><span class="tile-top"><span class="tile-icon" aria-hidden="true">▥</span><span class="tile-arrow" aria-hidden="true">←</span></span><span class="tile-copy"><b>آمار روزانه</b><small>ترددها و وزن ثبت‌شده</small></span></button>
- </div>
+<section class="home-hero" aria-label="گمرکیار">
+  <div class="hero-atmosphere" aria-hidden="true"></div>
+  <div class="hero-topline">
+    <div class="hero-brand-mark" aria-hidden="true"><span>⚖</span></div>
+    <div class="hero-brand-copy"><h2>گمرکیار</h2><p>سامانه مدیریت عملیات مرزی</p></div>
+    <div class="hero-bell" aria-hidden="true">♧<i>۲</i></div>
+  </div>
+  <div class="hero-footer">
+    <div><strong>سلام، <span id="homeGreeting">همکار گرامی</span></strong><small id="homeDate">سامانه ثبت و پایش تردد</small></div>
+    <span class="hero-location">گمرک شیخ صله</span>
+  </div>
+</section>
+<section class="home-stat-grid" aria-label="خلاصه آمار">
+  <article class="home-stat-card stat-today"><div class="stat-card-head"><span>ثبت امروز</span><b aria-hidden="true">▣</b></div><strong id="homeTodayCount">۰ خودرو</strong><small>تعداد ثبت‌های امروز</small></article>
+  <article class="home-stat-card stat-weight"><div class="stat-card-head"><span>وزن خالص امروز</span><b aria-hidden="true">◈</b></div><strong id="homeWeightToday">۰ تن</strong><small>مجموع وزن ثبت‌شده</small></article>
+  <article class="home-stat-card stat-unique"><div class="stat-card-head"><span>کامیون‌های یکتا</span><b aria-hidden="true">▤</b></div><strong id="homeUniqueToday">۰</strong><small>پلاک‌های یکتای امروز</small></article>
+  <article class="home-stat-card stat-total"><div class="stat-card-head"><span>کل سوابق</span><b aria-hidden="true">◷</b></div><strong id="homeTotalRecords">۰</strong><small>سوابق ذخیره‌شده در دستگاه</small></article>
+</section>
+<section class="home-actions-section">
+  <div class="home-section-head"><h2>دسترسی سریع</h2><span>عملیات پرکاربرد</span></div>
+  <div class="home-shortcuts">
+    <button class="glass-tile glass-export" type="button" data-tab="registrationTab"><span class="tile-top"><span class="tile-icon" aria-hidden="true">＋</span><span class="tile-arrow" aria-hidden="true">←</span></span><span class="tile-copy"><b>ثبت عملیات</b><small>ورود و خروج کامیون‌ها</small></span></button>
+    <button class="glass-tile glass-import" type="button" data-tab="reportTab"><span class="tile-top"><span class="tile-icon" aria-hidden="true">▥</span><span class="tile-arrow" aria-hidden="true">←</span></span><span class="tile-copy"><b>آمار و گزارش</b><small>گزارش‌های عملکرد</small></span></button>
+    <button class="glass-tile glass-history" type="button" data-tab="historyTab"><span class="tile-top"><span class="tile-icon" aria-hidden="true">⌕</span><span class="tile-arrow" aria-hidden="true">←</span></span><span class="tile-copy"><b>جستجوی سوابق</b><small>فیلتر و بررسی ترددها</small></span></button>
+    <button class="glass-tile glass-daily" type="button" data-tab="topTrucksTab"><span class="tile-top"><span class="tile-icon" aria-hidden="true">▣</span><span class="tile-arrow" aria-hidden="true">←</span></span><span class="tile-copy"><b>مدیریت خودروها</b><small>مشاهده کامیون‌های پرتردد</small></span></button>
+  </div>
 </section>
 <section class="panel chart-panel" id="statsChartPanel">
 <div class="chart-head"><h2 style="margin:0">نمودار تردد و تناژ</h2><span class="small">بر اساس سوابق ثبت‌شده</span></div>
@@ -422,7 +512,11 @@ html,body,button,input,select,textarea,.drawer-account>summary.drawer-item,.prev
 <div class="category-share-filters"><div class="field"><label for="categoryShareDirection">نوع عملیات</label><select id="categoryShareDirection"><option value="export">صادرات</option><option value="import">واردات</option></select></div><div class="category-share-dates"><div class="field"><label for="categoryShareFrom">از تاریخ</label><input id="categoryShareFrom" type="text" inputmode="none" placeholder="انتخاب تاریخ" autocomplete="off" readonly></div><div class="field"><label for="categoryShareTo">تا تاریخ</label><input id="categoryShareTo" type="text" inputmode="none" placeholder="انتخاب تاریخ" autocomplete="off" readonly></div></div><button id="categoryShareApply" type="button" class="category-share-apply">اعمال بازه</button></div>
 <div id="categoryShareSummary" class="category-share-summary">در حال محاسبه سهم نوع کالاها...</div><div id="categoryShareContent" class="category-share-content"></div><div id="categoryShareFoot" class="chart-foot">مبنای محاسبه، وزن خالص ثبت‌شده است.</div></div>
 </section>
-<section class="panel home-top-trucks-panel" id="homeTopTrucksPanel"><div class="chart-head"><h2 style="margin:0">پرترددترین کامیون‌ها</h2><button type="button" class="secondary" data-tab="topTrucksTab" style="min-width:0;padding:7px 11px;font-size:10px">مشاهده همه</button></div><p class="hint" style="margin:7px 0">مقایسه اختلاف وزن خالی کامیون‌ها در ترددهای ثبت‌شده؛ رنگ هر پلاک میزان اختلاف را نشان می‌دهد.</p><div id="homeTopTrucksSummary" class="small" style="margin:5px 0 8px"></div><div id="homeTopTrucksList" class="daily-vehicle-scroll" style="max-height:365px;overflow-y:auto"><div class="hint">در حال محاسبه ترددها...</div></div></section></div>
+<section class="panel home-top-trucks-panel" id="homeTopTrucksPanel"><div class="chart-head"><h2 style="margin:0">پرترددترین کامیون‌ها</h2><button type="button" class="secondary" data-tab="topTrucksTab" style="min-width:0;padding:7px 11px;font-size:10px">مشاهده همه</button></div><p class="hint" style="margin:7px 0">مقایسه اختلاف وزن خالی کامیون‌ها در ترددهای ثبت‌شده؛ رنگ هر پلاک میزان اختلاف را نشان می‌دهد.</p><div id="homeTopTrucksSummary" class="small" style="margin:5px 0 8px"></div><div id="homeTopTrucksList" class="daily-vehicle-scroll" style="max-height:365px;overflow-y:auto"><div class="hint">در حال محاسبه ترددها...</div></div></section>
+<section class="panel home-recent-panel">
+  <div class="home-section-head"><h2>آخرین عملیات</h2><button type="button" class="home-more-link" data-tab="historyTab">مشاهده سوابق</button></div>
+  <div id="homeRecentOperations" class="home-recent-list"><div class="hint">در حال دریافت آخرین عملیات...</div></div>
+</section></div>
 <div id="registrationTab" class="hide">
 <nav class="tabs" aria-label="بخش‌های ثبت اطلاعات"><button class="tabbtn active" data-tab="weighTab">ثبت صادراتی با برگ باسکول</button><button class="tabbtn" data-tab="importEntryTab">ثبت وارداتی با باسکول دستی</button><button class="tabbtn" data-tab="emptyTab">ثبت ورود کامیون خالی</button><button class="tabbtn" data-tab="exitTab">ثبت خروج کامیون وارداتی</button></nav>
 <div id="weighTab">
@@ -1731,10 +1825,27 @@ async function prepareCategoryTruckSearch(){
 $('runCategoryTruckSearch').onclick=runCategoryTruckSearch;
 $('resetCategoryTruckSearch').onclick=()=>{categoryTruckRevision++;clearCategoryPhotoObserver();$('categoryTruckSearchType').value='weighed';$('categoryTruckSearchCategory').value='';$('categoryTruckSearchFrom').value='';$('categoryTruckSearchTo').value='';$('categoryTruckSearchSummary').textContent='برای شروع، نوع کالا و بازه زمانی را مشخص کن.';$('categoryTruckSearchResults').innerHTML=''};
 $('categoryTruckSearchType').addEventListener('change',()=>{categoryTruckRevision++;clearCategoryPhotoObserver();$('categoryTruckSearchResults').innerHTML='';$('categoryTruckSearchSummary').textContent='نوع ثبت تغییر کرد؛ برای مشاهده نتایج دوباره جست‌وجو کن.'});
+function renderHomeDashboard(records){
+ const now=new Date(),start=new Date(now);start.setHours(0,0,0,0);
+ const end=new Date(start);end.setDate(end.getDate()+1);
+ const today=records.filter(r=>{const t=Date.parse(r.created);return Number.isFinite(t)&&t>=start.getTime()&&t<end.getTime()});
+ const weight=today.reduce((sum,r)=>{const n=Number(normalizeDigits(r.netWeight??'').replace(/[^0-9.-]/g,''));return sum+(Number.isFinite(n)?n:0)},0);
+ const plates=new Set(today.map(r=>String(r.manualPlate||r.plateKey||'').trim()).filter(Boolean));
+ $('homeTodayCount').textContent=today.length.toLocaleString('fa-IR')+' خودرو';
+ $('homeWeightToday').textContent=(weight/1000).toLocaleString('fa-IR',{maximumFractionDigits:1})+' تن';
+ $('homeUniqueToday').textContent=plates.size.toLocaleString('fa-IR');
+ $('homeTotalRecords').textContent=records.length.toLocaleString('fa-IR');
+ $('homeDate').textContent=new Intl.DateTimeFormat('fa-IR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(now);
+ const recent=$('homeRecentOperations');
+ if(recent){
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const rows=[...records].filter(r=>!r.isDeleted&&Number.isFinite(Date.parse(r.created))).sort((a,b)=>Date.parse(b.created)-Date.parse(a.created)).slice(0,3);
+  recent.innerHTML=rows.length?rows.map(r=>'<div class="home-operation-row"><div class="home-operation-main"><b>'+esc(r.manualPlate||r.plateKey||'پلاک ثبت نشده')+'</b><small>'+esc(typeLabel(r.eventType||'weighed'))+' · '+esc(r.goodsText||'')+'</small></div><div class="home-operation-meta"><strong>'+esc((Number(r.netWeight)||0).toLocaleString('fa-IR'))+' kg</strong>'+esc(new Date(r.created).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'}))+'</div></div>').join(''):'<div class="hint">هنوز عملیاتی ثبت نشده است.</div>';
+ }
+}
 async function renderRecords(newRecord=null){
  const all=newRecord?.id?[...lastChartRecords.filter(record=>!record.isDeleted),recordSummary(newRecord)]:await allRecordSummaries();
- await refreshHolidayCache();lastChartRecords=all;renderChart(all);renderRecentVehicles(all);
- $('homeTodayCount').textContent=$('recentVehiclesCount').textContent;
+ await refreshHolidayCache();lastChartRecords=all;renderChart(all);renderRecentVehicles(all);renderHomeDashboard(all);
  if(!$('historyTab').classList.contains('hide'))scheduleHistorySearch();
 }
 
@@ -2787,7 +2898,7 @@ async function initAuth(){
   showAuth(false);$('loginUsername').focus();
  }
 }
-async function unlockAs(user){currentUser=user;$('activeUserLabel').textContent='کاربر فعال: '+user.displayName+' ('+user.username+')';$('manageUsersBtn').style.display=user.role==='admin'?'block':'none';$('authGate').style.display='none';}
+async function unlockAs(user){currentUser=user;$('activeUserLabel').textContent='کاربر فعال: '+user.displayName+' ('+user.username+')';$('homeGreeting').textContent=user.displayName||'همکار گرامی';$('manageUsersBtn').style.display=user.role==='admin'?'block':'none';$('authGate').style.display='none';}
 $('createAdminBtn').onclick=async()=>{
  const username=authNormalize($('setupUsername').value),displayName=$('setupDisplayName').value.trim()||'مدیر سامانه',p=$('setupPassword').value,p2=$('setupPassword2').value;
  if(!/^[a-z0-9_.@-]{3,64}$/.test(username)){$('authError').textContent='نام کاربری باید حداقل ۳ نویسه و شامل حروف انگلیسی، عدد یا @، . _ - باشد.';return}
