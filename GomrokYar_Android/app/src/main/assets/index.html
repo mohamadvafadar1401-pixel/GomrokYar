@@ -1283,7 +1283,7 @@ $('resetImportEntry').onclick=()=>{clearImportManualPlate();['impInGoods','impIn
 
 $('impInFirst')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('impInSecond')?.focus()}});
 $('impInSecond')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('impInClearanceAgent')?.focus()}});
-$('impInClearanceAgent')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('impInRecordDate')?.focus()}});
+$('impInClearanceAgent')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();setTimeout(()=>openJalaliPicker('impInRecordDate'),60)}});
 
 $('saveEmpty').onclick=async()=>{try{let n=await saveSimpleRecord('empty_entry',plateData('emptyPlate'),'','emptyRecordDate');if(n){$('emptyStatus').textContent='ورود کامیون خالی با ردیف '+n+' ثبت شد.';clearPlate('emptyPlate');$('emptyRecordDate').value=jalaliDisplay(new Date());$('emptyPlateSuffix').focus();window.scrollTo({top:0,behavior:'smooth'});}}catch(e){alert('ثبت ورود انجام نشد؛ دوباره تلاش کن.')}};
 $('saveExit').onclick=async()=>{try{let n=await saveSimpleRecord('import_exit',plateData('exitPlate'),$('exitGoods').value,'exitRecordDate');if(n){$('exitStatus').textContent='خروج کامیون وارداتی با ردیف '+n+' ثبت شد.';clearPlate('exitPlate');$('exitGoods').value='';$('exitRecordDate').value=jalaliDisplay(new Date());$('exitPlateSuffix').focus();window.scrollTo({top:0,behavior:'smooth'});}}catch(e){alert('ثبت خروج انجام نشد؛ دوباره تلاش کن.')}};
