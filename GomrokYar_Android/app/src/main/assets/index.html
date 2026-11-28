@@ -512,6 +512,16 @@ body.registration-active{padding-bottom:12px!important}
 #previousPlateReviewCard .review-actions{display:flex;gap:10px}
 #previousPlateReviewCard button{flex:1;min-height:44px;border-radius:11px}
 #previousPlateReviewCard .review-cancel{background:#dceaf6!important;color:#174365!important;border:1px solid #a9c9e2!important}
+</style><style id="jalali-calendar-month-contrast-fix">
+/* خوانایی نام ماه، سال، روزهای هفته و کنترل‌های تقویم شمسی */
+#jalaliPicker,#jalaliPicker *{color:#173b5d!important}
+#jalaliPicker{background:#f4f9ff!important;border-color:#9fc5e5!important}
+#jalaliPicker .jp-head strong,#jalaliPicker #jpTitle{color:#123b60!important;font-weight:900!important;text-shadow:none!important}
+#jalaliPicker .jp-week{color:#496783!important;font-weight:800!important}
+#jalaliPicker .jp-day{background:#e1effb!important;color:#173b5d!important;border-color:#bfd7ec!important}
+#jalaliPicker .jp-day.today{border-color:#1675b9!important;color:#07558d!important}
+#jalaliPicker .jp-day.selected{background:#087fc1!important;color:#fff!important}
+#jalaliPicker .jp-head button,#jalaliPicker .jp-foot button{background:#dcecf9!important;color:#17486d!important;border:1px solid #a9cce7!important}
 </style></head><body><div id="authGate"><div id="authCard"><div class="brand"><h2>ورود به سامانه گمرک شیخ صله</h2></div><div id="firstAdminSetup" class="hide"><p>برای راه‌اندازی، حساب مدیر اصلی را بسازید. این حساب امکان تعریف پنج کاربر دیگر را دارد.</p><label>نام کاربری مدیر</label><input id="setupUsername" autocomplete="username" maxlength="64" value="muhamadvafadar22@gmail.com"><label>نام نمایشی</label><input id="setupDisplayName" maxlength="50" placeholder="مثلاً مدیر سامانه"><label>رمز عبور (حداقل ۸ نویسه)</label><input id="setupPassword" type="password" autocomplete="new-password"><label>تکرار رمز عبور</label><input id="setupPassword2" type="password" autocomplete="new-password"><button id="createAdminBtn" class="btn" style="width:100%;margin-top:16px">ساخت حساب مدیر</button></div><div id="userLogin"><p>برای استفاده از برنامه، با حساب کاربری خود وارد شوید.</p><label>نام کاربری</label><input id="loginUsername" autocomplete="username"><label>رمز عبور</label><input id="loginPassword" type="password" autocomplete="current-password"><button id="loginBtn" class="btn" style="width:100%;margin-top:16px">ورود به برنامه</button></div><div id="authError" role="alert"></div><button id="recoverAuthBtn" type="button" class="btn secondary" style="width:100%;margin-top:12px">بازیابی ورود مدیر (بدون حذف سوابق)</button><p class="hint" style="margin-top:14px">حساب‌ها و رمزها روی همین گوشی نگهداری می‌شوند. در صورت حذف داده‌های برنامه، اطلاعات ورود محلی نیز پاک می‌شود.</p></div></div><script>
 (function(){
  const showError=(message)=>{const e=document.getElementById('authError');if(e)e.textContent=message;};
