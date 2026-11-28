@@ -493,6 +493,25 @@ main.wrap{max-width:790px!important;padding:12px 14px 24px!important}
 /* هنگام ثبت اطلاعات، نوار ناوبری پایین مخفی می‌شود تا فضای فرم و دکمه‌های ثبت آزاد باشد. */
 body.registration-active .app-nav{display:none!important}
 body.registration-active{padding-bottom:12px!important}
+</style><style id="readable-light-boxes-fix">
+/* متن داخل کارت‌ها و باکس‌های روشن باید تیره و خوانا باشد؛ حتی در تم شیشه‌ای/تیره */
+.panel{color:#173b5d!important}
+.panel h1,.panel h2,.panel h3,.panel h4,.panel p,.panel label,.panel small,.panel strong,.panel b,.panel span,.panel div,.panel li{color:inherit}
+.panel .hint,.panel .small,.panel .tabnote{color:#526b80!important}
+#topTruckDetails .panel{background:#f5faff!important;color:#153b60!important;border-color:#a9cbe5!important}
+#topTruckDetails table{color:#153b60!important}
+#topTruckDetails table th{background:#cfe5f7!important;color:#123b60!important}
+#topTruckDetails table td{background:#f4f9fe!important;color:#173b5d!important}
+#topTruckDetails table tr:nth-child(even) td{background:#e7f2fc!important}
+#topTruckDetails table td *,#topTruckDetails table th *{color:#173b5d!important}
+#topTruckDetails table td button{color:#fff!important}
+#previousPlateReviewOverlay{position:fixed;inset:0;z-index:10080;background:rgba(2,15,32,.72);display:flex;align-items:center;justify-content:center;padding:18px}
+#previousPlateReviewCard{width:min(100%,430px);background:#f2f8ff;border:1px solid #80b9e6;border-radius:18px;padding:20px;color:#153b60!important;box-shadow:0 18px 55px #0007;direction:rtl}
+#previousPlateReviewCard h3{margin:0 0 12px;color:#123b60!important;font-size:17px}
+#previousPlateReviewCard p{white-space:pre-line;line-height:2;color:#294d6d!important;font-size:14px;margin:0 0 18px}
+#previousPlateReviewCard .review-actions{display:flex;gap:10px}
+#previousPlateReviewCard button{flex:1;min-height:44px;border-radius:11px}
+#previousPlateReviewCard .review-cancel{background:#dceaf6!important;color:#174365!important;border:1px solid #a9c9e2!important}
 </style></head><body><div id="authGate"><div id="authCard"><div class="brand"><h2>ورود به سامانه گمرک شیخ صله</h2></div><div id="firstAdminSetup" class="hide"><p>برای راه‌اندازی، حساب مدیر اصلی را بسازید. این حساب امکان تعریف پنج کاربر دیگر را دارد.</p><label>نام کاربری مدیر</label><input id="setupUsername" autocomplete="username" maxlength="64" value="muhamadvafadar22@gmail.com"><label>نام نمایشی</label><input id="setupDisplayName" maxlength="50" placeholder="مثلاً مدیر سامانه"><label>رمز عبور (حداقل ۸ نویسه)</label><input id="setupPassword" type="password" autocomplete="new-password"><label>تکرار رمز عبور</label><input id="setupPassword2" type="password" autocomplete="new-password"><button id="createAdminBtn" class="btn" style="width:100%;margin-top:16px">ساخت حساب مدیر</button></div><div id="userLogin"><p>برای استفاده از برنامه، با حساب کاربری خود وارد شوید.</p><label>نام کاربری</label><input id="loginUsername" autocomplete="username"><label>رمز عبور</label><input id="loginPassword" type="password" autocomplete="current-password"><button id="loginBtn" class="btn" style="width:100%;margin-top:16px">ورود به برنامه</button></div><div id="authError" role="alert"></div><button id="recoverAuthBtn" type="button" class="btn secondary" style="width:100%;margin-top:12px">بازیابی ورود مدیر (بدون حذف سوابق)</button><p class="hint" style="margin-top:14px">حساب‌ها و رمزها روی همین گوشی نگهداری می‌شوند. در صورت حذف داده‌های برنامه، اطلاعات ورود محلی نیز پاک می‌شود.</p></div></div><script>
 (function(){
  const showError=(message)=>{const e=document.getElementById('authError');if(e)e.textContent=message;};
@@ -864,6 +883,22 @@ async function renderTopTruckDetailsByKey(key){
  await renderTopTruckReport({key:normalized,plate,records:matched});return true;
 }
 let pendingPreviousRecordsReturnTab=null;
+function showPreviousPlateReviewPrompt(message){
+ return new Promise(resolve=>{
+  const old=$('previousPlateReviewOverlay');if(old)old.remove();
+  const overlay=document.createElement('div');overlay.id='previousPlateReviewOverlay';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');
+  const card=document.createElement('section');card.id='previousPlateReviewCard';
+  const title=document.createElement('h3');title.textContent='بررسی سوابق قبلی این کامیون';
+  const body=document.createElement('p');body.textContent=message;
+  const actions=document.createElement('div');actions.className='review-actions';
+  const yes=document.createElement('button');yes.type='button';yes.textContent='مشاهده و تکمیل سوابق';
+  const no=document.createElement('button');no.type='button';no.className='review-cancel';no.textContent='فعلاً نه';
+  const finish=value=>{overlay.remove();resolve(value)};
+  yes.addEventListener('click',()=>finish(true));no.addEventListener('click',()=>finish(false));
+  overlay.addEventListener('click',event=>{if(event.target===overlay)finish(false)});
+  actions.append(yes,no);card.append(title,body,actions);overlay.append(card);document.body.append(overlay);yes.focus();
+ });
+}
 async function notifyPreviousPlateRecords(plateKey,previousRecords){
  if(!Array.isArray(previousRecords)||!previousRecords.length)return;
  const measurableRecords=previousRecords.filter(record=>['weighed','import_entry_manual'].includes(record.eventType||'weighed'));
@@ -887,7 +922,7 @@ async function notifyPreviousPlateRecords(plateKey,previousRecords){
  if(missingWeight)reasons.push(missingWeight.toLocaleString('fa-IR')+' سابقه بدون وزن کامل');
  if(redDifference)reasons.push('اختلاف وزن خالی قرمز ('+weightDifference.toLocaleString('fa-IR')+' کیلوگرم)');
  const message='برای این پلاک '+previousRecords.length.toLocaleString('fa-IR')+' تردد قبلی ثبت شده و نیاز به بررسی دارد:\n'+reasons.join('\n')+'\nمی‌خواهی سوابق را ببینی و موارد ناقص یا اختلاف وزن قرمز را اصلاح کنی؟';
- const openHistory=confirm(message);
+ const openHistory=await showPreviousPlateReviewPrompt(message);
  if(redDifference)showAppToast('هشدار اختلاف وزن خالی برای این پلاک: '+weightDifference.toLocaleString('fa-IR')+' کیلوگرم. سوابق را بررسی کن.','warning');
  else if(missingWeight||missingCategory)showAppToast('سوابق قبلی این پلاک ناقص است؛ وزن یا نوع کالا را بررسی کن.','warning');
  if(!openHistory)return;
