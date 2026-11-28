@@ -1094,7 +1094,7 @@ async function passengerImportRosterFile(file){
   }
   if(!fresh.length){alert('همه خودروهای این فایل قبلاً در این گوشی ثبت شده‌اند؛ مورد جدیدی اضافه نشد.');return}
   await new Promise((resolve,reject)=>{
-   const tx=db.transaction('passengerVehicles','readwrite'),store=tx.objectStore('passengerVehicles');
+   const tx=customsRecordsDb.transaction('passengerVehicles','readwrite'),store=tx.objectStore('passengerVehicles');
    fresh.forEach(v=>store.add(v));
    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('import_failed'));tx.onabort=()=>reject(tx.error||new Error('import_aborted'));
   });
@@ -1674,7 +1674,7 @@ async function saveUncategorizedCategories(){
   const current=await fullRecordsFor(updates);
   const byId=new Map(current.map(record=>[Number(record.id),record]));
   await new Promise((resolve,reject)=>{
-   const transaction=db.transaction('records','readwrite'),store=transaction.objectStore('records');
+   const transaction=customsRecordsDb.transaction('records','readwrite'),store=transaction.objectStore('records');
    updates.forEach(item=>{const record=byId.get(item.id);if(record&&isEditablePieCategoryRecord(record,uncategorizedEditKind,uncategorizedEditSource))store.put({...record,category:item.category,categoryUpdatedAt:new Date().toISOString()})});
    transaction.oncomplete=resolve;transaction.onerror=()=>reject(transaction.error||new Error('category_update_failed'));transaction.onabort=()=>reject(transaction.error||new Error('category_update_aborted'));
   });
