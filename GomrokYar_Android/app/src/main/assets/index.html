@@ -772,7 +772,8 @@ const DB='gomrokyar_offline_v1';
 function openDB(){return new Promise((res,rej)=>{let q=indexedDB.open(DB,3);q.onupgradeneeded=()=>{const d=q.result,t=q.transaction;const records=d.objectStoreNames.contains('records')?t.objectStore('records'):d.createObjectStore('records',{keyPath:'id',autoIncrement:true});const settings=d.objectStoreNames.contains('settings')?t.objectStore('settings'):d.createObjectStore('settings');if(!records.indexNames.contains('plateKey'))records.createIndex('plateKey','plateKey',{unique:false});if(!records.indexNames.contains('manualPlate'))records.createIndex('manualPlate','manualPlate',{unique:false});if(!d.objectStoreNames.contains('passengerVehicles'))d.createObjectStore('passengerVehicles',{keyPath:'id',autoIncrement:true});let maxNo=0;const cursor=records.openCursor();cursor.onsuccess=()=>{const c=cursor.result;if(c){const x=c.value;maxNo=Math.max(maxNo,Number(x.entryNo)||Number(x.id)||0);c.continue()}else{const current=settings.get('nextEntryNo');current.onsuccess=()=>settings.put(Math.max(Number(current.result)||1,maxNo+1),'nextEntryNo')}}};q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
 function openCustomsRecordsDB(id=currentCustomsId){if(id==='sheikh_saleh')return Promise.resolve(db);return new Promise((resolve,reject)=>{const request=indexedDB.open('gomrokyar_customs_data_'+id,1);request.onupgradeneeded=()=>{const d=request.result,records=d.createObjectStore('records',{keyPath:'id',autoIncrement:true});records.createIndex('plateKey','plateKey',{unique:false});records.createIndex('manualPlate','manualPlate',{unique:false});d.createObjectStore('passengerVehicles',{keyPath:'id',autoIncrement:true})};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
 function tx(store,mode='readonly'){const target=(store==='records'||store==='passengerVehicles')?customsRecordsDb:db;return target.transaction(store,mode).objectStore(store)}
-function customsSettingKey(key){return key==='nextEntryNo'&&currentCustomsId!=='sheikh_saleh'?key+'_'+currentCustomsId:key}
+const CUSTOMS_SCOPED_SETTINGS=new Set(['nextEntryNo','customHolidayDates','regions','templateMode','autoBackupBaselineCreated','autoBackupEnabled','autoBackupPendingCount','autoBackupStartDate','autoBackupDailyDone','autoBackupWeeklyArchives','autoBackupRetroactiveEnabled']);
+function customsSettingKey(key){return CUSTOMS_SCOPED_SETTINGS.has(key)&&currentCustomsId!=='sheikh_saleh'?key+'_'+currentCustomsId:key}
 async function setting(k,v){const key=customsSettingKey(k);if(arguments.length>1)return new Promise((r,j)=>{let q=tx('settings','readwrite').put(v,key);q.onsuccess=()=>r();q.onerror=()=>j(q.error)});return new Promise((r,j)=>{let q=tx('settings').get(key);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error)})}
 async function recordsForPlate(plateKey,manualPlate){const store=tx('records'),queries=[];const add=(indexName,value)=>{if(value!==undefined&&value!==null&&String(value)!==''&&store.indexNames.contains(indexName))queries.push(new Promise((resolve,reject)=>{const request=store.index(indexName).getAll(value);request.onsuccess=()=>resolve(request.result||[]);request.onerror=()=>reject(request.error)}))};add('plateKey',plateKey);add('manualPlate',manualPlate);const groups=await Promise.all(queries),unique=new Map();groups.forEach(group=>group.forEach(record=>unique.set(record.id,record)));const normalized=normalizeTopTruckKey(plateKey||manualPlate);return [...unique.values()].filter(record=>!record.isDeleted&&normalizeTopTruckKey(record.plateKey||record.manualPlate)===normalized)}
 let holidayDatesCache=[];
@@ -2155,7 +2156,7 @@ async function streamBackupArchive(name,exportType,options={}){
   const bridge=window.AndroidBridge,automatic=!!options.automatic;
   const native=bridge&&typeof bridge.appendBackupText==='function';
   if(automatic&&!native)throw new Error('Automatic backup storage unavailable');
-  const data={format:'gomrokyar-transfer',version:4,exportType,exportedAt:new Date().toISOString()};
+  const data={format:'gomrokyar-transfer',version:4,exportType,exportedAt:new Date().toISOString(),customsId:currentCustomsId,customsName:customsName()};
   if(automatic)data.automatic=true;
   if(options.metadata)Object.assign(data,options.metadata);
   if(options.start)data.periodStart=options.start;
@@ -2255,9 +2256,10 @@ function autoBackupWeekStart(date){
 }
 const autoBackupMonthLatin=['farvardin','ordibehesht','khordad','tir','mordad','shahrivar','mehr','aban','azar','dey','bahman','esfand'];
 const autoBackupDayLatin={6:'shanbe',0:'yekshanbe',1:'doshanbe',2:'seshanbe',3:'chaharshanbe',4:'panjshanbe',5:'jome'};
+function autoBackupSitePrefix(){return currentCustomsId==='sheikh_saleh'?'':currentCustomsId+'-'}
 function autoBackupDailyName(date){
   const p=jalaliParts(date);
-  return 'gomrokyar-auto-'+autoBackupDayLatin[date.getDay()]+p.d+autoBackupMonthLatin[p.m-1]+p.y+'.json.gz';
+  return 'gomrokyar-auto-'+autoBackupSitePrefix()+autoBackupDayLatin[date.getDay()]+p.d+autoBackupMonthLatin[p.m-1]+p.y+'.json.gz';
 }
 function autoBackupWeeklyInfo(start){
   const end=autoBackupAddDays(start,5),p=jalaliParts(start),ep=jalaliParts(end);
@@ -2268,7 +2270,7 @@ function autoBackupWeeklyInfo(start){
     ? p.d+'ta'+ep.d+autoBackupMonthLatin[p.m-1]
     : p.d+autoBackupMonthLatin[p.m-1]+'ta'+ep.d+autoBackupMonthLatin[ep.m-1];
   return {start:autoBackupDateKey(start),end:autoBackupDateKey(end),
-    name:'gomrokyar-auto-hafte'+weekNo+'_'+rangeName+p.y+'.json.gz',
+    name:'gomrokyar-auto-'+autoBackupSitePrefix()+'hafte'+weekNo+'_'+rangeName+p.y+'.json.gz',
     startDate:new Date(start.getFullYear(),start.getMonth(),start.getDate()),
     endDate:new Date(end.getFullYear(),end.getMonth(),end.getDate())};
 }
@@ -2287,7 +2289,7 @@ async function createInitialAutomaticBackup(){
   if((await setting('autoBackupEnabled'))===false)return false;
   if(await setting('autoBackupBaselineCreated'))return true;
   const todayKey=localISODate();
-  const name='gomrokyar-auto-base-'+todayKey+'-'+Date.now()+'.json.gz';
+  const name='gomrokyar-auto-'+autoBackupSitePrefix()+'base-'+todayKey+'-'+Date.now()+'.json.gz';
   showAutomaticBackupNotice('در حال تهیه پشتیبان اولیه کامل گمرکیار…');
   const count=await streamBackupArchive(name,'full_backup',{automatic:true});
   await setting('autoBackupStartDate',todayKey);
@@ -2714,7 +2716,7 @@ $('export').onclick=async()=>{
   button.disabled=true;
   status.textContent='در حال آماده‌سازی خروجی کامل…';
   try{
-    const count=await queueBackupWrite(()=>streamBackupArchive('gomrokyar-full-backup-'+localISODate()+'.json','full_backup'));
+    const count=await queueBackupWrite(()=>streamBackupArchive('gomrokyar-full-backup-'+currentCustomsId+'-'+localISODate()+'.json','full_backup'));
     status.textContent='خروجی کامل با '+count.toLocaleString('fa-IR')+' سابقه آماده ذخیره است.';
   }catch(error){
     console.error('Full backup export failed',error);
@@ -2991,6 +2993,10 @@ async function restoreBackup(file){
       status.textContent='این فایل هیچ سابقه یا اطلاعات تعطیلی معتبری ندارد.';
       return;
     }
+    if(metadata.customsId&&metadata.customsId!==currentCustomsId){
+      const sourceName=metadata.customsName||metadata.customsId;
+      if(!confirm('این فایل متعلق به '+sourceName+' است، اما گمرک فعال '+customsName()+' است. اطلاعات این فایل در گمرک فعال وارد شود؟')){status.textContent='بازیابی لغو شد؛ گمرک فعال تغییر نکرد.';return}
+    }
     const known=new Set();
     let maxNo=0;
     await scanBackupRecords(record=>{
@@ -3160,6 +3166,11 @@ async function confirmCustomsSwitch(){
   const old=customsRecordsDb;if(old&&old!==db)old.close();
   currentCustomsId=next;localStorage.setItem(CUSTOMS_STORAGE_KEY,next);
   customsRecordsDb=await openCustomsRecordsDB(next);updateCustomsDisplay();closeCustomsPin();
+  regions=await setting('regions')||{};templateMode=(await setting('templateMode'))===true;
+  const retroactiveBackupEnabled=(await setting('autoBackupRetroactiveEnabled'))!==false;$('retroactiveBackupToggle').checked=retroactiveBackupEnabled;
+  $('retroactiveBackupToggleHint').textContent=retroactiveBackupEnabled?'بازسازی پشتیبان‌های تاریخ‌های گذشته فعال است.':'بازسازی پشتیبان‌های تاریخ‌های گذشته خاموش است؛ پشتیبان‌های معمول روزانه و هفتگی ادامه دارند.';
+  const automaticBackupEnabled=(await setting('autoBackupEnabled'))!==false;$('autoBackupEnabledToggle').checked=automaticBackupEnabled;
+  $('autoBackupEnabledHint').textContent=automaticBackupEnabled?'پشتیبان‌گیری خودکار فعال است؛ شمارنده ۵۰ ثبت و پشتیبان‌های روزانه و هفتگی طبق روال ادامه دارند.':'پشتیبان‌گیری خودکار خاموش است؛ شمارنده و ساخت پشتیبان‌های خودکار متوقف است. خروجی دستی و بازیابی همچنان فعال می‌مانند.';
   await renderRecords();await refreshReportPreview();renderDailyRecords();await renderDeletedRecords();await refreshReportBackupCounter();
   if(!$('topTrucksTab').classList.contains('hide'))await renderTopTrucks();
   if(!$('passengerTab').classList.contains('hide')){await passengerRenderRoster();await passengerRenderHistory()}
